@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
-import {  Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 
 const Roles = () => {
   const router = useRouter();
@@ -12,7 +12,7 @@ const Roles = () => {
   };
 
   const handlePress = () => {
-    router.push("login");
+    router.push("/login");
   };
 
   return (
@@ -22,39 +22,34 @@ const Roles = () => {
           title: "Roles",
         }}
       />
-      <View className="container p-[20px]">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Image source={require("../assets/images/logo.png")} />
-          </View>
-          <View className="space-x-[10px] flex-row">
-            <View className="w-[20px] h-[2px] bg-[#0D6EFD]"></View>
-            <View className="w-[20px] h-[2px] bg-gray-300"></View>
-            <View className="w-[20px] h-[2px] bg-gray-300"></View>
-          </View>
-        </View>
+      <View className="container py-[24px] px-[16px]">
         <View className="space-y-2">
-          <Text className="text-[#1B1B1B] text-[16px] text-center">Vui lòng chọn vai trò</Text>
-
-          <View className="bg-gray-200 p-2">
-            {/* Sender */}
-            <Pressable onPress={() => handleSelectRole("Sender")} className={`h-[128px] flex-col justify-center items-center ${selectedRole === "Sender" ? "bg-blue-500" : "bg-white"}`}>
-              <Text className={`text-center ${selectedRole === "Sender" ? "text-white" : "text-black"}`}>Sender</Text>
-            </Pressable>
-
-            {/* Carrier */}
-            <Pressable onPress={() => handleSelectRole("Carrier")} className={`h-[128px] flex-col justify-center items-center ${selectedRole === "Carrier" ? "bg-blue-500" : "bg-white"}`}>
-              <Text className={`text-center ${selectedRole === "Carrier" ? "text-white" : "text-black"}`}>Carrier</Text>
-            </Pressable>
+          <Text className="text-[#1B1B1B] text-[16px] text-center text-[28px] text-primary-600 font-bold text-[#1570EF]">Chọn vai trò để bắt đầu</Text>
+          <View className="flex-row justify-center py-[48px]">
+            <Image source={require("../assets/images/role.webp")} className="w-[261px] h-[278px]" />
           </View>
         </View>
-
-        <View className="flex-row items-center justify-between space-y-[40px]">
-          <View className="flex-row items-center">
-            <Text className="text-[#1B1B1B]"></Text>
+        <View className="w-full h-full space-y-[12px]">
+          <View className="flex-row w-full justify-between">
+            <View className="bg-[#0D6EFD] rounded-[12px] p-[12px] space-y-[8px] flex-1">
+              <Text className="font-bold text-center text-white text-[20px]">Người Gửi</Text>
+              <Text className="text-center text-white">
+                Tạo yêu cầu vận chuyển, chờ người đi {'\n'} đường nhận giao.
+              </Text>
+            </View>
           </View>
-          <Pressable onPress={handlePress} className="bg-[#0D6EFD]  py-[14px] px-[32px] rounded-[14px]">
-            <Text className="text-white">Next</Text>
+          <View className="flex-row w-full justify-between">
+            <View className="bg-[#0D6EFD] rounded-[12px] p-[12px] space-y-[8px] flex-1">
+              <Text className="font-bold text-center text-white text-[20px]">Người vận chuyển</Text>
+              <Text className="text-center text-white">
+                Nhận đơn phù hợp với lịch trình, hỗ {'\n'} trợ giao hàng.
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View>
+          <Pressable onPress={handlePress} className="bg-[#0D6EFD] w-full  py-[14px] px-[32px] rounded-[14px]">
+            <Text className="text-center text-white">Tiếp tục</Text>
           </Pressable>
         </View>
       </View>
