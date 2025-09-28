@@ -21,10 +21,9 @@ function Login() {
   const handlePress = () => {
     const { username, password } = formData;
     if (username && password) {
-      alert('Login Successful');
-
+      alert("Login Successful");
     } else {
-      alert('Please fill in both fields');
+      alert("Please fill in both fields");
     }
   };
 
@@ -35,45 +34,36 @@ function Login() {
           title: "Login",
         }}
       />
-      <View className="flex-col justify-between  px-[20px] py-[32px] bg-white h-full">
-        <View className="space-y-[16px]">
-          <Text className="text-center text-[28px]">Đăng nhập</Text>
-          <Text className="text-center text-[#3C3C43]">Please sign in to continue our app</Text>
-
-          <View className="space-y-[16px] py-[32px]">
+      <View className="px-[20px] py-[32px] bg-white h-full">
+        <Text className="text-[24px] font-bold py-[16px]">Đăng nhập</Text>
+        <View className="space-y-[24px]">
+          <View className="space-y-[4px]">
+            <Text>Tên tài khoản</Text>
             <TextInput
-              value={formData.username}
-              onChangeText={(value) => handleInputChange("username", value)}
-              className="bg-[#F2F2F7] p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-              placeholder="Enter your name"
-            />
-            <TextInput
-              value={formData.password}
-              secureTextEntry={true}
-              onChangeText={(value) => handleInputChange("password", value)}
-              className="bg-[#F2F2F7] p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-              placeholder="Enter your Password"
+              className=" p-4 border border-gray-300 rounded-[16px]  text-lg w-full"
+              placeholder="Nhập tên tài khoản"
             />
           </View>
-          <View className="flex-row justify-end">
-            <Text className="text-[#0D6EFD]">Forget Password?</Text>
+          <View className="space-y-[4px]">
+            <Text>Số điện thoại</Text>
+            <TextInput
+              className=" p-4 border border-gray-300 rounded-[16px]  text-lg w-full"
+              placeholder="Nhập số điện thoại"
+            />
           </View>
-          <Pressable onPress={handlePress} className="bg-[#0D6EFD] py-[14px] px-[32px] rounded-[14px]">
-            <Text className="text-white text-center">Sign In</Text>
-          </Pressable>
-          <View className="flex-row justify-center">
-            <Pressable
-              onPress={() => router.push("/register")}
-            >
-              <View
-                className="flex-row text-center space-x-[10px]">
-                <Text>Don’t have an account?</Text>
-                <Text className="text-[#0D6EFD]">Sign Up</Text>
-              </View>
+          <View className="space-y-[4px]">
+            <Text>Mật khẩu</Text>
+            <TextInput
+              className=" p-4 border border-gray-300 rounded-[16px]  text-lg w-full"
+              placeholder="Nhập mật khẩu"
+            />
+          </View>
+          <View className="mt-[24px]">
+            <Pressable onPress={() => router.push("/receiver/index")} className="bg-[#0D6EFD] w-full  py-[14px] px-[32px] rounded-[14px]">
+              <Text className="text-center text-white">Đăng nhập</Text>
             </Pressable>
           </View>
         </View>
-        <SocialMedia />
       </View >
     </>
   );

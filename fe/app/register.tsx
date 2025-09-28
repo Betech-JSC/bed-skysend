@@ -35,29 +35,30 @@ function Register() {
         }}
       />
       <View className="flex-col justify-between  px-[20px] py-[32px] bg-white h-full">
-        <View className="space-y-[16px]">
-          <Text className="text-center text-[28px]">Đăng ký</Text>
-          <Text className="text-center text-[#3C3C43]">Please sign in to continue our app</Text>
-
-          <View className="space-y-[16px] py-[32px]">
-            <TextInput
-              value={formData.username}
-              onChangeText={(value) => handleInputChange("username", value)}
-              className="bg-[#F2F2F7] p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-              placeholder="Số điện thoại"
-            />
+        <View>
+          <View className="space-y-[8px]">
+            <Text className="text-black text-[24px] font-bold">
+              Đăng ký
+            </Text>
+            <Text className="text-[#3C3C43]">
+              Vui lòng nhập để tiếp tục
+            </Text>
           </View>
-          <Pressable onPress={handlePress} className="bg-[#0D6EFD] py-[14px] px-[32px] rounded-[14px]">
-            <Text className="text-white text-center">Sign In</Text>
-          </Pressable>
-          <View className="flex-row justify-center">
-            <View className="flex-row text-center space-x-[10px]">
-              <Text>Don’t have an account?</Text>
-              <Text className="text-[#0D6EFD]">Sign Up</Text>
+          <View className="flex-row space-y-[8px]">
+          </View>
+          <View className="mt-[24px] space-y-[8px]">
+            <Pressable onPress={handlePress} className="bg-[#0D6EFD] w-full  py-[14px] px-[32px] rounded-[14px]">
+              <Text className="text-center text-white">Gửi mã xác nhận</Text>
+            </Pressable>
+            <View className="flex-row space-x-1 justify-center">
+              <Text className="text-[#3C3C43]">Bạn đã có tài khoản</Text>
+              <Pressable onPress={() => router.push("/login")}>
+                <Text className="text-[#0D6EFD]">Đăng nhập</Text>
+              </Pressable>
             </View>
           </View>
         </View>
-        <SocialMedia />
+
       </View>
     </>
   );

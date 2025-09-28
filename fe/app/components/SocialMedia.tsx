@@ -8,7 +8,9 @@ const SocialMedia = () => {
 
     return (
         <View className="space-y-[16px]">
-            <Text className="text-center">Or connect</Text>
+            <Text className="text-center">
+                Hoặc tiếp tục với
+            </Text>
             <View className="flex-row space-x-[16px]">
                 {/* Instagram Button */}
                 <TouchableOpacity
@@ -16,7 +18,7 @@ const SocialMedia = () => {
                     className="flex-1 flex-row border border-[#F2F2F7] rounded-[12px] justify-center py-[12px]"
                 >
                     <Image
-                        source={require("../../assets/images/social/instagram.webp")}
+                        source={require("../../assets/images/social/google.webp")}
                         className="w-[24px] h-[24px]"
                     />
                 </TouchableOpacity>
@@ -28,17 +30,6 @@ const SocialMedia = () => {
                 >
                     <Image
                         source={require("../../assets/images/social/fb.webp")}
-                        className="w-[24px] h-[24px]"
-                    />
-                </TouchableOpacity>
-
-                {/* Threads Button */}
-                <TouchableOpacity
-                    onPress={() => handleSocialMediaLink("https://www.threads.net/")}
-                    className="flex-1 flex-row border border-[#F2F2F7] rounded-[12px] justify-center py-[12px]"
-                >
-                    <Image
-                        source={require("../../assets/images/social/thread.webp")}
                         className="w-[24px] h-[24px]"
                     />
                 </TouchableOpacity>
