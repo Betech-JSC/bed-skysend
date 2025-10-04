@@ -34,7 +34,7 @@ const Home = () => {
         </View>
         <View className="flex-row items-center justify-between space-y-[40px]">
           <Pressable
-            onPress={() => router.push("/chat")}
+            onPress={() => router.push("/list_orders")}
           >
             <View className="flex-row items-center">
               <Text className="text-[#1B1B1B]">Skip</Text>
