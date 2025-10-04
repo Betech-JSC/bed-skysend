@@ -34,10 +34,10 @@ const Home = () => {
         </View>
         <View className="flex-row items-center justify-between space-y-[40px]">
           <Pressable
-            onPress={() => router.push("/list_orders")}
+            onPress={() => router.push("/create_order")}
           >
-            <View className="flex-row items-center">
-              <Text className="text-[#1B1B1B]">Skip</Text>
+            <View className="flex-col items-center">
+              <Text className="text-[#1B1B1B]đúng">Skip</Text>
             </View>
           </Pressable>
           <Pressable
