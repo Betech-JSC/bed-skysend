@@ -10,13 +10,6 @@ function Register() {
     username: "",
   });
 
-  const handleInputChange = (name: any, value: any) => {
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
   const handlePress = () => {
     const { username } = formData;
     if (username) {
