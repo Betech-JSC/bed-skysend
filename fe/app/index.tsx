@@ -2,7 +2,7 @@ import { Stack, useRouter } from "expo-router";
 import { Button, Image, Pressable, Text, View } from "react-native";
 
 const Home = () => {
-  const router = useRouter(); // Khởi tạo router
+  const router = useRouter();
 
   const handlePress = () => {
     router.push("roles");
