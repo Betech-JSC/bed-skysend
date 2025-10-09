@@ -13,12 +13,10 @@ function create_order() {
     const [showDate, setShowDate] = useState(false);
     const [showTime, setShowTime] = useState(false);
 
-    // Handle changes in the date/time
     const onChange = (event, selectedDate) => {
         const currentDate = selectedDate || date;
         setDate(currentDate);
 
-        // Hide the picker after selecting
         if (event.type === "set") {
             setShowDate(false);  // Close Date picker after selection
             setShowTime(false);  // Close Time picker after selection
