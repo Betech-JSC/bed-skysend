@@ -7,11 +7,6 @@ function CreateOrderSuccess() {
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "Tạo đơn hàng thành công",
-                }}
-            />
             <View className="container p-[20px] bg-white h-full flex-col justify-center">
                 <View>
                     <View className="space-y-[48px]">

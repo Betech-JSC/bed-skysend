@@ -7,11 +7,6 @@ const Index = () => {
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "On Board",
-                }}
-            />
             <View className="flex justify-between h-full">
                 <View>
                     <View className="relative">

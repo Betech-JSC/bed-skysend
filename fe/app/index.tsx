@@ -10,11 +10,6 @@ const Home = () => {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: "On Board",
-        }}
-      />
       <View className="container p-[20px]">
         <View className="flex-row items-center justify-between">
           <View>
@@ -34,7 +29,7 @@ const Home = () => {
         </View>
         <View className="flex-row items-center justify-between space-y-[40px]">
           <Pressable
-            onPress={() => router.push("/create_order")}
+            onPress={() => router.push("/home")}
           >
             <View className="flex-col items-center">
               <Text className="text-[#1B1B1B]đúng">Skip</Text>

@@ -1,21 +1,15 @@
 import React, { useState } from "react";
-import ItemOrder from "./components/ItemOrder";
 import { Stack, useRouter } from "expo-router";
 import { View, Text, TouchableOpacity, TextInput, Image, ScrollView, Pressable } from "react-native";
+
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { MaterialIcons, Entypo } from '@expo/vector-icons'; // Icons
-
 
 function create_order() {
     const router = useRouter();
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "Tạo đơn hàng",
-                }}
-            />
             <View className="p-4  h-full">
                 <ScrollView className="space-y-[12px]">
                     <View className="space-y-[12px] bg-white p-[12px] rounded-[12px]">
@@ -36,14 +30,12 @@ function create_order() {
                                 <View className="flex-row justify-between space-x-[8px] ">
                                     <TouchableOpacity
                                         className="flex-row items-center justify-between bg-white border border-[#D0D5DD] p-3 rounded-xl w-1/2 "
-                                        onPress={() => setShowDate(true)}
                                     >
                                         <Text className="ml-2 text-base text-gray-800">Ngày</Text>
                                         <MaterialIcons name="calendar-today" size={24} color="blue" />
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         className="flex-row items-center justify-between bg-white border border-[#D0D5DD] p-3 rounded-xl w-1/2 "
-                                        onPress={() => setShowTime(true)}
                                     >
                                         <Text className="ml-2 text-base text-gray-800">Giờ</Text>
                                         <Entypo name="clock" size={24} color="blue" />
@@ -57,7 +49,7 @@ function create_order() {
                                 <View className="flex-row justify-between space-x-[8px] ">
                                     <TouchableOpacity
                                         className="flex-row items-center justify-between bg-white border border-[#D0D5DD] p-3 rounded-xl w-1/2 "
-                                        onPress={() => setShowDate(true)}
+
                                     >
                                         <Text className="ml-2 text-base text-gray-800">Ngày</Text>
                                         <MaterialIcons name="calendar-today" size={24} color="blue" />
@@ -65,7 +57,6 @@ function create_order() {
 
                                     <TouchableOpacity
                                         className="flex-row items-center justify-between bg-white border border-[#D0D5DD] p-3 rounded-xl w-1/2 "
-                                        onPress={() => setShowTime(true)}
                                     >
                                         <Text className="ml-2 text-base text-gray-800">Giờ</Text>
                                         <Entypo name="clock" size={24} color="blue" />
@@ -79,7 +70,7 @@ function create_order() {
                                 <View className="flex-row justify-between space-x-[8px] ">
                                     <TouchableOpacity
                                         className="flex-row items-center justify-between bg-white border border-[#D0D5DD] p-3 rounded-xl w-1/2 "
-                                        onPress={() => setShowDate(true)}
+
                                     >
                                         <Text className="ml-2 text-base text-gray-800">Ngày</Text>
                                         <MaterialIcons name="calendar-today" size={24} color="blue" />
@@ -87,7 +78,6 @@ function create_order() {
 
                                     <TouchableOpacity
                                         className="flex-row items-center justify-between bg-white border border-[#D0D5DD] p-3 rounded-xl w-1/2"
-                                        onPress={() => setShowTime(true)}
                                     >
                                         <Text className="ml-2 text-base text-gray-800">Giờ</Text>
                                         <Entypo name="clock" size={24} color="blue" />
@@ -101,15 +91,15 @@ function create_order() {
                             <Text className="text-lg text-[#0F172A] mb-2">Hàng hóa</Text>
                             <View className="flex-row items-center space-x-[12px]">
                                 <View className="flex-row items-center  border border-[#D0D5DD] space-x-[12px] py-[8px] px-[8px] rounded-[10px]">
-                                    <Image source={require("../assets/images/box.webp")} className="w-[24px]" />
+                                    <Image source={require("../../assets/images/box.webp")} className="w-[24px]" />
                                     <Text>Hộp</Text>
                                 </View>
                                 <View className="flex-row items-center  border border-[#D0D5DD] space-x-[12px] py-[8px] px-[8px] rounded-[10px]">
-                                    <Image source={require("../assets/images/document.webp")} className="w-[24px]" />
+                                    <Image source={require("../../assets/images/document.webp")} className="w-[24px]" />
                                     <Text>Tài liệu</Text>
                                 </View>
                                 <View className="flex-row items-center  border border-[#D0D5DD] space-x-[12px] py-[8px] px-[8px] rounded-[10px]">
-                                    <Image source={require("../assets/images/orther.webp")} className="w-[24px]" />
+                                    <Image source={require("../../assets/images/orther.webp")} className="w-[24px]" />
                                     <Text>Khác</Text>
                                 </View>
                             </View>
@@ -129,7 +119,7 @@ function create_order() {
                                 />
                                 <View className="flex-row items-center justify-center py-[24px] border border-dashed border-[#D0D5DD] rounded-[12px]">
                                     <View className="flex-col items-center justify-center space-y-[12px]">
-                                        <Image source={require("../assets/images/upload.webp")} className="w-[28px]" />
+                                        <Image source={require("../../assets/images/upload.webp")} className="w-[28px]" />
                                         <Text>Tải ảnh hàng hóa</Text>
                                     </View>
                                 </View>
