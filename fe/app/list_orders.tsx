@@ -6,11 +6,6 @@ import { Stack, useRouter } from "expo-router";
 function ListOrder() {
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "Danh sách đơn hàng",
-                }}
-            />
             <ScrollView className="flex-1 py-[12px] px-[16px] space-y-[20px]" >
                 <ItemOrder />
                 <ItemOrder />

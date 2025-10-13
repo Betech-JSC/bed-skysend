@@ -1,8 +1,15 @@
 import React from 'react'
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, Button, Linking } from "react-native";
 
 const home = () => {
+
+    const handleOpenLink = () => {
+        const url = 'https://www.flightradar24.com/VJC83/3ca313d8';
+        Linking.openURL(url);
+    };
+
     return (
+
         <View className="flex justify-between h-full">
             <View>
                 <View className="relative">
