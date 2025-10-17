@@ -21,20 +21,15 @@ class DatabaseSeeder extends Seeder
             'account_id' => $account->id,
             'first_name' => 'John',
             'last_name' => 'Doe',
-            'email' => 'johndoe@example.com',
-            'password' => 'secret',
+            'email' => 'admin@gmail.com',
+            'password' => 'admin@gmail.com',
             'owner' => true,
         ]);
 
         User::factory(5)->create(['account_id' => $account->id]);
 
-        $organizations = Organization::factory(100)
-            ->create(['account_id' => $account->id]);
-
-        Contact::factory(100)
-            ->create(['account_id' => $account->id])
-            ->each(function ($contact) use ($organizations) {
-                $contact->update(['organization_id' => $organizations->random()->id]);
-            });
+        $this->call([
+            RegionSeeder::class,
+        ]);
     }
 }

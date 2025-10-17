@@ -10,6 +10,7 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
 use App\Events\TestMessage;
+use App\Http\Controllers\RegionsController;
 use Illuminate\Http\Request;
 
 /*
@@ -157,4 +158,20 @@ Route::post('/chat/send', function (Request $request) {
         $request->input('text')
     ));
     return ['status' => 'sent'];
+});
+
+Route::prefix('regions')->name('regions.')->group(function () {
+    // Route cho việc liệt kê danh sách các vùng
+    Route::get('/', [RegionsController::class, 'index'])->name('index');
+
+    // Route cho việc tạo mới vùng
+    Route::get('create', [RegionsController::class, 'create'])->name('create');
+    Route::post('store', [RegionsController::class, 'store'])->name('store');
+
+    // Route cho việc chỉnh sửa vùng
+    Route::get('{region}/edit', [RegionsController::class, 'edit'])->name('edit');
+    Route::put('{region}', [RegionsController::class, 'update'])->name('update');
+
+    // Route cho việc xóa vùng
+    Route::delete('{region}', [RegionsController::class, 'destroy'])->name('destroy');
 });

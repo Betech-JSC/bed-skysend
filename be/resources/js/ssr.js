@@ -10,7 +10,7 @@ createServer((page) => createInertiaApp({
     const pages = import.meta.glob('./Pages/**/*.vue', { eager: true })
     return pages[`./Pages/${name}.vue`]
   },
-  title: title => title ? `${title} - Ping CRM` : 'Ping CRM',
+  title: title => title ? `${title} - SkySend` : 'SkySend',
   setup({ app, props, plugin }) {
     return createSSRApp({
       render: () => h(app, props),
