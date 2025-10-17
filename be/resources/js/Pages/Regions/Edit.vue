@@ -23,7 +23,6 @@
           <text-input v-model="form.path" :error="form.errors.path" class="pb-8 pr-6 w-full lg:w-1/2" label="Region Path (optional)" />
           <text-input v-model="form.path_with_type" :error="form.errors.path_with_type" class="pb-8 pr-6 w-full lg:w-1/2" label="Region Path with Type (optional)" />
           <text-input v-model="form.sort" :error="form.errors.sort" class="pb-8 pr-6 w-full lg:w-1/2" label="Sort" type="number" />
-          <text-input v-model="form.shipping_price" :error="form.errors.shipping_price" class="pb-8 pr-6 w-full lg:w-1/2" label="Shipping Price" type="number" />
         </div>
         <div class="flex items-center justify-end px-8 py-4 bg-gray-50 border-t border-gray-100">
           <loading-button :loading="form.processing" class="btn-indigo" type="submit">Update Region</loading-button>

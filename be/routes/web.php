@@ -10,6 +10,7 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
 use App\Events\TestMessage;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RegionsController;
 use Illuminate\Http\Request;
 
@@ -175,3 +176,17 @@ Route::prefix('regions')->name('regions.')->group(function () {
     // Route cho việc xóa vùng
     Route::delete('{region}', [RegionsController::class, 'destroy'])->name('destroy');
 });
+
+
+
+// API Routes for Auth
+
+Route::post('api/register', [AuthController::class, 'register']);
+
+Route::post('api/login', [AuthController::class, 'login']);
+
+Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+Route::middleware('auth:sanctum')->post('api/logout', [AuthController::class, 'logout']);
