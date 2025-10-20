@@ -15,20 +15,20 @@ return [
     |
     */
 
-    'paths' => ['*'],
+    'paths' => ['*'], // Applies to all paths (can be limited to specific routes if needed)
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => [], // No methods allowed
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],
+    'allowed_origins' => [], // No origins allowed
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [], // No patterns allowed
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => [], // No headers allowed
 
-    'exposed_headers' => [],
+    'exposed_headers' => [], // No headers to expose
 
-    'max_age' => 0,
+    'max_age' => 0, // No caching of preflight response
 
-    'supports_credentials' => true,
+    'supports_credentials' => false, // Don't support credentials
 
 ];

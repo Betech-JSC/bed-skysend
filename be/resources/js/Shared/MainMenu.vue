@@ -2,26 +2,47 @@
   <div>
     <div class="mb-4">
       <Link class="group flex items-center py-3" href="/">
-        <icon name="dashboard" class="mr-2 w-4 h-4" :class="isUrl('') ? 'fill-white' : 'fill-indigo-400 group-hover:fill-white'" />
         <div :class="isUrl('') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Dashboard</div>
       </Link>
     </div>
     <div class="mb-4">
-      <Link class="group flex items-center py-3" href="/organizations">
-        <icon name="office" class="mr-2 w-4 h-4" :class="isUrl('organizations') ? 'fill-white' : 'fill-indigo-400 group-hover:fill-white'" />
-        <div :class="isUrl('organizations') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Organizations</div>
+      <Link class="group flex items-center py-3" href="/contacts">
+        <div :class="isUrl('contacts') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Liên hệ</div>
       </Link>
     </div>
     <div class="mb-4">
-      <Link class="group flex items-center py-3" href="/contacts">
-        <icon name="users" class="mr-2 w-4 h-4" :class="isUrl('contacts') ? 'fill-white' : 'fill-indigo-400 group-hover:fill-white'" />
-        <div :class="isUrl('contacts') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Contacts</div>
+      <Link class="group flex items-center py-3" href="/users">
+        <div :class="isUrl('users') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Người dùng</div>
       </Link>
     </div>
     <div class="mb-4">
       <Link class="group flex items-center py-3" href="/regions">
-        <icon name="users" class="mr-2 w-4 h-4" :class="isUrl('regions') ? 'fill-white' : 'fill-indigo-400 group-hover:fill-white'" />
-        <div :class="isUrl('regions') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Regions</div>
+        <div :class="isUrl('regions') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Tỉnh/Thành</div>
+      </Link>
+    </div>
+    <div class="mb-4">
+      <Link class="group flex items-center py-3" href="/orders">
+        <div :class="isUrl('orders') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Đơn hàng</div>
+      </Link>
+    </div>
+    <div class="mb-4">
+      <Link class="group flex items-center py-3" href="/transactions">
+        <div :class="isUrl('regions') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Lịch sử giao dịch</div>
+      </Link>
+    </div>
+    <div class="mb-4">
+      <Link class="group flex items-center py-3" href="/notifications">
+        <div :class="isUrl('notifications') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Thông báo</div>
+      </Link>
+    </div>
+    <div class="mb-4">
+      <Link class="group flex items-center py-3" href="/settings">
+        <div :class="isUrl('settings') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Cài đặt hệ thống</div>
+      </Link>
+    </div>
+    <div class="mb-4">
+      <Link class="group flex items-center py-3" href="/supports">
+        <div :class="isUrl('supports') ? 'text-white' : 'text-indigo-300 group-hover:text-white'">Hỗ trợ</div>
       </Link>
     </div>
   </div>

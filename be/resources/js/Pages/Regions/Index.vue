@@ -23,7 +23,6 @@
           <th class="pb-4 pt-6 px-6">Code</th>
           <th class="pb-4 pt-6 px-6">Type</th>
           <th class="pb-4 pt-6 px-6">Level</th>
-          <th class="pb-4 pt-6 px-6" colspan="2">Shipping Price</th>
         </tr>
         <tr v-for="region in regions.data" :key="region.id" class="hover:bg-gray-100 focus-within:bg-gray-100">
           <td class="border-t">

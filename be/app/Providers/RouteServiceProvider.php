@@ -32,7 +32,6 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function mapApiRoutes()
     {
-        dd('vs code api routes');
         Route::prefix('api')               // Thêm prefix 'api' vào các route của API
             ->middleware('api')            // Sử dụng middleware 'api' (hoặc các middleware khác nếu cần)
             ->namespace($this->namespace)   // Chỉ định không gian tên cho controller
