@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Helpers\ApiResponse; // Đừng quên import ApiResponse
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -12,7 +13,6 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        dd("fs");
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -20,7 +20,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return ApiResponse::validationError($validator); // Sử dụng ApiResponse để trả về lỗi validation
         }
 
         // Tạo người dùng mới
@@ -30,16 +30,16 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Trả về token sau khi đăng ký thành công
+        // Tạo token
         $token = $user->createToken('MyApp')->plainTextToken;
 
-        return response()->json([
-            'message' => 'User created successfully',
+        // Trả về thành công
+        return ApiResponse::success([
+            'user' => $user,
             'token' => $token,
-        ]);
+        ], 'User created successfully');
     }
 
-    // Đăng nhập người dùng
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -48,7 +48,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return ApiResponse::validationError($validator); // Sử dụng ApiResponse để trả về lỗi validation
         }
 
         // Kiểm tra người dùng và mật khẩu
@@ -60,16 +60,16 @@ class AuthController extends Controller
             ]);
         }
 
-        // Tạo và trả về token cho người dùng
+        // Tạo token
         $token = $user->createToken('MyApp')->plainTextToken;
 
-        return response()->json([
+        // Trả về thành công
+        return ApiResponse::success([
             'message' => 'Login successful',
             'token' => $token,
         ]);
     }
 
-    // Đăng xuất người dùng
     public function logout(Request $request)
     {
         // Xóa tất cả các token của người dùng
@@ -77,6 +77,7 @@ class AuthController extends Controller
             $token->delete();
         });
 
-        return response()->json(['message' => 'Logged out successfully']);
+        // Trả về thành công
+        return ApiResponse::success(null, 'Logged out successfully');
     }
 }

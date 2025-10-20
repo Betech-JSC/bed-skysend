@@ -70,26 +70,5 @@ Route::get('/send', function () {
     return 'sent';
 });
 
-Route::post('/chat/send', function (Request $request) {
-    // chỉ cần 3 tham số from, to, text
-    event(new ChatMessage(
-        $request->input('from'),
-        $request->input('to'),
-        $request->input('text')
-    ));
-    return ['status' => 'sent'];
-});
-
 Route::resource('regions', RegionsController::class)
     ->middleware('auth');
-
-// API Routes for Auth
-
-Route::post('api/register', [AuthController::class, 'register']);
-Route::post('api/login', [AuthController::class, 'login']);
-
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
-});
-
-Route::middleware('auth:sanctum')->post('api/logout', [AuthController::class, 'logout']);

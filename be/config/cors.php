@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Cross-Origin Resource Sharing (CORS) Configuration
@@ -15,20 +14,12 @@ return [
     |
     */
 
-    'paths' => ['*'], // Applies to all paths (can be limited to specific routes if needed)
-
-    'allowed_methods' => [], // No methods allowed
-
-    'allowed_origins' => [], // No origins allowed
-
-    'allowed_origins_patterns' => [], // No patterns allowed
-
-    'allowed_headers' => [], // No headers allowed
-
-    'exposed_headers' => [], // No headers to expose
-
-    'max_age' => 0, // No caching of preflight response
-
-    'supports_credentials' => false, // Don't support credentials
-
+    'paths' => ['api/*'], // Đây là các đường dẫn sẽ áp dụng CORS. Bạn có thể thay đổi thành bất kỳ đường dẫn nào cần thiết.
+    'allowed_methods' => ['*'], // Cho phép tất cả các phương thức HTTP như GET, POST, PUT, DELETE.
+    'allowed_origins' => ['*'], // Cho phép tất cả các domain. Bạn có thể thay bằng URL của frontend nếu muốn hạn chế.
+    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'], // Cho phép tất cả các headers.
+    'exposed_headers' => [],
+    'max_age' => 0,
+    'supports_credentials' => true,
 ];
