@@ -14,8 +14,9 @@ return new class extends Migration
             $table->string('last_name', 50)->nullable();
             $table->string('email', 100)->unique();
             $table->string('password');
-            $table->string('photo_path')->nullable();
+            $table->string('image')->nullable();
             $table->boolean('super_admin')->default(false);
+
             $table->rememberToken();
             $table->timestamps();
         });
