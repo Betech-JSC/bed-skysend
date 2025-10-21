@@ -2,25 +2,36 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrderController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\UserController;
 
 Route::post('register', [AuthController::class, 'register']);
-
 Route::post('login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->post('logout', [AuthController::class, 'logout']);
-
 Route::middleware('auth:sanctum')->group(function () {
-    // Tạo đơn hàng
+    // Auth
+    Route::post('logout', [AuthController::class, 'logout']);
+
+    // Orders
     Route::post('orders', [OrderController::class, 'create']);
-
-    // Lấy danh sách đơn hàng
     Route::get('orders', [OrderController::class, 'index']);
-
-    // Khớp đơn hàng giữa người gửi và người vận chuyển
+    Route::get('orders/{order}', [OrderController::class, 'show']);
+    Route::put('orders/{order}', [OrderController::class, 'updateStatus']);
+    Route::delete('orders/{order}', [OrderController::class, 'cancel']);
     Route::post('orders/match', [OrderController::class, 'matchOrder']);
 
-    // Cập nhật trạng thái đơn hàng
-    Route::put('orders/{order}', [OrderController::class, 'updateStatus']);
+    // Notifications
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::put('notifications/{notification}', [NotificationController::class, 'markAsRead']);
+
+    // Chat
+    Route::get('chats/{order}', [ChatController::class, 'index']);
+    Route::post('chats/{order}', [ChatController::class, 'sendMessage']);
+
+    Route::get('user/profile', [UserController::class, 'show']);
+    Route::put('user/profile', [UserController::class, 'update']);
+    Route::post('user/change-password', [UserController::class, 'changePassword']);
+    Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
+    Route::post('user/assign-role', [UserController::class, 'assignRole']);
 });
