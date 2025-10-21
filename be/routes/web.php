@@ -48,9 +48,6 @@ Route::get('/', [DashboardController::class, 'index'])
 Route::resource('users', UsersController::class)
     ->middleware('auth');
 
-Route::resource('organizations', OrganizationsController::class)
-    ->middleware('auth');
-
 Route::resource('contacts', ContactsController::class)
     ->middleware('auth');
 // Reports

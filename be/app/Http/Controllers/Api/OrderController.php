@@ -7,66 +7,23 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Services\OrderMatcherService;
 
 class OrderController extends Controller
 {
-    // Tạo đơn hàng
-    public function create(Request $request)
+    public function store(Request $request)
     {
-        $request->validate([
-            'description' => 'required|string|max:255',
-            'role' => 'required|in:sender,carrier', // Vai trò phải là sender hoặc carrier
-        ]);
-
         $order = Order::create([
-            'user_id' => $request->user()->id,
-            'role' => $request->role,
-            'description' => $request->description,
+            'sender_id' => auth()->id(),
+            'shipment_description' => $request->shipment_description,
+            'pickup_location' => $request->pickup_location,
+            'delivery_location' => $request->delivery_location,
+            'status' => 'pending',
         ]);
 
-        return ApiResponse::success($order, 'Order created successfully');
-    }
+        // Gọi service để attempt match
+        app(OrderMatcherService::class)->attemptMatch($order);
 
-    // Lấy danh sách đơn hàng của người dùng
-    public function index(Request $request)
-    {
-        $orders = Order::where('user_id', $request->user()->id)->get();
-
-        return ApiResponse::success($orders, 'Orders retrieved successfully');
-    }
-
-    // Khớp đơn hàng giữa người gửi và người vận chuyển
-    public function matchOrder(Request $request)
-    {
-        // Lấy đơn hàng của người gửi và người vận chuyển
-        $senderOrder = Order::where('role', 'sender')->where('status', 'pending')->first();
-        $carrierOrder = Order::where('role', 'carrier')->where('status', 'pending')->first();
-
-        if (!$senderOrder || !$carrierOrder) {
-            return ApiResponse::error('No matching orders found', 'Matching failed', 404);
-        }
-
-        // Cập nhật trạng thái đơn hàng
-        $senderOrder->status = 'matched';
-        $carrierOrder->status = 'matched';
-
-        // Lưu lại
-        $senderOrder->save();
-        $carrierOrder->save();
-
-        return ApiResponse::success(null, 'Orders matched successfully');
-    }
-
-    // Cập nhật trạng thái đơn hàng
-    public function updateStatus(Request $request, Order $order)
-    {
-        $request->validate([
-            'status' => 'required|string|in:pending,matched,completed,cancelled', // Các trạng thái có thể có
-        ]);
-
-        $order->status = $request->status;
-        $order->save();
-
-        return ApiResponse::success($order, 'Order status updated successfully');
+        return response()->json(['order' => $order]);
     }
 }
