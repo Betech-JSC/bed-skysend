@@ -13,13 +13,34 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sender_id')->constrained('users');  // Người gửi
-            $table->foreignId('receiver_id')->nullable()->constrained('users');  // Người nhận (được liên kết khi match)
-            $table->string('shipment_description');  // Mô tả hàng hóa
-            $table->string('pickup_location');  // Địa điểm người gửi giao hàng
-            $table->string('delivery_location');  // Địa điểm giao hàng (dành cho người nhận)
-            $table->enum('status', ['pending', 'matched', 'confirmed', 'delivered', 'cancelled'])->default('pending');  // Trạng thái đơn hàng
-            $table->decimal('shipping_fee', 10, 2)->default(0);  // Phí vận chuyển
+            // Ai tạo đơn, có thể là sender hoặc carrier
+            $table->foreignId('user_id')->constrained('users');
+
+            // Loại đơn: sender hoặc carrier (hoặc role tạo đơn)
+            $table->enum('role', ['sender', 'carrier']);
+
+            // Các trường chung mô tả đơn hàng
+            $table->string('shipment_description')->nullable();
+
+            $table->string('pickup_location')->nullable();
+            $table->string('delivery_location')->nullable();
+
+            // Thông tin chuyến bay (có thể null)
+            $table->string('flight_number')->nullable();
+            $table->timestamp('flight_time')->nullable();
+
+            $table->decimal('package_weight', 8, 2)->nullable();
+            $table->string('package_dimensions')->nullable();
+
+            // Trạng thái đơn hàng
+            $table->enum('status', ['pending', 'matched', 'confirmed', 'delivered', 'cancelled'])->default('pending');
+
+            // Liên kết 2 đơn với nhau khi match thành công (ví dụ: order của bên kia)
+            $table->foreignId('matched_order_id')->nullable()->constrained('orders');
+
+            $table->decimal('shipping_fee', 10, 2)->default(0);
+            $table->text('special_instructions')->nullable();
+
             $table->timestamps();
         });
     }
