@@ -34,6 +34,9 @@ class AuthController extends Controller
 
             $token = $user->createToken('MyApp')->plainTextToken;
 
+            $user->remember_token = $token;
+            $user->save();
+
             // Trả về thành công
             return ApiResponse::success([
                 'user' => $user,
