@@ -74,22 +74,4 @@ class UserController extends Controller
             'avatar_url' => asset('storage/' . $path),
         ]);
     }
-
-    public function assignRole(Request $request)
-    {
-        $user = $request->user();
-
-        $request->validate([
-            'role' => 'required|string|exists:roles,name',
-        ]);
-
-        $roleName = $request->role;
-
-        $user->syncRoles([$roleName]);
-
-        return response()->json([
-            'message' => "Đã gán role $roleName cho user.",
-            'roles' => $user->getRoleNames(),
-        ]);
-    }
 }

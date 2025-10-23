@@ -48,13 +48,23 @@ class OrderController extends Controller
     /**
      * Display a listing of orders.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::where('user_id', auth()->id()) // Filter by logged-in user
-            ->paginate(10); // Pagination for listing orders
+        $user = auth()->user();
+
+        $query = Order::where('user_id', $user->id)
+            ->where('role', $request->role);
+
+        // Optional filter
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return ApiResponse::success(['orders' => $orders], 'Orders retrieved successfully');
     }
+
 
     /**
      * Display the specified order.

@@ -16,7 +16,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('orders/create', [OrderController::class, 'create']);
     Route::get('orders/{order}', [OrderController::class, 'show']);
     Route::put('orders/{order}', [OrderController::class, 'updateStatus']);
-    Route::delete('orders/{order}', [OrderController::class, 'cancel']);
+    Route::delete('orders/{orderId}/cancel', [OrderController::class, 'cancel']);
     Route::post('orders/match', [OrderController::class, 'matchOrder']);
 
     // Notifications
@@ -27,5 +27,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('user/profile', [UserController::class, 'update']);
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
-    Route::post('user/assign-role', [UserController::class, 'assignRole']);
 });
