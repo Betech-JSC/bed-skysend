@@ -30,7 +30,6 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'status' => OrderStatus::class, // Ánh xạ trạng thái đơn hàng vào enum
         'shipping_fee' => 'decimal:2', // Định dạng số cho phí vận chuyển
         'flight_time' => 'datetime', // Nếu có thời gian bay, cần ánh xạ vào kiểu datetime
     ];

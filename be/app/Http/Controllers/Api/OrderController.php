@@ -17,6 +17,7 @@ class OrderController extends Controller
     {
         // Validate the incoming request
         $validated = $request->validate([
+            'role' => 'required|in:sender,carrier',
             'shipment_description' => 'required|string',
             'pickup_location' => 'required|string',
             'delivery_location' => 'required|string',
@@ -29,15 +30,16 @@ class OrderController extends Controller
         // Create the order
         $order = Order::create([
             'user_id' => auth()->id(),
-            'role' => 'sender', // Assuming this is a sender creating the order
+            'role' => $validated['role'],
             'shipment_description' => $validated['shipment_description'],
             'pickup_location' => $validated['pickup_location'],
             'delivery_location' => $validated['delivery_location'],
+            'flight_number' => $validated['flight_number'] ?? null,
+            'flight_time' => $validated['flight_time'] ?? null,
+            'package_weight' => $validated['package_weight'] ?? null,
+            'package_dimensions' => $validated['package_dimensions'] ?? null,
+            'special_instructions' => $validated['special_instructions'] ?? null,
             'status' => 'pending',
-            'flight_number' => $validated['flight_number'],
-            'flight_time' => $validated['flight_time'],
-            'package_weight' => $validated['package_weight'],
-            'package_dimensions' => $validated['package_dimensions'],
         ]);
 
         return ApiResponse::success(['order' => $order], 'Order created successfully');
