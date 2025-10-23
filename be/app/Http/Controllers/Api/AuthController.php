@@ -25,7 +25,6 @@ class AuthController extends Controller
                 return ApiResponse::validationError($validator);
             }
 
-            // Tạo người dùng mới
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -37,7 +36,6 @@ class AuthController extends Controller
             $user->remember_token = $token;
             $user->save();
 
-            // Trả về thành công
             return ApiResponse::success([
                 'user' => $user,
                 'token' => $token,
@@ -49,42 +47,43 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|string|email|max:255',
-            'password' => 'required|string|min:8',
-        ]);
-
-        if ($validator->fails()) {
-            return ApiResponse::validationError($validator);
-        }
-
-        // Kiểm tra người dùng và mật khẩu
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+        try {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|string|email|max:255',
+                'password' => 'required|string|min:8',
             ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::validationError($validator);
+            }
+
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['The provided credentials are incorrect.'],
+                ]);
+            }
+
+            $token = $user->createToken('MyApp')->plainTextToken;
+
+            return ApiResponse::success([
+                'message' => 'Login successful',
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error('An error occurred while logging in: ' . $e->getMessage());
         }
-
-        // Tạo token
-        $token = $user->createToken('MyApp')->plainTextToken;
-
-        // Trả về thành công
-        return ApiResponse::success([
-            'message' => 'Login successful',
-            'token' => $token,
-        ]);
     }
 
     public function logout(Request $request)
     {
-        // Xóa tất cả các token của người dùng
-        $request->user()->tokens->each(function ($token) {
-            $token->delete();
-        });
-
-        // Trả về thành công
+        $request->user()->currentAccessToken()->delete();
         return ApiResponse::success(null, 'Logged out successfully');
     }
 }
