@@ -42,6 +42,14 @@ class OrderController extends Controller
             'status' => 'pending',
         ]);
 
+        // Save images if uploaded
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('order_images', 'public'); // Lưu vào storage/app/public/order_images
+                $order->images()->create(['image_path' => $path]);
+            }
+        }
+
         return ApiResponse::success(['order' => $order], 'Order created successfully');
     }
 

@@ -57,4 +57,9 @@ class Order extends Model
     {
         return $this->belongsTo(Order::class, 'matched_order_id');
     }
+
+    public function images()
+    {
+        return $this->hasMany(OrderImage::class);
+    }
 }
