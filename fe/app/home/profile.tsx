@@ -1,7 +1,44 @@
-import { View, Text, ScrollView, Image } from "react-native";
+import { View, Text, Pressable, Alert, ScrollView, Image } from "react-native";
+import api from "@/api/api";
 import React from "react";
+import { useRouter } from "expo-router";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Profile = () => {
+    const router = useRouter();
+
+    const logout = async () => {
+        try {
+            const user = await AsyncStorage.getItem('user');
+
+            if (user) {
+                const response = await api.post(
+                    'logout',
+                    {},
+                    {
+                        headers: {
+                            Authorization: `Bearer ${JSON.parse(user).token}`,
+                        },
+                    }
+                );
+
+                if (response.status === 200) {
+                    await AsyncStorage.removeItem('user');
+
+                    Alert.alert("Đăng xuất thành công");
+                    router.push("/login");
+                } else {
+                    Alert.alert("Đăng xuất thất bại", response.data.message || "Vui lòng thử lại.");
+                }
+            } else {
+                Alert.alert("Chưa có token", "Vui lòng đăng nhập trước.");
+            }
+        } catch (error) {
+            console.error("Logout error:", error);
+            Alert.alert("Lỗi mạng", "Không thể kết nối đến server. Vui lòng thử lại.");
+        }
+    };
+
     return (
         <ScrollView>
             <View className="">
@@ -96,10 +133,14 @@ const Profile = () => {
                             <Text>Trợ giúp</Text>
                             <Image source={require("../../assets/images/icon-right.webp")} />
                         </View>
-                        <View className="flex-row items-center justify-between py-[12px]">
-                            <Text className="text-[#B42318]">Đăng xuất</Text>
-                            <Image source={require("../../assets/images/icon-right.webp")} />
-                        </View>
+                        <Pressable
+                            onPress={logout}
+                        >
+                            <View className="flex-row items-center justify-between py-[12px]">
+                                <Text className="text-[#B42318]">Đăng xuất</Text>
+                                <Image source={require("../../assets/images/icon-right.webp")} />
+                            </View>
+                        </Pressable>
                     </View>
                 </View>
             </View>

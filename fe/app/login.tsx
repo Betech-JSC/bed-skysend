@@ -7,8 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; // Import 
 function Login() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: "toan@gmail.com",
-    password: "toan@gmail.com",
+    email: "john@example.com",
+    password: "password123",
   });
 
   const handleInputChange = (name: any, value: any) => {
