@@ -3,10 +3,12 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\RegionsController;
 use App\Http\Controllers\Api\UserController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+Route::get('regions', [RegionsController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
 

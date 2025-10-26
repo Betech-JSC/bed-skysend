@@ -22,4 +22,14 @@ class Region extends Model
         'sort',
         'shipping_price',
     ];
+
+    public function transform()
+    {
+        return [
+            'id' => $this->id,
+            'country_id' => $this->country_id,
+            'level' => $this->level,
+            'title' => $this->name,
+        ];
+    }
 }

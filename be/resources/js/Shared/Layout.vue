@@ -6,7 +6,7 @@
         <div class="md:flex md:shrink-0">
           <div class="flex items-center justify-between px-6 py-4 bg-indigo-900 md:shrink-0 md:justify-center md:w-56 text-white">
             <Link class="mt-1" href="/">
-              <img src="/logo.webp" alt="" />
+              <img src="/logo.webp" alt="" class="w-[40px]" />
             </Link>
             <dropdown class="md:hidden" placement="bottom-end">
               <template #default>
