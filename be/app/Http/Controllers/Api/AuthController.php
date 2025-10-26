@@ -37,8 +37,7 @@ class AuthController extends Controller
             $user->save();
 
             return ApiResponse::success([
-                'user' => $user,
-                'token' => $token,
+                'user' => array_merge($user->toArray(), ['token' => $token]),
             ], 'User created successfully');
         } catch (\Throwable $th) {
             dd($th);
@@ -68,14 +67,8 @@ class AuthController extends Controller
             $token = $user->createToken('MyApp')->plainTextToken;
 
             return ApiResponse::success([
-                'message' => 'Login successful',
-                'token' => $token,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email
-                ]
-            ]);
+                'user' => array_merge($user->toArray(), ['token' => $token]),
+            ], 'User Login successful');
         } catch (\Exception $e) {
             return ApiResponse::error('An error occurred while logging in: ' . $e->getMessage());
         }
