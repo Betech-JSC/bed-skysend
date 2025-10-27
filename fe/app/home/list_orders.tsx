@@ -56,7 +56,7 @@ function ListOrder() {
             />
             <ScrollView className="flex-1 py-[12px] px-[16px] space-y-[20px]">
                 {orders.map((order) => (
-                    <ItemOrder key={order.id} />
+                    <ItemOrder key={order.id} item={order} />
                 ))}
             </ScrollView>
         </>

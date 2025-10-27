@@ -15,6 +15,15 @@ class OrderController extends Controller
      */
     public function create(Request $request)
     {
+        // Check if the user already has an active order (pending or in_transit)
+        $existingOrder = Order::where('user_id', auth()->id())
+            ->whereIn('status', ['pending', 'in_transit'])
+            ->first();
+
+        if ($existingOrder) {
+            return ApiResponse::error('You already have an active order. Please wait until it is delivered before creating a new one.', 400);
+        }
+
         // Validate the incoming request
         $validated = $request->validate([
             'role' => 'required|in:sender,carrier',
@@ -52,6 +61,7 @@ class OrderController extends Controller
 
         return ApiResponse::success(['order' => $order], 'Order created successfully');
     }
+
 
     /**
      * Display a listing of orders.
@@ -105,12 +115,21 @@ class OrderController extends Controller
             'status' => 'required|in:pending,matched,confirmed,delivered,cancelled',
         ]);
 
-        $order->update([
-            'status' => $validated['status']
-        ]);
+        // Update the status only if it is valid and update the matched_order_id accordingly
+        if ($validated['status'] == 'delivered') {
+            // Allow creating a new order only when the previous one is delivered
+            $order->update([
+                'status' => 'delivered'
+            ]);
+        } else {
+            $order->update([
+                'status' => $validated['status']
+            ]);
+        }
 
         return ApiResponse::success(['order' => $order], 'Order status updated successfully');
     }
+
 
     /**
      * Cancel the specified order.

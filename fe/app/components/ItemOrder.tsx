@@ -1,7 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { Button, Image, Pressable, Text, View } from "react-native";
 
-function ItemOrder() {
+function ItemOrder({ item }: any) {
 
     const router = useRouter();
 
@@ -31,17 +31,17 @@ function ItemOrder() {
                             </View>
                         </View>
                         <View className="bg-[#2DD4BF]  rounded-[80px]">
-                            <Text className="text-white py-[2px] px-[6px]  text-center">Transporting</Text>
+                            <Text className="text-white py-[2px] px-[6px]  text-center"> {item.status} </Text>
                         </View>
                     </View>
                     <View className="space-y-4">
                         <View>
-                            <Text className="font-medium text-[16px]">Parcel 1</Text>
+                            <Text className="font-medium text-[16px]">Parcel {item.id} </Text>
                         </View>
                         <View className="flex-row items-center space-x-2">
                             <View className="w-3 h-3 bg-blue-500 rounded-full" />
                             <View className="flex-1">
-                                <Text className="font-semibold">Hồ Chí Minh (SGN)</Text>
+                                <Text className="font-semibold"> {item.pickup_location} </Text>
                                 <Text className="text-gray-600">10.08.2025, 10:00</Text>
                             </View>
                         </View>
@@ -50,16 +50,16 @@ function ItemOrder() {
 
                             <View className="w-3 h-3 bg-blue-900 rounded-full" />
                             <View className="flex-1">
-                                <Text className="font-semibold">Hà Nội (HAN)</Text>
+                                <Text className="font-semibold"> {item.delivery_location} </Text>
                                 <Text className="text-gray-600">10.08.2025, 15:00</Text>
                             </View>
                         </View>
                         <View className="flex-row items-center space-x-[8px]">
                             <View className="rounded-[80px]">
-                                <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">100 usd</Text>
+                                <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">.{item.shipping_fee} </Text>
                             </View>
                             <View className="rounded-[80px]">
-                                <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">Document</Text>
+                                <Text className="py-[2px] px-[6px] bg-[#DCEDFF] "> {item.package_dimensions} </Text>
                             </View>
                         </View>
                     </View>
