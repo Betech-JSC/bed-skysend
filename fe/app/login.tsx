@@ -44,6 +44,7 @@ function Login() {
           const { user } = response.data.data;
 
           await AsyncStorage.setItem('user', JSON.stringify(user));
+          await AsyncStorage.setItem('role', 'sender');
 
           // Cập nhật Redux store
           dispatch(setUser(user));

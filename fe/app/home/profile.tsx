@@ -1,11 +1,19 @@
-import { View, Text, Pressable, Alert, ScrollView, Image } from "react-native";
+import { View, Text, Pressable, Alert, ScrollView, Image, Button } from "react-native";
 import api from "@/api/api";
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Profile = () => {
+
     const router = useRouter();
+    const [role, setRole] = useState<string>('sender');
+
+    const toggleRole = async () => {
+        const newRole: string = role === 'sender' ? 'carrier' : 'sender';
+        await AsyncStorage.setItem('role', newRole);
+        setRole(newRole);
+    };
 
     const logout = async () => {
         try {
@@ -60,9 +68,11 @@ const Profile = () => {
                             </View>
                         </View>
                         <View className="flex-row space-x-[12px] ">
-                            <View className="p-[10px]  rounded-[12px] bg-[#EFF8FF] w-1/2">
-                                <Text className="text-center text-[#1570EF]">Thay đổi vai trò</Text>
-                            </View>
+                            <Pressable onPress={toggleRole} className="p-[10px]  rounded-[12px] bg-[#EFF8FF] w-1/2">
+                                <Text className="text-center text-[#1570EF]">
+                                    {`Chuyển sang ${role === 'sender' ? 'Carrier' : 'Sender'}`}
+                                </Text>
+                            </Pressable>
                             <View className="p-[10px]  rounded-[12px] bg-[#FFFAEB] w-1/2">
                                 <Text className="text-center text-[#F79009]">Xem hồ sơ</Text>
                             </View>

@@ -15,15 +15,6 @@ class OrderController extends Controller
      */
     public function create(Request $request)
     {
-        // Check if the user already has an active order (pending or in_transit)
-        $existingOrder = Order::where('user_id', auth()->id())
-            ->whereIn('status', ['pending', 'in_transit'])
-            ->first();
-
-        if ($existingOrder) {
-            return ApiResponse::error('You already have an active order. Please wait until it is delivered before creating a new one.', 400);
-        }
-
         // Validate the incoming request
         $validated = $request->validate([
             'role' => 'required|in:sender,carrier',

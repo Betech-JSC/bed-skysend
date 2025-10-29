@@ -1,17 +1,24 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Text, Image, Button, Linking } from "react-native";
 import { useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const home = () => {
 
     const user = useSelector((state) => state.user);
+    const [role, setRole] = useState(null);
 
-    console.log(user);
+    useEffect(() => {
+        const fetchRole = async () => {
+            const storedRole = await AsyncStorage.getItem('role');
+            if (storedRole) {
+                setRole(storedRole);
+            }
+        };
 
-    const handleOpenLink = () => {
-        const url = 'https://www.flightradar24.com/VJC83/3ca313d8';
-        Linking.openURL(url);
-    };
+        fetchRole();
+    }, []);
 
     return (
 
@@ -27,7 +34,7 @@ const home = () => {
                                 </View>
                                 <View className="space-y-[2px]">
                                     <Text className="text-[#0F172A] font-bold text-[18px]"> {user.name} </Text>
-                                    <Text className="text-[#344054]">Người vận chuyển</Text>
+                                    <Text className="text-[#344054]">{role} </Text>
                                 </View>
                             </View>
                             <Image source={require("../../assets/images/bell.webp")} className="w-[20px] h-[20px]" />
