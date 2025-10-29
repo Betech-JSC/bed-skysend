@@ -1,7 +1,12 @@
 import React from 'react'
 import { View, Text, Image, Button, Linking } from "react-native";
+import { useSelector } from 'react-redux';
 
 const home = () => {
+
+    const user = useSelector((state) => state.user);
+
+    console.log(user);
 
     const handleOpenLink = () => {
         const url = 'https://www.flightradar24.com/VJC83/3ca313d8';
@@ -21,7 +26,7 @@ const home = () => {
                                     <Image source={require("../../assets/images/avatar.webp")} className="w-[48px] h-[48px]" />
                                 </View>
                                 <View className="space-y-[2px]">
-                                    <Text className="text-[#0F172A] font-bold text-[18px]">Tony Trần</Text>
+                                    <Text className="text-[#0F172A] font-bold text-[18px]"> {user.name} </Text>
                                     <Text className="text-[#344054]">Người vận chuyển</Text>
                                 </View>
                             </View>

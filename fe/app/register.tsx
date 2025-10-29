@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import api from "@/api/api";
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 
 function Register() {
   const router = useRouter();

@@ -58,11 +58,6 @@ class User extends Authenticatable
         return $this->belongsTo(Account::class);
     }
 
-    public function getNameAttribute()
-    {
-        return $this->first_name . ' ' . $this->last_name;
-    }
-
     public function setPasswordAttribute($password)
     {
         $this->attributes['password'] = Hash::needsRehash($password) ? Hash::make($password) : $password;

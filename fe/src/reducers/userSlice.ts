@@ -5,12 +5,14 @@ interface UserState {
     id: string | null;
     name: string | null;
     email: string | null;
+    role: string | null;
 }
 
 const initialState: UserState = {
     id: null,
     name: null,
     email: null,
+    role: null,
 };
 
 const userSlice = createSlice({
@@ -21,11 +23,13 @@ const userSlice = createSlice({
             state.id = action.payload.id;
             state.name = action.payload.name;
             state.email = action.payload.email;
+            state.role = action.payload.role;
         },
         clearUser(state) {
             state.id = null;
             state.name = null;
             state.email = null;
+            state.role = null;
         },
     },
 });

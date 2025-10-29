@@ -4,7 +4,19 @@ import { Stack, useRouter } from "expo-router";
 import api from "@/api/api";
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 
+import { useSelector, useDispatch } from 'react-redux';
+import { setUser } from "@/reducers/userSlice";
+import { RootState } from "@/store";
+
 function Login() {
+
+  const user = useSelector((state: RootState) => state.user);
+  const dispatch = useDispatch();
+
+  const updateUser = () => {
+    dispatch(setUser({ id: '1', name: 'John Doe', email: 'john@example.com', 'role': 'sender' }));
+  };
+
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: "john@example.com",
@@ -32,7 +44,13 @@ function Login() {
           const { user } = response.data.data;
 
           await AsyncStorage.setItem('user', JSON.stringify(user));
+
+          // Cập nhật Redux store
+          dispatch(setUser(user));
+
+          // Điều hướng đến màn hình chính
           router.push("/home");
+
         } else {
           Alert.alert("Đăng nhập thất bại", response.data.message || "Vui lòng thử lại.");
         }

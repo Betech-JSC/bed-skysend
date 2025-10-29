@@ -14,7 +14,7 @@ function ListOrder() {
             const response = await api.get("orders", {
                 params: {
                     role: "sender",
-                    status: "pending"
+                    // status: "pending"
                 }
             });
             if (response.data.status === "success") {
