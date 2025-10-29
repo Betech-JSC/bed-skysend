@@ -30,3 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
 });
+
+Route::controller(AuthController::class)->group(function () {
+    Route::get('auth/{provider}/redirect', 'redirectToProvider'); // google / facebook
+    Route::get('auth/{provider}/callback', 'handleProviderCallback');
+});

@@ -2,9 +2,6 @@ import React from "react";
 import { View, Text, Image, TouchableOpacity, Linking } from "react-native";
 
 const SocialMedia = () => {
-    const handleSocialMediaLink = (url) => {
-        Linking.openURL(url).catch((err) => console.error("Failed to open URL", err));
-    };
 
     return (
         <View className="space-y-[16px]">
@@ -12,9 +9,9 @@ const SocialMedia = () => {
                 Hoặc tiếp tục với
             </Text>
             <View className="flex-row space-x-[16px]">
-                {/* Instagram Button */}
+                {/* Google Button */}
                 <TouchableOpacity
-                    onPress={() => handleSocialMediaLink("https://www.instagram.com/")}
+                    onPress={() => { }}
                     className="flex-1 flex-row border border-[#F2F2F7] rounded-[12px] justify-center py-[12px]"
                 >
                     <Image
@@ -25,7 +22,7 @@ const SocialMedia = () => {
 
                 {/* Facebook Button */}
                 <TouchableOpacity
-                    onPress={() => handleSocialMediaLink("https://www.facebook.com/")}
+                    onPress={() => { }}
                     className="flex-1 flex-row border border-[#F2F2F7] rounded-[12px] justify-center py-[12px]"
                 >
                     <Image

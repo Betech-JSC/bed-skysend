@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\Controller;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
@@ -78,5 +79,46 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
         return ApiResponse::success(null, 'Logged out successfully');
+    }
+
+    public function redirectToProvider($provider)
+    {
+        if (!in_array($provider, ['google', 'facebook'])) {
+            return response()->json(['error' => 'Unsupported provider'], 400);
+        }
+
+        return Socialite::driver($provider)->stateless()->redirect()->getTargetUrl();
+    }
+
+    public function handleProviderCallback($provider)
+    {
+        try {
+            $socialUser = Socialite::driver($provider)->stateless()->user();
+
+            $user = User::where('provider_id', $socialUser->getId())
+                ->orWhere('email', $socialUser->getEmail())
+                ->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $socialUser->getName(),
+                    'email' => $socialUser->getEmail(),
+                    'provider' => $provider,
+                    'provider_id' => $socialUser->getId(),
+                    'password' => bcrypt(Str::random(16)), // random password
+                    'avatar' => $socialUser->getAvatar(),
+                ]);
+            }
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'status' => 'success',
+                'token' => $token,
+                'user' => $user,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

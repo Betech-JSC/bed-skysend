@@ -18,7 +18,6 @@ function ItemOrder({ item }: any) {
                                 <View>
                                     <View className="flex-row items-center space-x-2">
                                         <Text className="text-[#1B1B1B] font-semibold">Tony Trần</Text>
-
                                     </View>
                                     <View className="flex-row items-center space-x-[2px] ">
                                         <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
