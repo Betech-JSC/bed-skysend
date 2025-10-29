@@ -3,18 +3,25 @@ import { View, ScrollView, Text, ActivityIndicator } from "react-native";
 import { Stack } from "expo-router";
 import ItemOrder from "../components/ItemOrder";  // Giả sử đây là component hiển thị mỗi đơn hàng
 import api from "@/api/api";
+import { useSelector } from "react-redux";
+import useRole from "@/hooks/useRole";
 
 function ListOrder() {
-    const [orders, setOrders] = useState([]);  // State lưu danh sách đơn hàng
-    const [loading, setLoading] = useState(true);  // State loading
-    const [error, setError] = useState(null);  // State lỗi (nếu có)
+    const user = useSelector((state) => state.user);
+    const role = useRole();  // This is now fetched asynchronously
+    const [orders, setOrders] = useState([]);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     const fetchOrders = async () => {
         try {
+            // Only call API when role is available
+            if (!role) return; // If role is null, do not fetch
+
             const response = await api.get("orders", {
                 params: {
-                    role: "sender",
-                    // status: "pending"
+                    role: role,
+                    // status: "pending"  // Optionally, you can add status filter here
                 }
             });
             if (response.data.status === "success") {
@@ -30,6 +37,12 @@ function ListOrder() {
     useEffect(() => {
         fetchOrders();
     }, []);
+
+    useEffect(() => {
+        if (role) {
+            fetchOrders();  // Only fetch orders when role is available
+        }
+    }, [role]);  // Re-run when role changes
 
     if (loading) {
         return (

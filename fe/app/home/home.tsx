@@ -1,24 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, Image, Button, Linking } from "react-native";
+import React from 'react'
+import { View, Text, Image } from "react-native";
 import { useSelector } from 'react-redux';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import useRole from '@/hooks/useRole';
 
 const home = () => {
 
-    const user = useSelector((state) => state.user);
-    const [role, setRole] = useState(null);
-
-    useEffect(() => {
-        const fetchRole = async () => {
-            const storedRole = await AsyncStorage.getItem('role');
-            if (storedRole) {
-                setRole(storedRole);
-            }
-        };
-
-        fetchRole();
-    }, []);
+    const user = useSelector((state) => state.user);  // Redux state for user
+    const role = useRole();
 
     return (
 
