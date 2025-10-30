@@ -2,10 +2,11 @@ import React from 'react'
 import { View, Text, Image } from "react-native";
 import { useSelector } from 'react-redux';
 import useRole from '@/hooks/useRole';
+import useOrderMatch from '@/hooks/useOrderMatch';
 
 const home = () => {
 
-    const user = useSelector((state) => state.user);  // Redux state for user
+    const user = useSelector((state) => state.user);
     const role = useRole();
 
     return (
@@ -22,7 +23,7 @@ const home = () => {
                                 </View>
                                 <View className="space-y-[2px]">
                                     <Text className="text-[#0F172A] font-bold text-[18px]"> {user.name} </Text>
-                                    <Text className="text-[#344054]">{role} </Text>
+                                    <Text className="text-[#344054]">{user.role} </Text>
                                 </View>
                             </View>
                             <Image source={require("../../assets/images/bell.webp")} className="w-[20px] h-[20px]" />

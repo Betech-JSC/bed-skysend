@@ -1,107 +1,113 @@
-// import React, { useState, useEffect } from 'react';
-// import { View, Text, TextInput, TouchableOpacity, Image, FlatList } from 'react-native';
-// import Echo from 'laravel-echo';
+import React, { useEffect, useState, useRef } from "react";
+import { View, FlatList, TextInput, Button, Text, KeyboardAvoidingView, Platform } from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import api from "@/api/api";
+import Echo from "laravel-echo";
+import { useLocalSearchParams } from "expo-router";
+import Pusher from "pusher-js/react-native";
+// import Pusher from "pusher-js";
 
-// import axios from 'axios';
+let echo: Echo | null = null;
 
-// const echo = new Echo({
-//     broadcaster: 'pusher',
-//     key: 'TJi7BIOAbIjqup12ExC9UNcTUauhEWxc', // REVERB_APP_KEY
-//     cluster: 'mt1',  // REVERB_APP_CLUSTER (hoặc cluster của bạn)
-//     forceTLS: false,  // Tùy chọn nếu bạn không sử dụng TLS
-//     wsHost: '127.0.0.1',  // REVERB_HOST
-//     wsPort: 9000,  // REVERB_PORT
-//     disableStats: true,  // Tắt thống kê (tùy chọn)
-//     encrypted: false,  // Cài đặt mã hóa nếu cần
-// });
+export default function Chat() {
+    const user = useSelector((state: RootState) => state.user);
+    const { chat_id, sender_id, receiver_id } = useLocalSearchParams<{ chat_id: string; sender_id: string; receiver_id: string }>();
 
-// function Chat({ myId = 1, partnerId = 2 }) {
-//     const [text, setText] = useState('');
-//     const [messages, setMessages] = useState([]);
+    const [messages, setMessages] = useState<{ sender_id: number; text: string; created_at: string }[]>([]);
+    const [text, setText] = useState("");
+    const flatListRef = useRef<FlatList>(null);
 
-//     useEffect(() => {
-//         const channel = echo.channel(`chat.${myId}.${partnerId}`);
+    // Khởi tạo Laravel Echo nếu chưa có
+    useEffect(() => {
+        if (!user || !chat_id) return;
 
-//         channel.listen('.ChatMessage', (e) => {
-//             setMessages((prevMessages) => [
-//                 ...prevMessages,
-//                 { from: e.from, text: e.text, timestamp: new Date().toLocaleTimeString() },
-//             ]);
-//         });
+        if (!echo) {
+            echo = new Echo({
+                broadcaster: "pusher",
+                key: "reverb",          // Reverb không cần key thật
+                wsHost: "127.0.0.1",
+                wsPort: 9000,
+                forceTLS: false,
+                disableStats: true,
+                client: Pusher,
+                auth: {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`,
+                    },
+                },
+            });
+        }
 
-//         return () => {
-//             channel.stopListening('.ChatMessage');
-//         };
-//     }, [myId, partnerId]);
+        const channel = echo.private(`chat.${chat_id}`);
 
-//     function send() {
-//         if (!text.trim()) return;
+        channel.listen("ChatMessageSent", (event: any) => {
+            setMessages((prev) => [...prev, event.message]);
+            flatListRef.current?.scrollToEnd({ animated: true });
+        });
 
-//         axios.post('http://localhost:8000/chat/send', {
-//             from: myId,
-//             to: partnerId,
-//             text: text,
-//         });
+        return () => {
+            channel.stopListening("ChatMessageSent");
+        };
+    }, [user, chat_id]);
 
-//         setMessages((prevMessages) => [
-//             ...prevMessages,
-//             { from: myId, text: text, timestamp: new Date().toLocaleTimeString() },
-//         ]);
+    // Gửi message qua API
+    const handleSend = async () => {
+        if (!text.trim()) return;
 
-//         setText('');
-//     }
+        try {
+            const response = await api.post("/chat/send", { chat_id: chat_id, text });
+            setMessages((prev) => [...prev, response.data.message]);
+            setText("");
+            flatListRef.current?.scrollToEnd({ animated: true });
+        } catch (err) {
+            console.log("Error sending message:", err);
+        }
+    };
 
-//     return (
-//         <View className="flex-1 bg-gray-100">
-//             <View className="flex-1 p-4">
-//                 <FlatList
-//                     data={messages}
-//                     renderItem={({ item }) => (
-//                         <View
-//                             className={`flex flex-row items-center mb-3 ${item.from === myId ? 'justify-end' : ''}`}>
-//                             {item.from !== myId && (
-//                                 <Image source={{ uri: 'https://via.placeholder.com/40' }} className="w-10 h-10 rounded-full" />
-//                             )}
-//                             <View className={`p-3 rounded-lg max-w-[70%] ${item.from === myId ? 'bg-blue-500 text-white' : 'bg-blue-100 text-gray-900'}`}>
-//                                 <Text className={`${item.from === myId ? 'text-white' : 'text-gray-900'}`}>{item.text}</Text>
-//                                 <Text className="text-xs text-right text-gray-500">{item.timestamp}</Text>
-//                             </View>
-//                             {item.from === myId && (
-//                                 <Image source={{ uri: 'https://via.placeholder.com/40' }} className="w-10 h-10 rounded-full" />
-//                             )}
-//                         </View>
-//                     )}
-//                     keyExtractor={(item, index) => index.toString()}
-//                 />
-//             </View>
-
-//             <View className="flex-row items-center p-4 border-t border-gray-300">
-//                 <TextInput
-//                     className="flex-1 p-3 border border-gray-300 rounded-full"
-//                     placeholder="Type your message..."
-//                     value={text}
-//                     onChangeText={setText}
-//                 />
-//                 <TouchableOpacity className="ml-2" onPress={send}>
-//                     <Text className="text-yellow-500 text-xl">➤</Text>
-//                 </TouchableOpacity>
-//             </View>
-//         </View>
-//     );
-// };
-
-// export default Chat;
-
-
-import { View, Text } from 'react-native'
-import React from 'react'
-
-const chat = () => {
     return (
-        <View>
-            <Text>chat</Text>
-        </View>
-    )
-}
+        <KeyboardAvoidingView
+            style={{ flex: 1, padding: 10 }}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+            <FlatList
+                ref={flatListRef}
+                data={messages}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => (
+                    <View
+                        style={{
+                            alignSelf: item.sender_id === user.id ? "flex-end" : "flex-start",
+                            backgroundColor: item.sender_id === user.id ? "#0f62fe" : "#e0e0e0",
+                            padding: 10,
+                            borderRadius: 8,
+                            marginVertical: 2,
+                        }}
+                    >
+                        <Text style={{ color: item.sender_id === user.id ? "white" : "black" }}>{item.text}</Text>
+                        <Text style={{ fontSize: 10, color: "#555", alignSelf: "flex-end" }}>
+                            {new Date(item.created_at).toLocaleTimeString()}
+                        </Text>
+                    </View>
+                )}
+            />
 
-export default chat
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5 }}>
+                <TextInput
+                    style={{
+                        flex: 1,
+                        borderWidth: 1,
+                        borderColor: "#ccc",
+                        borderRadius: 8,
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                    }}
+                    placeholder="Type a message..."
+                    value={text}
+                    onChangeText={setText}
+                />
+                <Button title="Send" onPress={handleSend} />
+            </View>
+        </KeyboardAvoidingView>
+    );
+}

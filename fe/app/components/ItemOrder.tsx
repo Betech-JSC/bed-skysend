@@ -40,7 +40,7 @@ function ItemOrder({ item }: any) {
                         <View className="flex-row items-center space-x-2">
                             <View className="w-3 h-3 bg-blue-500 rounded-full" />
                             <View className="flex-1">
-                                <Text className="font-semibold"> {item.pickup_location} </Text>
+                                <Text className="font-semibold"> {item.pickup_location?.name} </Text>
                                 <Text className="text-gray-600">10.08.2025, 10:00</Text>
                             </View>
                         </View>
@@ -49,16 +49,21 @@ function ItemOrder({ item }: any) {
 
                             <View className="w-3 h-3 bg-blue-900 rounded-full" />
                             <View className="flex-1">
-                                <Text className="font-semibold"> {item.delivery_location} </Text>
+                                <Text className="font-semibold"> {item.delivery_location?.name} </Text>
                                 <Text className="text-gray-600">10.08.2025, 15:00</Text>
                             </View>
                         </View>
                         <View className="flex-row items-center space-x-[8px]">
                             <View className="rounded-[80px]">
-                                <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">.{item.shipping_fee} </Text>
+                                <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">{item.package_weight} </Text>
                             </View>
                             <View className="rounded-[80px]">
                                 <Text className="py-[2px] px-[6px] bg-[#DCEDFF] "> {item.package_dimensions} </Text>
+                            </View>
+                        </View>
+                        <View className="flex-row items-center space-x-[8px]">
+                            <View className="rounded-[80px]">
+                                <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">{item.shipment_description} </Text>
                             </View>
                         </View>
                     </View>

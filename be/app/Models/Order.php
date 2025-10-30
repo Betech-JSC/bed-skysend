@@ -34,6 +34,18 @@ class Order extends Model
         'flight_time' => 'datetime', // Nếu có thời gian bay, cần ánh xạ vào kiểu datetime
     ];
 
+    // Trong Order.php
+    public function pickupRegion()
+    {
+        return $this->belongsTo(Region::class, 'pickup_location'); // pickup_location lưu region_id
+    }
+
+    public function deliveryRegion()
+    {
+        return $this->belongsTo(Region::class, 'delivery_location'); // delivery_location lưu region_id
+    }
+
+
     /**
      * Get the sender (user who created the order).
      */
@@ -61,5 +73,24 @@ class Order extends Model
     public function images()
     {
         return $this->hasMany(OrderImage::class);
+    }
+
+    public function transform()
+    {
+        return [
+            'id' => $this->id,
+            'shipment_description' => $this->shipment_description,
+            'pickup_location' => $this->pickupRegion ? $this->pickupRegion->transform() : null,
+            'delivery_location' => $this->deliveryRegion ? $this->deliveryRegion->transform() : null,
+            'flight_number' => $this->flight_number,
+            'flight_time' => $this->flight_time,
+            'package_weight' => $this->package_weight,
+            'package_dimensions' => $this->package_dimensions,
+            'status' => $this->status,
+            'matched_order_id' => $this->matched_order_id,
+            'shipping_fee' => $this->shipping_fee,
+            'special_instructions' => $this->special_instructions,
+            'images' => $this->images->map(fn($img) => $img->transform()), // nếu OrderImage có transform
+        ];
     }
 }

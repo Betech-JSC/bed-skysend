@@ -71,6 +71,11 @@ class OrderController extends Controller
 
         $orders = $query->orderBy('created_at', 'desc')->paginate(10);
 
+        // Map collection bên trong paginate sang transform
+        $orders->getCollection()->transform(function ($order) {
+            return $order->transform(); // gọi method transform() trong model Order
+        });
+
         return ApiResponse::success(['orders' => $orders], 'Orders retrieved successfully');
     }
 

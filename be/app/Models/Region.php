@@ -29,7 +29,7 @@ class Region extends Model
             'id' => $this->id,
             'title' => $this->name,
             'name' => $this->name,
-            'value' => $this->name,
+            'value' => $this->id,
         ];
     }
 }
