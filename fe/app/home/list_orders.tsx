@@ -28,15 +28,6 @@ function ListOrder() {
         }
     };
 
-    useFocusEffect(
-        useCallback(() => {
-            // Khi screen được focus, gọi lại API
-            if (role) {
-                fetchOrders();
-            }
-        }, [role])
-    );
-
     if (loading) {
         return (
             <View className="flex-1 justify-center items-center">

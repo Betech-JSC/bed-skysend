@@ -24,21 +24,15 @@ const Profile = () => {
 
     const logout = async () => {
         try {
-            const user = await AsyncStorage.getItem('user');
+            const response = await api.post('logout');
 
-            if (user) {
-                const response = await api.post('logout');
+            if (response.status === 200) {
+                await AsyncStorage.removeItem('user');
 
-                if (response.status === 200) {
-                    await AsyncStorage.removeItem('user');
-
-                    Alert.alert("Đăng xuất thành công");
-                    router.push("/login");
-                } else {
-                    Alert.alert("Đăng xuất thất bại", response.data.message || "Vui lòng thử lại.");
-                }
+                Alert.alert("Đăng xuất thành công");
+                router.push("/login");
             } else {
-                Alert.alert("Chưa có token", "Vui lòng đăng nhập trước.");
+                Alert.alert("Đăng xuất thất bại", response.data.message || "Vui lòng thử lại.");
             }
         } catch (error) {
             console.error("Logout error:", error);

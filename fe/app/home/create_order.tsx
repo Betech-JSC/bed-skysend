@@ -6,6 +6,8 @@ import DateTimePicker from '@react-native-community/datetimepicker'; // Date Pic
 import { launchImageLibrary } from 'react-native-image-picker'; // Image Picker
 import api from "@/api/api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LocationForm from "../../app/components/LocationForm";
+import PackageSelector from "../../app/components/PackageSelector";
 
 function CreateOrder() {
     const router = useRouter();
@@ -96,18 +98,7 @@ function CreateOrder() {
                     <View className="space-y-[12px] bg-white p-[12px] rounded-[12px]">
                         <Text className="text-lg text-[#0F172A] mb-2">Hành trình của bạn</Text>
                         {/* Pickup and Delivery Locations */}
-                        <TextInput
-                            className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-                            placeholder="Điểm khởi hành"
-                            value={formData.pickup_location}
-                            onChangeText={(text) => handleInputChange("pickup_location", text)}
-                        />
-                        <TextInput
-                            className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-                            placeholder="Điểm đến"
-                            value={formData.delivery_location}
-                            onChangeText={(text) => handleInputChange("delivery_location", text)}
-                        />
+                        <LocationForm formData={formData} handleInputChange={handleInputChange} />
                     </View>
 
                     <View className="space-y-[12px] bg-white p-[12px] rounded-[12px]">
@@ -134,30 +125,17 @@ function CreateOrder() {
 
                     <View className="space-y-[12px] bg-white p-[12px] rounded-[12px]">
                         <Text className="text-lg text-[#0F172A] mb-2">Hàng hóa</Text>
-                        <View className="flex-row items-center space-x-[12px]">
-                            <View className="flex-row items-center  border border-[#D0D5DD] space-x-[12px] py-[8px] px-[8px] rounded-[10px]">
-                                <Image source={require("../../assets/images/box.webp")} className="w-[24px]" />
-                                <Text>Hộp</Text>
-                            </View>
-                            <View className="flex-row items-center  border border-[#D0D5DD] space-x-[12px] py-[8px] px-[8px] rounded-[10px]">
-                                <Image source={require("../../assets/images/document.webp")} className="w-[24px]" />
-                                <Text>Tài liệu</Text>
-                            </View>
-                            <View className="flex-row items-center  border border-[#D0D5DD] space-x-[12px] py-[8px] px-[8px] rounded-[10px]">
-                                <Image source={require("../../assets/images/orther.webp")} className="w-[24px]" />
-                                <Text>Khác</Text>
-                            </View>
-                        </View>
-                        <TextInput
-                            className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-                            placeholder="Giá trị hàng hóa"
-                            value={formData.shipment_description}
-                            onChangeText={(text) => handleInputChange("shipment_description", text)}
-                        />
+                        <PackageSelector formData={formData} handleInputChange={handleInputChange} />
                         <TextInput
                             className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
                             placeholder="Cân nặng ước tính"
                             value={formData.package_weight}
+                            onChangeText={(text) => handleInputChange("package_weight", text)}
+                        />
+                        <TextInput
+                            className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
+                            placeholder="Ghi chú"
+                            value={formData.shipment_description}
                             onChangeText={(text) => handleInputChange("package_weight", text)}
                         />
                     </View>
