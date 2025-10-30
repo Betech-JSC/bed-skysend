@@ -1,48 +1,37 @@
 import React, { useEffect, useState } from "react";
 import { View, ScrollView, Text, ActivityIndicator } from "react-native";
 import { Stack } from "expo-router";
-import ItemOrder from "../components/ItemOrder";  // Giả sử đây là component hiển thị mỗi đơn hàng
+import ItemOrder from "../components/ItemOrder";
 import api from "@/api/api";
 import { useSelector } from "react-redux";
-import useRole from "@/hooks/useRole";
+import { RootState } from "@/store";
 
 function ListOrder() {
-    const user = useSelector((state) => state.user);
-    const role = useRole();  // This is now fetched asynchronously
+    const user = useSelector((state: RootState) => state.user);
+    const role = user?.role;
+
     const [orders, setOrders] = useState([]);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchOrders = async () => {
-        try {
-            // Only call API when role is available
-            if (!role) return; // If role is null, do not fetch
+    useEffect(() => {
+        const fetchOrders = async () => {
+            if (!role) return;
 
-            const response = await api.get("orders", {
-                params: {
-                    role: role,
-                    // status: "pending"  // Optionally, you can add status filter here
+            try {
+                const response = await api.get("orders", { params: { role } });
+                if (response.data.status === "success") {
+                    setOrders(response.data.data.orders.data);
                 }
-            });
-            if (response.data.status === "success") {
-                setOrders(response.data.data.orders.data);
+            } catch (err) {
+                setError("Error fetching orders");
+            } finally {
+                setLoading(false);
             }
-        } catch (err) {
-            setError("Error fetching orders");
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
 
-    useEffect(() => {
         fetchOrders();
-    }, []);
-
-    useEffect(() => {
-        if (role) {
-            fetchOrders();  // Only fetch orders when role is available
-        }
-    }, [role]);  // Re-run when role changes
+    }, [role]); // Chỉ chạy khi role thay đổi
 
     if (loading) {
         return (
@@ -62,11 +51,7 @@ function ListOrder() {
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "Danh sách đơn hàng",
-                }}
-            />
+            <Stack.Screen options={{ title: "Danh sách đơn hàng" }} />
             <ScrollView className="flex-1 py-[12px] px-[16px] space-y-[20px]">
                 {orders.map((order) => (
                     <ItemOrder key={order.id} item={order} />

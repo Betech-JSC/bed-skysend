@@ -3,43 +3,39 @@ import api from "@/api/api";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from "react-redux";
+import { setUser } from "@/reducers/userSlice";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 const Profile = () => {
 
+    const dispatch = useDispatch();
     const router = useRouter();
-    const [role, setRole] = useState<string>('sender');
 
-    const toggleRole = async () => {
-        const newRole: string = role === 'sender' ? 'carrier' : 'sender';
-        await AsyncStorage.setItem('role', newRole);
-        setRole(newRole);
+    const user = useSelector((state: RootState) => state.user);
+    const role = user?.role;
+
+    const toggleRole = () => {
+        if (!user) return;
+
+        const newRole: string = role === "sender" ? "carrier" : "sender";
+
+        dispatch(setUser({ ...user, role: newRole }));
+
     };
 
     const logout = async () => {
         try {
-            const user = await AsyncStorage.getItem('user');
+            const response = await api.post('logout');
 
-            if (user) {
-                const response = await api.post(
-                    'logout',
-                    {},
-                    {
-                        headers: {
-                            Authorization: `Bearer ${JSON.parse(user).token}`,
-                        },
-                    }
-                );
+            if (response.status === 200) {
+                await AsyncStorage.removeItem('user');
 
-                if (response.status === 200) {
-                    await AsyncStorage.removeItem('user');
-
-                    Alert.alert("Đăng xuất thành công");
-                    router.push("/login");
-                } else {
-                    Alert.alert("Đăng xuất thất bại", response.data.message || "Vui lòng thử lại.");
-                }
+                Alert.alert("Đăng xuất thành công");
+                router.push("/login");
             } else {
-                Alert.alert("Chưa có token", "Vui lòng đăng nhập trước.");
+                Alert.alert("Đăng xuất thất bại", response.data.message || "Vui lòng thử lại.");
             }
         } catch (error) {
             console.error("Logout error:", error);

@@ -19,8 +19,8 @@ function Login() {
 
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: "john@example.com",
-    password: "password123",
+    email: "admin@gmail.com",
+    password: "admin@gmail.com",
   });
 
   const handleInputChange = (name: any, value: any) => {
@@ -43,13 +43,10 @@ function Login() {
         if (response.status === 200) {
           const { user } = response.data.data;
 
-          await AsyncStorage.setItem('user', JSON.stringify(user));
-          await AsyncStorage.setItem('role', 'sender');
+          const userWithRole = { ...user, role: 'sender' };
 
           // Cập nhật Redux store
-          dispatch(setUser(user));
-
-          // Điều hướng đến màn hình chính
+          dispatch(setUser(userWithRole));
           router.push("/home");
 
         } else {

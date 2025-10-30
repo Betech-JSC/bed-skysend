@@ -27,9 +27,9 @@ class Region extends Model
     {
         return [
             'id' => $this->id,
-            'country_id' => $this->country_id,
-            'level' => $this->level,
             'title' => $this->name,
+            'name' => $this->name,
+            'value' => $this->name,
         ];
     }
 }
