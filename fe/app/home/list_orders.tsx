@@ -5,25 +5,19 @@ import ItemOrder from "../components/ItemOrder";  // Giả sử đây là compon
 import api from "@/api/api";
 import { useSelector } from "react-redux";
 import useRole from "@/hooks/useRole";
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 function ListOrder() {
-    const user = useSelector((state) => state.user);
-    const role = useRole();  // This is now fetched asynchronously
+    const role = useRole();
     const [orders, setOrders] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const fetchOrders = async () => {
+        if (!role) return;
         try {
-            // Only call API when role is available
-            if (!role) return; // If role is null, do not fetch
-
-            const response = await api.get("orders", {
-                params: {
-                    role: role,
-                    // status: "pending"  // Optionally, you can add status filter here
-                }
-            });
+            const response = await api.get("orders", { params: { role } });
             if (response.data.status === "success") {
                 setOrders(response.data.data.orders.data);
             }
@@ -34,15 +28,14 @@ function ListOrder() {
         }
     };
 
-    useEffect(() => {
-        fetchOrders();
-    }, []);
-
-    useEffect(() => {
-        if (role) {
-            fetchOrders();  // Only fetch orders when role is available
-        }
-    }, [role]);  // Re-run when role changes
+    useFocusEffect(
+        useCallback(() => {
+            // Khi screen được focus, gọi lại API
+            if (role) {
+                fetchOrders();
+            }
+        }, [role])
+    );
 
     if (loading) {
         return (

@@ -20,16 +20,10 @@ const userSlice = createSlice({
     initialState,
     reducers: {
         setUser(state, action: PayloadAction<UserState>) {
-            state.id = action.payload.id;
-            state.name = action.payload.name;
-            state.email = action.payload.email;
-            state.role = action.payload.role;
+            Object.assign(state, action.payload);
         },
         clearUser(state) {
-            state.id = null;
-            state.name = null;
-            state.email = null;
-            state.role = null;
+            Object.assign(state, initialState);
         },
     },
 });

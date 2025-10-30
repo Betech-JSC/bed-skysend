@@ -3,16 +3,23 @@ import api from "@/api/api";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from "react-redux";
+import { setUser } from "@/reducers/userSlice";
+import { useSelector } from "react-redux";
 
 const Profile = () => {
 
+    const user = useSelector((state) => state.user);
+    const dispatch = useDispatch();
+
     const router = useRouter();
+
     const [role, setRole] = useState<string>('sender');
 
     const toggleRole = async () => {
         const newRole: string = role === 'sender' ? 'carrier' : 'sender';
-        await AsyncStorage.setItem('role', newRole);
-        setRole(newRole);
+        dispatch(setUser({ ...user, role: newRole }));
+        await AsyncStorage.setItem('user', JSON.stringify({ ...user, role: newRole }));
     };
 
     const logout = async () => {
@@ -20,15 +27,7 @@ const Profile = () => {
             const user = await AsyncStorage.getItem('user');
 
             if (user) {
-                const response = await api.post(
-                    'logout',
-                    {},
-                    {
-                        headers: {
-                            Authorization: `Bearer ${JSON.parse(user).token}`,
-                        },
-                    }
-                );
+                const response = await api.post('logout');
 
                 if (response.status === 200) {
                     await AsyncStorage.removeItem('user');
