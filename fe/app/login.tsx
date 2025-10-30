@@ -19,8 +19,8 @@ function Login() {
 
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: "john@example.com",
-    password: "password123",
+    email: "admin@gmail.com",
+    password: "admin@gmail.com",
   });
 
   const handleInputChange = (name: any, value: any) => {
