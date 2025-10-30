@@ -1,8 +1,7 @@
 import axios from "axios";
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Nếu bạn sử dụng AsyncStorage
-import Config from 'react-native-config';
+import { store } from "@/store"; // import store trực tiếp
 
-// Tạo một instance của axios với base URL từ .env
+// Tạo instance axios
 const api = axios.create({
     baseURL: "http://localhost:8000/api",
     headers: {
@@ -10,39 +9,26 @@ const api = axios.create({
     },
 });
 
-// Thêm Interceptor cho mỗi request để gắn token vào header
+// Interceptor để gắn token vào header
 api.interceptors.request.use(
-    async (config) => {
-        // Lấy user từ AsyncStorage
-        const user = await AsyncStorage.getItem('user');
+    (config) => {
+        // Lấy user từ Redux store
+        const state = store.getState();
+        const user = state.user; // giả sử user lưu ở state.user
 
-        if (user) {
-            // Parse dữ liệu user từ chuỗi JSON
-            const parsedUser = JSON.parse(user);
-
-            // Lấy token từ đối tượng user
-            const token = parsedUser?.token;
-
-            if (token) {
-                // Nếu có token thì thêm vào header Authorization
-                config.headers['Authorization'] = `Bearer ${token}`;
-            }
+        if (user?.token) {
+            config.headers['Authorization'] = `Bearer ${user.token}`;
         }
 
-        return config; // Trả về config đã cập nhật
+        return config;
     },
-    (error) => {
-        return Promise.reject(error); // Trả về lỗi nếu có
-    }
+    (error) => Promise.reject(error)
 );
 
-// Cấu hình interceptor để xử lý phản hồi của API
+// Interceptor xử lý response
 api.interceptors.response.use(
-    (response) => response, // Chỉ trả về response nếu không có lỗi
-    (error) => {
-        // Xử lý lỗi nếu có (như token hết hạn, v.v.)
-        return Promise.reject(error);
-    }
+    (response) => response,
+    (error) => Promise.reject(error)
 );
 
 export default api;

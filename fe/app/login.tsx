@@ -43,11 +43,10 @@ function Login() {
         if (response.status === 200) {
           const { user } = response.data.data;
 
-          // Cập nhật Redux store
-          dispatch(setUser(user));
+          const userWithRole = { ...user, role: 'sender' };
 
-          await AsyncStorage.setItem('user', JSON.stringify(user));
-          // Điều hướng đến màn hình chính
+          // Cập nhật Redux store
+          dispatch(setUser(userWithRole));
           router.push("/home");
 
         } else {

@@ -6,20 +6,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch } from "react-redux";
 import { setUser } from "@/reducers/userSlice";
 import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 const Profile = () => {
 
-    const user = useSelector((state) => state.user);
     const dispatch = useDispatch();
-
     const router = useRouter();
 
-    const [role, setRole] = useState<string>('sender');
+    const user = useSelector((state: RootState) => state.user);
+    const role = user?.role;
 
-    const toggleRole = async () => {
-        const newRole: string = role === 'sender' ? 'carrier' : 'sender';
+    const toggleRole = () => {
+        if (!user) return;
+
+        const newRole: string = role === "sender" ? "carrier" : "sender";
+
         dispatch(setUser({ ...user, role: newRole }));
-        await AsyncStorage.setItem('user', JSON.stringify({ ...user, role: newRole }));
+
     };
 
     const logout = async () => {
