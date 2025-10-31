@@ -7,13 +7,16 @@ use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Services\OrderMatcherService;
+use App\Services\FirebaseService;
 
 class OrderController extends Controller
 {
     /**
      * Store a newly created order.
      */
-    public function create(Request $request)
+
+
+    public function create(Request $request, FirebaseService $firebase)
     {
         // Validate the incoming request
         $validated = $request->validate([
@@ -25,6 +28,7 @@ class OrderController extends Controller
             'flight_time' => 'nullable|date',
             'package_weight' => 'nullable|numeric',
             'package_dimensions' => 'nullable|string',
+            'special_instructions' => 'nullable|string',
         ]);
 
         // Create the order
@@ -45,14 +49,37 @@ class OrderController extends Controller
         // Save images if uploaded
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $path = $image->store('order_images', 'public'); // Lưu vào storage/app/public/order_images
+                $path = $image->store('order_images', 'public');
                 $order->images()->create(['image_path' => $path]);
             }
         }
 
-        return ApiResponse::success(['order' => $order], 'Order created successfully');
+        $firebase->pushOrder($order->toArray());
+        $firebase->checkAndMatchOrder($order->toArray());
+
+        return ApiResponse::success(['order' => $order], 'Order created successfully and synced with Firebase');
     }
 
+    public function confirmMatch(Request $request, FirebaseService $firebase)
+    {
+        $orderId = $request->input('orderId');
+        $action  = $request->input('action'); // "confirm" hoặc "reject"
+
+        if (!$orderId || !in_array($action, ['confirm', 'reject'])) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid parameters'], 400);
+        }
+
+        $result = $firebase->confirmMatch($orderId, $request->user()->id, $action);
+
+        if ($action === 'confirm') {
+            return response()->json([
+                'status' => 'success',
+                'chat_id' => $result['chat_id'] ?? null
+            ]);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
 
     /**
      * Display a listing of orders.
@@ -159,22 +186,34 @@ class OrderController extends Controller
             'matched_order_id' => 'required|exists:orders,id',
         ]);
 
-        // Find the orders
         $order = Order::findOrFail($validated['order_id']);
         $matchedOrder = Order::findOrFail($validated['matched_order_id']);
 
-        // Ensure both orders belong to the same user or have the correct permissions
-        if ($order->user_id !== auth()->id() || $matchedOrder->user_id !== auth()->id()) {
-            return ApiResponse::error('Unauthorized', 403);
-        }
+        // Tạo chat node mới
+        $chatRef = app('firebase.database')->getReference('chats')->push([]);
+        $chatId = $chatRef->getKey();
 
-        // Link the orders together
-        $order->update(['matched_order_id' => $matchedOrder->id]);
-        $matchedOrder->update(['matched_order_id' => $order->id]);
+        // Cập nhật order đã match
+        $order->update([
+            'matched_order_id' => $matchedOrder->id,
+            'status' => 'matched',
+            'chat_id' => $chatId,
+        ]);
+
+        $matchedOrder->update([
+            'matched_order_id' => $order->id,
+            'status' => 'matched',
+            'chat_id' => $chatId,
+        ]);
+
+        // Push notification realtime tới 2 user
+        $this->pushNotification($order->user_id, 'Order Matched', 'Your order has been matched!', ['chat_id' => $chatId]);
+        $this->pushNotification($matchedOrder->user_id, 'Order Matched', 'Your order has been matched!', ['chat_id' => $chatId]);
 
         return ApiResponse::success([
             'order' => $order,
-            'matched_order' => $matchedOrder
+            'matched_order' => $matchedOrder,
+            'chat_id' => $chatId
         ], 'Orders matched successfully');
     }
 }

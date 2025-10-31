@@ -5,6 +5,7 @@ import ItemOrder from "../components/ItemOrder";
 import api from "@/api/api";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import { useOrderMatchList } from "@/hooks/useOrderMatchList";
 
 function ListOrder() {
     const user = useSelector((state: RootState) => state.user);
@@ -32,7 +33,7 @@ function ListOrder() {
         };
 
         fetchOrders();
-    }, [role]); // Chỉ chạy khi role thay đổi
+    }, [role]);
 
     if (loading) {
         return (
