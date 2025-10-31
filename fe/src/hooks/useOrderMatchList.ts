@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Alert, Platform } from "react-native";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { app } from "@/firebaseConfig";
@@ -6,30 +6,68 @@ import api from "@/api/api";
 
 const db = getDatabase(app);
 
-export function useOrderMatchList(orderIds: string[], onConfirm: (chatId: string) => void) {
+interface MatchData {
+    status: string;
+    matched_order_id: string;
+    chat_id?: string | null;
+}
+
+export function useOrderMatchList(
+    orderIds: string[],
+    onConfirm: (chatId: string) => void,
+    onReject?: (orderId: string) => void
+) {
+    const shownMatchesRef = useRef<Set<string>>(new Set());
+
     useEffect(() => {
         if (!orderIds || orderIds.length === 0) return;
 
         const unsubscribes = orderIds.map(orderId => {
             const matchRef = ref(db, `matches/${orderId}`);
             return onValue(matchRef, snapshot => {
-                const data = snapshot.val();
-                if (data?.status === "pending_confirmation") {
-                    // Hiển thị alert với 2 button
+                const data: MatchData = snapshot.val();
+
+                if (
+                    data?.status === "pending_confirmation" &&
+                    !shownMatchesRef.current.has(orderId)
+                ) {
+                    shownMatchesRef.current.add(orderId);
+
                     const message = `Đơn ${orderId} đã được ghép với đơn ${data.matched_order_id}`;
-                    if (Platform.OS === "web") {
-                        if (window.confirm(`${message}\nXác nhận?`)) {
-                            confirmMatch(orderId);
-                        } else {
-                            rejectMatch(orderId);
+
+                    const confirmMatch = async () => {
+                        try {
+                            const res = await api.post("/orders/confirm-match", { orderId, action: "confirm" });
+                            if (res.data.chat_id) {
+                                onConfirm(res.data.chat_id);
+                            }
+                        } catch (err) {
+                            console.error("Error confirming match", err);
                         }
+                    };
+
+                    const rejectMatch = async () => {
+                        try {
+                            await api.post("/orders/confirm-match", { orderId, action: "reject" });
+                            if (onReject) onReject(orderId);
+                            // Backend sẽ tự động match lại order khác → Firebase node cập nhật
+                            // Loại bỏ khỏi shownMatches để có thể show alert match mới
+                            shownMatchesRef.current.delete(orderId);
+                        } catch (err) {
+                            console.error("Error rejecting match", err);
+                        }
+                    };
+
+                    if (Platform.OS === "web") {
+                        if (window.confirm(`${message}\nXác nhận?`)) confirmMatch();
+                        else rejectMatch();
                     } else {
                         Alert.alert(
                             "Đơn hàng đã được ghép",
                             message,
                             [
-                                { text: "Từ chối", onPress: () => rejectMatch(orderId), style: "cancel" },
-                                { text: "Xác nhận", onPress: () => confirmMatch(orderId) }
+                                { text: "Từ chối", onPress: rejectMatch, style: "cancel" },
+                                { text: "Xác nhận", onPress: confirmMatch }
                             ]
                         );
                     }
@@ -39,15 +77,4 @@ export function useOrderMatchList(orderIds: string[], onConfirm: (chatId: string
 
         return () => unsubscribes.forEach(unsub => unsub());
     }, [orderIds]);
-
-    const confirmMatch = async (orderId: string) => {
-        const res = await api.post("/orders/confirm-match", { orderId, action: "confirm" });
-        if (res.data.chat_id) {
-            onConfirm(res.data.chat_id);
-        }
-    };
-
-    const rejectMatch = async (orderId: string) => {
-        await api.post("/orders/confirm-match", { orderId, action: "reject" });
-    };
 }

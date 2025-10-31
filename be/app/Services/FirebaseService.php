@@ -143,24 +143,30 @@ class FirebaseService
         $orders = $this->database->getReference("orders")->getValue();
 
         foreach ($orders as $id => $order) {
+            // Kiểm tra điều kiện match cơ bản
             if (
                 $order['status'] === 'pending' &&
                 $order['role'] !== $newOrder['role'] &&
                 $order['pickup_location'] === $newOrder['pickup_location'] &&
-                $order['delivery_location'] === $newOrder['delivery_location']
+                $order['delivery_location'] === $newOrder['delivery_location'] &&
+                !in_array($order['id'], $newOrder['rejected_matches'] ?? []) &&
+                !in_array($newOrder['id'], $order['rejected_matches'] ?? [])
             ) {
-
+                // Cập nhật status về pending_confirmation
                 $this->database->getReference("orders/{$order['id']}/status")->set('pending_confirmation');
                 $this->database->getReference("orders/{$newOrder['id']}/status")->set('pending_confirmation');
 
+                // Tạo node match
                 $this->database->getReference("matches/{$newOrder['id']}")->set([
                     'status' => 'pending_confirmation',
-                    'matched_order_id' => $order['id']
+                    'matched_order_id' => $order['id'],
+                    'chat_id' => null
                 ]);
 
                 $this->database->getReference("matches/{$order['id']}")->set([
                     'status' => 'pending_confirmation',
-                    'matched_order_id' => $newOrder['id']
+                    'matched_order_id' => $newOrder['id'],
+                    'chat_id' => null
                 ]);
 
                 return true;
@@ -178,28 +184,59 @@ class FirebaseService
         $otherOrderId = $match['matched_order_id'];
 
         if ($action === 'confirm') {
-
-            // Nếu chat_id đã tồn tại thì dùng lại, không tạo mới
             $chatId = $match['chat_id'] ?? $this->createChat($orderId, $otherOrderId);
 
-            // Cập nhật status thực sự và chat_id cho 2 order
+            // 1️⃣ Đồng bộ Firebase
             $this->update("orders/{$orderId}", ['status' => 'matched', 'chat_id' => $chatId]);
             $this->update("orders/{$otherOrderId}", ['status' => 'matched', 'chat_id' => $chatId]);
 
-            // Cập nhật node match
             $this->update("matches/{$orderId}", ['status' => 'matched', 'chat_id' => $chatId]);
             $this->update("matches/{$otherOrderId}", ['status' => 'matched', 'chat_id' => $chatId]);
+
+            // 2️⃣ Đồng bộ Laravel DB
+            \App\Models\Order::where('id', $orderId)->update([
+                'status' => 'matched',
+                'chat_id' => $chatId,
+                'matched_order_id' => $otherOrderId
+            ]);
+            \App\Models\Order::where('id', $otherOrderId)->update([
+                'status' => 'matched',
+                'chat_id' => $chatId,
+                'matched_order_id' => $orderId
+            ]);
 
             return ['chat_id' => $chatId];
         }
 
         if ($action === 'reject') {
-            // Loại bỏ match hiện tại
+            // Xóa match hiện tại Firebase
             $this->delete("matches/{$orderId}");
             $this->delete("matches/{$otherOrderId}");
 
-            // Tìm match khác nếu có
-            $this->checkAndMatchOrder($this->get("orders/{$orderId}"));
+            // Cập nhật status về pending Firebase
+            $order = $this->get("orders/{$orderId}");
+            $otherOrder = $this->get("orders/{$otherOrderId}");
+
+            $order['status'] = 'pending';
+            $otherOrder['status'] = 'pending';
+
+            $order['rejected_matches'] = array_unique(array_merge($order['rejected_matches'] ?? [], [$otherOrderId]));
+            $otherOrder['rejected_matches'] = array_unique(array_merge($otherOrder['rejected_matches'] ?? [], [$orderId]));
+
+            $this->update("orders/{$orderId}", $order);
+            $this->update("orders/{$otherOrderId}", $otherOrder);
+
+            // Cập nhật status Laravel DB
+            \App\Models\Order::where('id', $orderId)->update([
+                'status' => 'pending',
+            ]);
+            \App\Models\Order::where('id', $otherOrderId)->update([
+                'status' => 'pending',
+            ]);
+
+            // Tìm match mới cho cả 2 order
+            $this->checkAndMatchOrder($order);
+            $this->checkAndMatchOrder($otherOrder);
 
             return true;
         }

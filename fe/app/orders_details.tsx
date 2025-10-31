@@ -67,9 +67,13 @@ function OrdersDetails() {
                                             </View>
                                         </View>
                                     </View>
-                                    <View>
-                                        <Image source={require("../assets/images/icon-chat.webp")} className="w-[48px] h-[48px]" />
-                                    </View>
+                                    <Pressable
+                                        onPress={() => router.push(`/home/chat/${"-OcuK_Xu30NhZcwX8IH9"}`)}
+                                    >
+                                        <View>
+                                            <Image source={require("../assets/images/icon-chat.webp")} className="w-[48px] h-[48px]" />
+                                        </View>
+                                    </Pressable>
                                 </View>
                                 <View>
                                     <Image source={require("../assets/images/map.webp")} className="h-[210px] w-full" />
