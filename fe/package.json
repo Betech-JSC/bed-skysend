@@ -1,5 +1,5 @@
 {
-  "name": "react-native-boilerplate",
+  "name": "SkySend",
   "version": "1.0.0",
   "main": "Main.tsx",
   "scripts": {
@@ -43,6 +43,7 @@
     "expo-router": "3.4.9",
     "expo-splash-screen": "~0.20.4",
     "expo-status-bar": "~1.6.0",
+    "expo-updates": "~29.0.12",
     "firebase": "^12.5.0",
     "laravel-echo": "^2.2.4",
     "nativewind": "^2.0.11",

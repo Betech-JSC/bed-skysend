@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "react-native-boilerplate",
-    "slug": "react-native-boilerplate",
+    "name": "SkySend",
+    "slug": "SkySend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.reactnativeboilerplate"
@@ -28,6 +30,23 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": ["@config-plugins/detox", "expo-router"]
+    "plugins": [
+      "@config-plugins/detox",
+      "expo-router"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "363ab25f-f7bc-4a57-869d-c054d3e254f7"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/363ab25f-f7bc-4a57-869d-c054d3e254f7"
+    }
   }
 }
