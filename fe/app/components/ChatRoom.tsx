@@ -7,7 +7,6 @@ import {
     Button,
     Text,
     KeyboardAvoidingView,
-    Platform,
     StyleSheet,
 } from 'react-native';
 import { getDatabase, ref, onValue, push, serverTimestamp } from 'firebase/database';
@@ -76,7 +75,6 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
     return (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <FlatList
                 data={messages}

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { app } from "@/firebaseConfig";
 import api from "@/api/api";
@@ -58,19 +58,14 @@ export function useOrderMatchList(
                         }
                     };
 
-                    if (Platform.OS === "web") {
-                        if (window.confirm(`${message}\nXác nhận?`)) confirmMatch();
-                        else rejectMatch();
-                    } else {
-                        Alert.alert(
-                            "Đơn hàng đã được ghép",
-                            message,
-                            [
-                                { text: "Từ chối", onPress: rejectMatch, style: "cancel" },
-                                { text: "Xác nhận", onPress: confirmMatch }
-                            ]
-                        );
-                    }
+                    Alert.alert(
+                        "Đơn hàng đã được ghép",
+                        message,
+                        [
+                            { text: "Từ chối", onPress: rejectMatch, style: "cancel" },
+                            { text: "Xác nhận", onPress: confirmMatch }
+                        ]
+                    );
                 }
             });
         });
