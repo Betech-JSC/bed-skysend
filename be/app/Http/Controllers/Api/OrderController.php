@@ -112,14 +112,18 @@ class OrderController extends Controller
      */
     public function show($orderId)
     {
-        $order = Order::findOrFail($orderId);
+        $order = Order::with(['matchedOrder']) // Giả sử quan hệ matchedUser trong model Order
+            ->findOrFail($orderId);
 
-        // Ensure the order belongs to the authenticated user
+        // Kiểm tra order thuộc về user hiện tại
         if ($order->user_id !== auth()->id()) {
             return ApiResponse::error('Unauthorized', 403);
         }
 
-        return ApiResponse::success(['order' => $order], 'Order retrieved successfully');
+        // Transform order nếu muốn, ví dụ gọi method transform() trong model
+        $orderTransformed = $order->transform();
+
+        return ApiResponse::success(['order' => $orderTransformed], 'Order retrieved successfully');
     }
 
     /**

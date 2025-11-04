@@ -1,34 +1,36 @@
-import { Stack, useRouter } from "expo-router";
-import { Button, Image, Pressable, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Image, Pressable, Text, View } from "react-native";
 
 function ItemOrder({ item }: any) {
 
     const router = useRouter();
 
     return (
-        <Pressable onPress={() => router.push("/orders_details")}>
+        <Pressable onPress={() => router.push(`home/orders/${item.id}`)}>
             <View className="bg-white p-[20px] mb-[12px] rounded-[12px] gap-y-[12px]">
                 <View className="gap-y-[12px]">
                     <View className="flex-row items-start justify-between ">
-                        <View className="gap-x-[12px] flex-row items-center">
-                            <View>
-                                <Image source={require("../../assets/images/avatar.webp")} className="w-[48px] h-[48px]" />
-                            </View>
-                            <View className="flex-row">
+                        {item.matched_order &&
+                            <View className="gap-x-[12px] flex-row items-center">
                                 <View>
-                                    <View className="flex-row items-center gap-x-2">
-                                        <Text className="text-[#1B1B1B] font-semibold">Tony Trần</Text>
-                                    </View>
-                                    <View className="flex-row items-center gap-x-[2px] ">
-                                        <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                        <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                        <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                        <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                        <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                    <Image source={item.matched_order?.avatar?.url} className="w-[48px] h-[48px]" />
+                                </View>
+                                <View className="flex-row">
+                                    <View>
+                                        <View className="flex-row items-center gap-x-2">
+                                            <Text className="text-[#1B1B1B] font-semibold"> {item.matched_order?.user.name} </Text>
+                                        </View>
+                                        <View className="flex-row items-center gap-x-[2px] ">
+                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                        </View>
                                     </View>
                                 </View>
                             </View>
-                        </View>
+                        }
                         <View className="bg-[#2DD4BF]  rounded-[80px]">
                             <Text className="text-white py-[2px] px-[6px]  text-center"> {item.status} </Text>
                         </View>

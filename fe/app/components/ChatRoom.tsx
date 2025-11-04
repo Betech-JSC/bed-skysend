@@ -27,6 +27,7 @@ interface ChatRoomProps {
 }
 
 export default function ChatRoom({ chatId }: ChatRoomProps) {
+
     const user = useSelector((state: RootState) => state.user);
     const [messages, setMessages] = useState<Message[]>([]);
     const [text, setText] = useState('');

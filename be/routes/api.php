@@ -19,8 +19,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Orders
     Route::get('orders', [OrderController::class, 'index']);
     Route::post('orders/create', [OrderController::class, 'create']);
-    Route::get('orders/{order}', [OrderController::class, 'show']);
-    Route::put('orders/{order}', [OrderController::class, 'updateStatus']);
+    Route::get('orders/{order}/show', [OrderController::class, 'show']);
+    Route::put('orders/{order}/status', [OrderController::class, 'updateStatus']);
     Route::delete('orders/{orderId}/cancel', [OrderController::class, 'cancel']);
     Route::post('orders/match', [OrderController::class, 'matchOrder']);
     Route::post('/orders/confirm-match', [OrderController::class, 'confirmMatch']);

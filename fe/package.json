@@ -13,6 +13,8 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
+    "@react-native-firebase/app": "^23.5.0",
+    "@react-native-firebase/messaging": "^23.5.0",
     "@react-navigation/native": "^7.1.8",
     "@react-navigation/stack": "^7.6.2",
     "@reduxjs/toolkit": "^2.9.2",
@@ -21,6 +23,7 @@
     "expo": "^54.0.0",
     "expo-constants": "~18.0.10",
     "expo-linking": "~8.0.8",
+    "expo-notifications": "~0.32.12",
     "expo-router": "~6.0.14",
     "expo-status-bar": "~3.0.8",
     "firebase": "^12.5.0",
@@ -41,6 +44,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~19.1.10",
+    "@types/react-native": "^0.73.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.25.1",
     "eslint-config-expo": "~10.0.0",

@@ -33,9 +33,6 @@ export default function Page() {
         <Pressable
           onPress={() => router.push("/home")}
         >
-          <View className="flex-col items-center">
-            <Text className="text-[#1B1B1B]đúng">Skip</Text>
-          </View>
         </Pressable>
         <Pressable
           onPress={handlePress}

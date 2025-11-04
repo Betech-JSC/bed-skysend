@@ -5,7 +5,6 @@ import ItemOrder from "../components/ItemOrder";
 import api from "@/api/api";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useOrderMatchList } from "@/hooks/useOrderMatchList";
 
 function ListOrder() {
     const user = useSelector((state: RootState) => state.user);
@@ -17,6 +16,7 @@ function ListOrder() {
 
     useEffect(() => {
         const fetchOrders = async () => {
+
             if (!role) return;
 
             try {

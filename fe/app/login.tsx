@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, Alert } from "react-native";
-import { useRouter } from "expo-router";
 import api from "@/api/api";
-
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useDispatch } from 'react-redux';
 import { setUser } from "@/reducers/userSlice";
 
 function Login() {
 
   const dispatch = useDispatch();
-
   const router = useRouter();
+  const { role } = useLocalSearchParams<{ role?: string }>();
+
   const [formData, setFormData] = useState({
     email: "admin@gmail.com",
     password: "admin@gmail.com",
@@ -37,7 +37,7 @@ function Login() {
         if (response.status === 200) {
           const { user } = response.data.data;
 
-          const userWithRole = { ...user, role: 'sender' };
+          const userWithRole = { ...user, role: role || "sender" };
 
           dispatch(setUser(userWithRole));
           router.push("/home");

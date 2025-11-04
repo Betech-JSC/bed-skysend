@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -45,6 +44,16 @@ class Order extends Model
         return $this->belongsTo(Region::class, 'delivery_location'); // delivery_location lưu region_id
     }
 
+    // Đơn đã match với đơn này
+    public function matchedOrder()
+    {
+        return $this->belongsTo(Order::class, 'matched_order_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     /**
      * Get the sender (user who created the order).
@@ -60,14 +69,6 @@ class Order extends Model
     public function carrier()
     {
         return $this->belongsTo(User::class, 'user_id')->where('role', 'carrier');
-    }
-
-    /**
-     * Get the matched order (if the order has been matched with another).
-     */
-    public function matchedOrder()
-    {
-        return $this->belongsTo(Order::class, 'matched_order_id');
     }
 
     public function images()
@@ -90,7 +91,23 @@ class Order extends Model
             'matched_order_id' => $this->matched_order_id,
             'shipping_fee' => $this->shipping_fee,
             'special_instructions' => $this->special_instructions,
-            'images' => $this->images->map(fn($img) => $img->transform()), // nếu OrderImage có transform
+            'chat_id' => $this->chat_id,
+            'images' => $this->images->map(fn($img) => $img->transform()),
+            'user' => [
+                'id' => $this->user->id,
+                'name' => $this->user->name,
+                'email' => $this->user->email,
+            ],
+            'matched_order' => $this->matchedOrder ? [
+                'id' => $this->matchedOrder->id,
+                'role' => $this->matchedOrder->role,
+                'status' => $this->matchedOrder->status,
+                'user' => [
+                    'id' => $this->matchedOrder->user->id,
+                    'name' => $this->matchedOrder->user->name,
+                    'email' => $this->matchedOrder->user->email,
+                ]
+            ] : null,
         ];
     }
 }
