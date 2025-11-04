@@ -46,54 +46,54 @@ const Profile = () => {
     return (
         <ScrollView>
             <View className="">
-                <View className="p-[16px] space-y-[12px]">
-                    <View className="p-[16px] bg-white rounded-[22px] space-y-[12px]">
-                        <View className="space-y-[12px]">
-                            <View className="flex-row space-x-[12px]">
-                                <Text className="font-semibold">Nguyễn Văn Minh</Text>
-                                <View className="bg-[#12B76A] rounded-[300px] px-[6px] py-[4px] flex-row space-x-[8px]">
+                <View className="p-[16px] gap-y-[12px]">
+                    <View className="p-[16px] bg-white rounded-[22px] gap-y-[12px]">
+                        <View className="gap-y-[12px]">
+                            <View className="flex-row gap-x-[12px]">
+                                <Text className="font-semibold"> {user.name} </Text>
+                                <View className="bg-[#12B76A] rounded-[300px] px-[6px] py-[4px] flex-row gap-x-[8px]">
                                     <Image source={require("../../assets/images/comfirm.webp")} />
                                     <Text className="text-white">
                                         Đã định danh</Text>
                                 </View>
                             </View>
-                            <View className="flex-row space-x-[12px]">
-                                <Text>051188005689</Text>
+                            <View className="flex-row gap-x-[12px]">
+                                <Text> {user.email} </Text>
                                 <Text>|</Text>
                                 <Text>Người gửi hàng</Text>
                             </View>
                         </View>
-                        <View className="flex-row space-x-[12px] ">
+                        <View className="flex-row gap-x-[12px] ">
                             <Pressable onPress={toggleRole} className="p-[10px]  rounded-[12px] bg-[#EFF8FF] w-1/2">
                                 <Text className="text-center text-[#1570EF]">
                                     {`Chuyển sang ${role === 'sender' ? 'Carrier' : 'Sender'}`}
                                 </Text>
                             </Pressable>
                             <View className="p-[10px]  rounded-[12px] bg-[#FFFAEB] w-1/2">
-                                <Text className="text-center text-[#F79009]">Xem hồ sơ</Text>
+                                <Text className="text-center text-[#F79009]">Cập nhật hồ sơ</Text>
                             </View>
                         </View>
                     </View>
-                    <View className="p-[16px] bg-white rounded-[22px] space-y-[12px]">
-                        <View className="space-y-[12px]">
+                    <View className="p-[16px] bg-white rounded-[22px] gap-y-[12px]">
+                        <View className="gap-y-[12px]">
                             <Text className="font-semibold">Đơn hàng</Text>
                         </View>
                         <ScrollView
                             horizontal={true}
                             showsHorizontalScrollIndicator={false}
                         >
-                            <View className="flex-row space-x-[12px]">
-                                <View className="space-y-[8px] flex-col items-center justify-center">
+                            <View className="flex-row gap-x-[12px]">
+                                <View className="gap-y-[8px] flex-col items-center justify-center">
                                     <Image source={require("../../assets/images/icon-order.webp")} />
                                     <Text className="text-center">Chờ xác nhận</Text>
                                 </View>
-                                <View className="space-y-[8px] flex-col items-center justify-center">
+                                <View className="gap-y-[8px] flex-col items-center justify-center">
                                     <Image source={require("../../assets/images/icon-order.webp")} />
                                     <Text className="text-center">Chờ lấy hàng</Text></View>
-                                <View className="space-y-[8px] flex-col items-center justify-center">
+                                <View className="gap-y-[8px] flex-col items-center justify-center">
                                     <Image source={require("../../assets/images/icon-order.webp")} />
                                     <Text className="text-center">Đang vận chuyển</Text></View>
-                                <View className="space-y-[8px] flex-col items-center justify-center">
+                                <View className="gap-y-[8px] flex-col items-center justify-center">
                                     <Image source={require("../../assets/images/icon-order.webp")} />
                                     <Text className="text-center">Hoàn thành</Text></View>
                             </View>
@@ -104,26 +104,8 @@ const Profile = () => {
                             <Image source={require("../../assets/images/icon-right.webp")} />
                         </View>
                     </View>
-                    <View className="p-[16px] bg-white rounded-[22px]  space-y-[12px]">
-                        <Text className="font-semibold">Liên kết thanh toán</Text>
-                        <View className="flex-row justify-center w-full">
-                            <View className="space-y-[8px]">
-                                <View className="space-y-[12px] flex-row justify-center">
-                                    <Image source={require("../../assets/images/icon-wallet.png")} />
-                                </View>
-                                <View className="w-full space-y-[8px]">
-                                    <View>
-                                        <Text>Chưa liên kết phương thức thanh toán nào</Text>
-                                    </View>
-                                    <View className=" border border-[#B2DDFF] py-[12px] rounded-[12px] w-full">
-                                        <Text className="text-[#007AFF] text-center font-semibold">Thêm phương thức thanh toán</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-                    <View className="p-[16px] bg-white rounded-[22px] space-y-[12px]">
-                        <View className="space-y-[12px]">
+                    <View className="p-[16px] bg-white rounded-[22px] gap-y-[12px]">
+                        <View className="gap-y-[12px]">
                             <Text className="font-semibold">Tổng quát</Text>
                         </View>
 

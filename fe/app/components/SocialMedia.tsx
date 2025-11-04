@@ -4,11 +4,11 @@ import { View, Text, Image, TouchableOpacity, Linking } from "react-native";
 const SocialMedia = () => {
 
     return (
-        <View className="space-y-[16px]">
+        <View className="gap-y-[16px]">
             <Text className="text-center">
                 Hoặc tiếp tục với
             </Text>
-            <View className="flex-row space-x-[16px]">
+            <View className="flex-row gap-x-[16px]">
                 {/* Google Button */}
                 <TouchableOpacity
                     onPress={() => { }}

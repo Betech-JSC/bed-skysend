@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { View, Text, TouchableOpacity, TextInput, Image, ScrollView, Pressable, Alert } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons'; // Icons
 import DateTimePicker from '@react-native-community/datetimepicker'; // Date Picker
@@ -81,15 +81,20 @@ function CreateOrder() {
 
     return (
         <>
+            <Stack.Screen
+                options={{
+                    title: "Tạo đơn hàng",
+                }}
+            />
             <View className="p-4 h-full">
-                <ScrollView className="space-y-[12px]">
-                    <View className="space-y-[12px] bg-white p-[12px] rounded-[12px]">
+                <ScrollView className="gap-y-[12px]">
+                    <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
                         <Text className="text-lg text-[#0F172A] mb-2">Hành trình của bạn</Text>
                         {/* Pickup and Delivery Locations */}
                         <LocationForm formData={formData} handleInputChange={handleInputChange} />
                     </View>
 
-                    <View className="space-y-[12px] bg-white p-[12px] rounded-[12px]">
+                    <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
                         <Text className="text-lg text-[#0F172A] mb-2">Thời gian khởi hành</Text>
                         {/* Date Picker for Flight Time */}
                         <TouchableOpacity
@@ -111,7 +116,7 @@ function CreateOrder() {
                         )}
                     </View>
 
-                    <View className="space-y-[12px] bg-white p-[12px] rounded-[12px]">
+                    <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
                         <Text className="text-lg text-[#0F172A] mb-2">Hàng hóa</Text>
                         <PackageSelector formData={formData} handleInputChange={handleInputChange} />
                         <TextInput
@@ -128,9 +133,9 @@ function CreateOrder() {
                         />
                     </View>
                     {/* Image Upload Section */}
-                    <View className="space-y-[12px] bg-white p-[12px] rounded-[12px]">
+                    <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
                         <View className="flex-row justify-center items-center py-[24px] border border-dashed border-[#D0D5DD] rounded-[12px]">
-                            <View className="flex-col items-center justify-center space-y-[12px]">
+                            <View className="flex-col items-center justify-center gap-y-[12px]">
                                 <TouchableOpacity onPress={handleImagePick}>
                                     <Image source={require("../../assets/images/upload.webp")} className="w-[28px]" />
                                     <Text>Tải ảnh hàng hóa</Text>
@@ -141,7 +146,7 @@ function CreateOrder() {
                         <View>
                             <Text className="text-[#0F172A] font-semibold">Ảnh đã tải lên:</Text>
                             {formData.images.length > 0 && (
-                                <View className=" flex-row space-x-2">
+                                <View className=" flex-row gap-x-2">
                                     {formData.images.map((image, index) => (
                                         <Image key={index} source={{ uri: image }} className="w-[100px] h-[100px] mt-2" />
                                     ))}
@@ -151,7 +156,7 @@ function CreateOrder() {
                     </View>
                 </ScrollView>
 
-                <View className="absolute inset-x-0 bottom-0 space-y-[16px] px-[20px] bg-white py-[40px]">
+                <View className="absolute inset-x-0 bottom-0 gap-y-[16px] px-[20px] bg-white py-[40px]">
                     <View className="flex-row justify-between items-center">
                         <Text>Chi phí đơn hàng</Text>
                         <Text className="text-[#109283] font-medium">50.000 vnđ</Text>

@@ -54,7 +54,7 @@ function ListOrder() {
     return (
         <>
             <Stack.Screen options={{ title: "Danh sách đơn hàng" }} />
-            <ScrollView className="flex-1 py-[12px] px-[16px] space-y-[20px]">
+            <ScrollView className="flex-1 py-[12px] px-[16px] gap-y-[20px]">
                 {orders.map((order) => (
                     <ItemOrder key={order.id} item={order} />
                 ))}

@@ -1,8 +1,5 @@
 import { Tabs } from 'expo-router';
 import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
-import { NativeWindStyleSheet } from 'nativewind';
-
-NativeWindStyleSheet.setOutput({ default: 'native' });
 
 export default function HomeTabsLayout() {
   return (

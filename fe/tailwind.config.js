@@ -1,8 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./src/**/*.{js,ts,jsx,tsx}', './app/**/*.{js,ts,jsx,tsx}'],
+  // NOTE: Update this to include the paths to all files that contain Nativewind classes.
+  content: ["./App.tsx", "./app/**/*.{js,jsx,ts,tsx}",],
+  presets: [require("nativewind/preset")],
   theme: {
-    extend: {},
+    extend: {
+      spacing: {
+        '4': '1rem',  // Đảm bảo spacing có sẵn
+      },
+    },
   },
   plugins: [],
   container: {
@@ -14,4 +20,4 @@ module.exports = {
       lg: '1200px', // Chiều rộng tối đa là 1200px trên màn hình lớn
     },
   },
-};
+}

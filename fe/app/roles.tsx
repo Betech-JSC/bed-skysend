@@ -22,16 +22,16 @@ const Roles = () => {
           title: "Roles",
         }}
       />
-      <View className="container py-[24px] px-[16px]">
-        <View className="space-y-2">
+      <View className="container py-[24px] px-[16px] bg-white">
+        <View className="gap-y-2">
           <Text className="text-center text-[28px] text-primary-600 font-bold text-[#1570EF]">Chọn vai trò để bắt đầu</Text>
           <View className="flex-row justify-center py-[48px]">
             <Image source={require("../assets/images/role.webp")} className="w-[261px] max-h-[278px]" />
           </View>
         </View>
-        <View className="w-full space-y-[12px]">
+        <View className="w-full gap-y-[12px]">
           <View className="flex-row w-full justify-between">
-            <View className="bg-[#0D6EFD] rounded-[12px] p-[12px] space-y-[8px] flex-1">
+            <View className="bg-[#0D6EFD] rounded-[12px] p-[12px] gap-y-[8px] flex-1">
               <Text className="font-bold text-center text-white text-[20px]">Người Gửi</Text>
               <Text className="text-center text-white">
                 Tạo yêu cầu vận chuyển, chờ người đi {'\n'} đường nhận giao.
@@ -39,7 +39,7 @@ const Roles = () => {
             </View>
           </View>
           <View className="flex-row w-full justify-between">
-            <View className="bg-white  rounded-[12px] p-[12px] space-y-[8px] flex-1">
+            <View className="bg-white  rounded-[12px] p-[12px] gap-y-[8px] flex-1">
               <Text className="font-bold text-center text-[#344054] text-[20px]">Người vận chuyển</Text>
               <Text className="text-center text-[#344054]">
                 Nhận đơn phù hợp với lịch trình, hỗ {'\n'} trợ giao hàng.

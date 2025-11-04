@@ -2,7 +2,6 @@ import React from 'react'
 import { View, Text, Image } from "react-native";
 import { useSelector } from 'react-redux';
 import useRole from '@/hooks/useRole';
-import useOrderMatch from '@/hooks/useOrderMatchList';
 
 const home = () => {
 
@@ -17,11 +16,11 @@ const home = () => {
                     <Image source={require("../../assets/images/banner-top.webp")} className="w-full" />
                     <View className="p-[24px] absolute inset-x-0">
                         <View className="flex-row justify-between items-center">
-                            <View className="flex-row space-x-[12px] items-center">
+                            <View className="flex-row gap-x-[12px] items-center">
                                 <View className="flex-row justify-center py-[48px]">
                                     <Image source={require("../../assets/images/avatar.webp")} className="w-[48px] h-[48px]" />
                                 </View>
-                                <View className="space-y-[2px]">
+                                <View className="gap-y-[2px]">
                                     <Text className="text-[#0F172A] font-bold text-[18px]"> {user.name} </Text>
                                     <Text className="text-[#344054]">{user.role} </Text>
                                 </View>
@@ -39,7 +38,7 @@ const home = () => {
                             Xem thêm
                         </Text>
                     </View>
-                    <View className="flex-col items-center py-[80px] space-y-[12px]">
+                    <View className="flex-col items-center py-[80px] gap-y-[12px]">
                         <Image source={require("../../assets/images/create-order.webp")} className="w-[64px] h-[64px]" />
                         <Text className="text-[#0F172A] font-semibold text-[16px]">
                             Tạo hành trình đầu tiên

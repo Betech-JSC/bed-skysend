@@ -8,7 +8,7 @@ function Register() {
 
   // Set up state for form data
   const [formData, setFormData] = useState({
-    name: "toannguyen ",
+    name: "toannguyen",
     email: "toan@gmail.com",
     password: "toan@gmail.com",
     confirmPassword: "toan@gmail.com",
@@ -49,9 +49,9 @@ function Register() {
       />
       <View className="px-[20px] py-[32px] bg-white h-full">
         <Text className="text-[24px] font-bold py-[16px]">Đăng ký</Text>
-        <View className="space-y-[24px]">
+        <View className="gap-y-[12px]">
           {/* name */}
-          <View className="space-y-[4px]">
+          <View className="gap-y-[4px]">
             <Text>Tên tài khoản</Text>
             <TextInput
               className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
@@ -62,7 +62,7 @@ function Register() {
           </View>
 
           {/* Email */}
-          <View className="space-y-[4px]">
+          <View className="gap-y-[4px]">
             <Text>Email</Text>
             <TextInput
               className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
@@ -73,7 +73,7 @@ function Register() {
           </View>
 
           {/* Password */}
-          <View className="space-y-[4px]">
+          <View className="gap-y-[4px]">
             <Text>Mật khẩu</Text>
             <TextInput
               className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
@@ -85,7 +85,7 @@ function Register() {
           </View>
 
           {/* Confirm Password */}
-          <View className="space-y-[4px]">
+          <View className="gap-y-[4px]">
             <Text>Nhập lại Mật khẩu</Text>
             <TextInput
               className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
@@ -97,7 +97,7 @@ function Register() {
           </View>
 
           {/* Submit Button */}
-          <View className="mt-[24px]">
+          <View>
             <Pressable onPress={handleSubmit} className="bg-[#0D6EFD] w-full py-[14px] px-[32px] rounded-[14px]">
               <Text className="text-center text-white">Hoàn tất đăng ký</Text>
             </Pressable>

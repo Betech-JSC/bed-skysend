@@ -22,32 +22,26 @@ function Main() {
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "Main",
-                }}
-            />
             <View className="flex-col justify-between  px-[20px] py-[32px] bg-white h-full">
                 <View className="flex-row justify-center py-[48px]">
                     <Image source={require("../assets/images/role.webp")} className="w-[261px] max-h-[278px]" />
                 </View>
-                <View className="space-y-[16px]">
+                <View className="gap-y-[12px]">
                     <Text className="text-center text-[24px] font-bold text-[#3C3C43]">Đăng nhập hoặc đăng ký</Text>
                     <Text className="text-center">Nhận tài khoản của Skysend để nhận các trải nghiệm tốt nhất về dịch vụ vận chuyển</Text>
-                    <View className="mt-[24px]">
+                    <View className="mt-[8px]">
                         <Pressable onPress={() => router.push("/login")} className="bg-[#0D6EFD] w-full  py-[14px] px-[32px] rounded-[14px]">
                             <Text className="text-center text-white">Đăng nhập</Text>
                         </Pressable>
                     </View>
-                    <View className="mt-[24px] ">
+                    <View className="mt-[8] ">
                         <Pressable onPress={() => router.push("/register")} className="bg-[#F2F2F7] w-full  py-[14px] px-[32px] rounded-[14px]">
                             <Text className="text-center text-[#0D6EFD] text-[17px] font-semibold">Bạn chưa có tài khoản đăng ký ngay</Text>
                         </Pressable>
                     </View>
-                    <View className="mt-[24px] ">
+                    <View className="mt-[12px]">
                         <SocialMedia />
                     </View>
-
                 </View>
                 <View>
                     <Text className="text-[#61677C]">

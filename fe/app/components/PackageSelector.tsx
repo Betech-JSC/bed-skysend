@@ -13,14 +13,14 @@ export default function PackageSelector({ formData, handleInputChange }) {
     };
 
     return (
-        <View className="flex-row items-center space-x-[12px]">
+        <View className="flex-row items-center gap-x-[12px]">
             {items.map((item) => {
                 const isSelected = formData.special_instructions === item.label;
                 return (
                     <TouchableOpacity
                         key={item.label}
                         onPress={() => selectItem(item.label)}
-                        className={`flex-row items-center space-x-[8px] py-[8px] px-[12px] rounded-[10px] border ${isSelected ? "border-blue-500 bg-blue-100" : "border-[#D0D5DD] bg-white"
+                        className={`flex-row items-center gap-x-[8px] py-[8px] px-[12px] rounded-[10px] border ${isSelected ? "border-blue-500 bg-blue-100" : "border-[#D0D5DD] bg-white"
                             }`}
                     >
                         <Image source={item.image} className="w-[24px] h-[24px]" />
