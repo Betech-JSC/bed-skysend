@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Storage;
+
 
 class UserController extends Controller
 {
@@ -35,6 +37,7 @@ class UserController extends Controller
     {
         $user = $request->user();
 
+        // Validate dữ liệu
         $validatedData = $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => [
@@ -43,15 +46,38 @@ class UserController extends Controller
                 'max:255',
                 Rule::unique('users')->ignore($user->id),
             ],
+            'phone' => 'sometimes|string|max:20',
+            'password' => 'sometimes|string|min:6|confirmed',
+            'avatar' => 'sometimes|image|max:2048', // file ảnh, max 2MB
         ]);
 
+        // Hash password nếu có
+        if (isset($validatedData['password'])) {
+            $validatedData['password'] = Hash::make($validatedData['password']);
+        }
+
+        // Lưu avatar nếu có
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $path = $file->store('avatars', 'public'); // lưu vào storage/app/public/avatars
+            $validatedData['avatar'] = $path;
+
+            // Xóa avatar cũ nếu muốn
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+        }
+
+        // Cập nhật user
         $user->update($validatedData);
 
         return response()->json([
             'message' => 'Cập nhật thông tin thành công',
             'user' => $user,
+            'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
         ]);
     }
+
 
     public function changePassword(Request $request)
     {
