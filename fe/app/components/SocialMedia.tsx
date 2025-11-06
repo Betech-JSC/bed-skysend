@@ -15,7 +15,7 @@ const SocialMedia = () => {
                     className="flex-1 flex-row border border-[#F2F2F7] rounded-[12px] justify-center py-[12px]"
                 >
                     <Image
-                        source={require("../../assets/images/social/google.webp")}
+                        source={require("@assets/images/social/google.webp")}
                         className="w-[24px] h-[24px]"
                     />
                 </TouchableOpacity>
@@ -26,7 +26,7 @@ const SocialMedia = () => {
                     className="flex-1 flex-row border border-[#F2F2F7] rounded-[12px] justify-center py-[12px]"
                 >
                     <Image
-                        source={require("../../assets/images/social/fb.webp")}
+                        source={require("@assets/images/social/fb.webp")}
                         className="w-[24px] h-[24px]"
                     />
                 </TouchableOpacity>

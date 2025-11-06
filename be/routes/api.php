@@ -11,6 +11,7 @@ use Kreait\Firebase\Factory;
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 Route::get('regions', [RegionsController::class, 'index']);
+Route::post('/users/save-token', [UserController::class, 'savePushToken']);
 
 Route::middleware('auth:sanctum')->group(function () {
 

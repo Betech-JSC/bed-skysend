@@ -101,22 +101,6 @@ class FirebaseService
     }
 
     /**
-     * Push tin nhắn realtime
-     */
-    public function pushChat(int $fromUserId, int $toUserId, string $message)
-    {
-        $chatPath = "chats/{$fromUserId}_{$toUserId}";
-        $data = [
-            'from' => $fromUserId,
-            'to' => $toUserId,
-            'message' => $message,
-            'timestamp' => now()->timestamp,
-        ];
-
-        return $this->push($chatPath, $data);
-    }
-
-    /**
      * Push thông báo realtime
      */
     public function pushNotification(int $userId, string $title, string $body, array $extra = [])
@@ -136,7 +120,6 @@ class FirebaseService
     {
         return $this->set("orders/{$order['id']}", $order);
     }
-
 
     public function checkAndMatchOrder($newOrder)
     {

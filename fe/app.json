@@ -1,8 +1,9 @@
 {
   "expo": {
     "name": "skysend",
-    "slug": "skysend",
+    "slug": "react-native-boilerplate",
     "version": "1.0.0",
+    "projectId": "363ab25f-f7bc-4a57-869d-c054d3e254f7",
     "web": {
       "favicon": "./assets/favicon.png"
     },
@@ -10,7 +11,20 @@
       "tsconfigPaths": true
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./local/assets/notification_icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "sounds": [
+            "./local/assets/notification_sound.wav",
+            "./local/assets/notification_sound_other.wav"
+          ],
+          "enableBackgroundRemoteNotifications": false
+        }
+      ]
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,12 +38,23 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.toannguyen112.reactnativeboilerplate",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.toannguyen112.reactnativeboilerplate"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "363ab25f-f7bc-4a57-869d-c054d3e254f7"
       }
     }
   }

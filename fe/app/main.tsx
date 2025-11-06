@@ -6,20 +6,6 @@ import SocialMedia from "./components/SocialMedia";
 function Main() {
     const router = useRouter();
 
-    const [formData, setFormData] = useState({
-        username: "",
-        password: "",
-    });
-
-    const handlePress = () => {
-        const { username, password } = formData;
-        if (username && password) {
-            alert("Login Successful");
-        } else {
-            alert("Please fill in both fields");
-        }
-    };
-
     return (
         <>
             <View className="flex-col justify-between  px-[20px] py-[32px] bg-white h-full">

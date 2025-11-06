@@ -6,7 +6,7 @@ function ItemOrder({ item }: any) {
     const router = useRouter();
 
     return (
-        <Pressable onPress={() => router.push(`home/orders/${item.id}`)}>
+        <Pressable onPress={() => router.push(`/orders/${item.id}`)}>
             <View className="bg-white p-[20px] mb-[12px] rounded-[12px] gap-y-[12px]">
                 <View className="gap-y-[12px]">
                     <View className="flex-row items-start justify-between ">
@@ -21,11 +21,11 @@ function ItemOrder({ item }: any) {
                                             <Text className="text-[#1B1B1B] font-semibold"> {item.matched_order?.user.name} </Text>
                                         </View>
                                         <View className="flex-row items-center gap-x-[2px] ">
-                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                            <Image source={require("../../assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("@assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("@assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("@assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("@assets/images/star.png")} className="w-[10px] h-[10px]" />
+                                            <Image source={require("@assets/images/star.png")} className="w-[10px] h-[10px]" />
                                         </View>
                                     </View>
                                 </View>

@@ -46,7 +46,6 @@ function Login() {
           Alert.alert("Đăng nhập thất bại", response.data.message || "Vui lòng thử lại.");
         }
       } catch (error) {
-        console.log(error);
         Alert.alert("Lỗi mạng", "Không thể kết nối đến server. Vui lòng thử lại.");
       }
     } else {

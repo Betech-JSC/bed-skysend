@@ -17,10 +17,10 @@ function CreateOrderSuccess() {
     useOrderMatchList(
         orders.map(o => o.id),
         (chatId) => {
-            // Điều hướng sang màn chat
             router.push(`home/chat/${chatId}`);
         }
     );
+
     useEffect(() => {
         const fetchOrders = async () => {
             if (!role) return;

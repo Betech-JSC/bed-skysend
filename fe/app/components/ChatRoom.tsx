@@ -10,7 +10,7 @@ import {
     Platform,
     StyleSheet,
 } from 'react-native';
-import { getDatabase, ref, onValue, push, serverTimestamp } from 'firebase/database';
+import { getDatabase, ref, onValue, push, serverTimestamp, get } from 'firebase/database';
 import { app } from '@/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
@@ -20,6 +20,7 @@ interface Message {
     sender_id: string;
     text: string;
     timestamp: number;
+    to?: number;
 }
 
 interface ChatRoomProps {
@@ -27,12 +28,26 @@ interface ChatRoomProps {
 }
 
 export default function ChatRoom({ chatId }: ChatRoomProps) {
-
     const user = useSelector((state: RootState) => state.user);
     const [messages, setMessages] = useState<Message[]>([]);
     const [text, setText] = useState('');
+    const [otherUserId, setOtherUserId] = useState<number | null>(null);
 
     const db = getDatabase(app);
+
+    // Lấy user khác từ node chat
+    useEffect(() => {
+        const chatRef = ref(db, `chats/${chatId}`);
+        get(chatRef).then(snapshot => {
+            const chat = snapshot.val();
+            console.log(chat?.users);
+
+            if (chat?.users) {
+                const other = chat.users.find((id: number) => id !== user.id);
+                setOtherUserId(other ?? null);
+            }
+        });
+    }, [chatId]);
 
     // Realtime listener
     useEffect(() => {
@@ -44,6 +59,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
                 sender_id: val.sender_id,
                 text: val.text,
                 timestamp: val.timestamp,
+                to: val.to,
             }));
             arr.sort((a, b) => a.timestamp - b.timestamp);
             setMessages(arr);
@@ -54,13 +70,17 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
 
     // Gửi tin nhắn
     const sendMessage = () => {
-        if (!text.trim()) return;
+
+        if (!text.trim() || !otherUserId) return;
+
         const messagesRef = ref(db, `chats/${chatId}/messages`);
         push(messagesRef, {
             text,
             sender_id: user.id,
+            to: otherUserId,
             timestamp: serverTimestamp(),
         });
+
         setText('');
     };
 

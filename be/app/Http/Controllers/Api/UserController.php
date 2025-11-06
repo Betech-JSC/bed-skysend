@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
@@ -10,6 +11,21 @@ use Laravel\Socialite\Facades\Socialite;
 
 class UserController extends Controller
 {
+
+    public function savePushToken(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'token' => 'required|string',
+        ]);
+
+        $user = User::find($request->user_id);
+        $user->fcm_token = $request->token; // hoặc expo_push_token
+        $user->save();
+
+        return response()->json(['success' => true]);
+    }
+
     public function show(Request $request)
     {
         return response()->json($request->user());
