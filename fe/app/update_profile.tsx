@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, Alert, ScrollView, Image } from "react-native";
+import {
+    View,
+    Text,
+    TextInput,
+    Pressable,
+    Alert,
+    ScrollView,
+    Image,
+    ActivityIndicator,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import api from "@/api/api";
 import { useSelector, useDispatch } from "react-redux";
@@ -18,7 +27,8 @@ export default function ProfileUpdate() {
         password_confirmation: "",
     });
 
-    const [avatar, setAvatar] = useState<string | null>(null); // local uri
+    const [avatar, setAvatar] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -29,7 +39,7 @@ export default function ProfileUpdate() {
                 password: "",
                 password_confirmation: "",
             });
-            setAvatar(user.avatar_url || null);
+            setAvatar(user.avatar || null);
         }
     }, [user]);
 
@@ -38,6 +48,12 @@ export default function ProfileUpdate() {
     };
 
     const pickImage = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+            Alert.alert("Quyền truy cập", "Vui lòng cấp quyền truy cập thư viện ảnh.");
+            return;
+        }
+
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality: 0.7,
@@ -52,9 +68,11 @@ export default function ProfileUpdate() {
         const { name, email, phone, password, password_confirmation } = formData;
 
         if (!name || !email) {
-            Alert.alert("Vui lòng điền đầy đủ thông tin");
+            Alert.alert("Thiếu thông tin", "Vui lòng nhập đầy đủ họ tên và email.");
             return;
         }
+
+        setLoading(true);
 
         try {
             const data = new FormData();
@@ -70,7 +88,6 @@ export default function ProfileUpdate() {
                 const filename = avatar.split("/").pop()!;
                 const match = /\.(\w+)$/.exec(filename);
                 const type = match ? `image/${match[1]}` : `image`;
-
                 data.append("avatar", {
                     uri: avatar,
                     name: filename,
@@ -78,19 +95,30 @@ export default function ProfileUpdate() {
                 } as any);
             }
 
-            const response = await api.put("user/profile", data, {
+            const response = await api.post("user/profile", data, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            if (response.status === 200) {
+            if (response.status === 200 && response.data?.user) {
                 dispatch(setUser(response.data.user));
-                Alert.alert("Cập nhật thành công");
+                Alert.alert("Thành công", "Cập nhật thông tin thành công!");
             } else {
-                Alert.alert("Cập nhật thất bại", response.data.message || "Vui lòng thử lại");
+                const message =
+                    response.data?.message ||
+                    Object.values(response.data?.errors || {}).join("\n") ||
+                    "Vui lòng thử lại.";
+                Alert.alert("Cập nhật thất bại", message);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            Alert.alert("Lỗi mạng", "Không thể kết nối server. Vui lòng thử lại.");
+            if (error.response?.data?.errors) {
+                const errMsg = Object.values(error.response.data.errors).join("\n");
+                Alert.alert("Lỗi", errMsg);
+            } else {
+                Alert.alert("Lỗi mạng", "Không thể kết nối đến server.");
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -107,7 +135,7 @@ export default function ProfileUpdate() {
                 <Text className="text-blue-600 mt-2">Đổi ảnh đại diện</Text>
             </Pressable>
 
-            {/* Name */}
+            {/* Họ tên */}
             <View className="mb-4">
                 <Text className="mb-1">Họ và tên</Text>
                 <TextInput
@@ -124,25 +152,25 @@ export default function ProfileUpdate() {
                 <TextInput
                     className="p-4 border border-gray-300 rounded-xl text-lg w-full"
                     placeholder="Nhập email"
-                    value={formData.email}
                     keyboardType="email-address"
+                    value={formData.email}
                     onChangeText={(v) => handleInputChange("email", v)}
                 />
             </View>
 
-            {/* Phone */}
+            {/* Số điện thoại */}
             <View className="mb-4">
                 <Text className="mb-1">Số điện thoại</Text>
                 <TextInput
                     className="p-4 border border-gray-300 rounded-xl text-lg w-full"
                     placeholder="Nhập số điện thoại"
-                    value={formData.phone}
                     keyboardType="phone-pad"
+                    value={formData.phone}
                     onChangeText={(v) => handleInputChange("phone", v)}
                 />
             </View>
 
-            {/* Password */}
+            {/* Mật khẩu */}
             <View className="mb-4">
                 <Text className="mb-1">Mật khẩu mới</Text>
                 <TextInput
@@ -154,6 +182,7 @@ export default function ProfileUpdate() {
                 />
             </View>
 
+            {/* Xác nhận mật khẩu */}
             <View className="mb-6">
                 <Text className="mb-1">Xác nhận mật khẩu</Text>
                 <TextInput
@@ -167,9 +196,17 @@ export default function ProfileUpdate() {
 
             <Pressable
                 onPress={handleUpdate}
-                className="bg-blue-600 w-full py-4 rounded-xl"
+                className={`bg-blue-600 w-full py-4 rounded-xl ${loading ? "opacity-70" : ""
+                    }`}
+                disabled={loading}
             >
-                <Text className="text-white text-center text-lg font-semibold">Cập nhật</Text>
+                {loading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text className="text-white text-center text-lg font-semibold">
+                        Cập nhật
+                    </Text>
+                )}
             </Pressable>
         </ScrollView>
     );

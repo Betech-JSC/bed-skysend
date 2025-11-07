@@ -24,7 +24,10 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
-        'fcm_token'
+        'fcm_token',
+        'avatar',
+        'first_name',
+        'last_name',
     ];
 
     /**
@@ -102,5 +105,14 @@ class User extends Authenticatable
                 $query->onlyTrashed();
             }
         });
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        if (!$this->avatar) {
+            return asset('images/default-avatar.png');
+        }
+
+        return asset('storage/' . $this->avatar);
     }
 }
