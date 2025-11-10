@@ -1,13 +1,14 @@
 import api from '@/api/api';
 import { useOrderMatchList } from '@/hooks/useOrderMatchList';
 import { RootState } from '@/store';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react'
-import { Button, Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 import { useSelector } from 'react-redux';
 
 function CreateOrderSuccess() {
     const router = useRouter();
+    const { order } = useLocalSearchParams();
 
     const user = useSelector((state: RootState) => state.user);
     const role = user?.role;
@@ -51,7 +52,9 @@ function CreateOrderSuccess() {
                         </View>
                     </View>
                     <View className="gap-y-[10px] py-[20px]">
-                        <Pressable onPress={() => router.push("/orders_details")}>
+                        <Pressable onPress={() => router.push({
+                            pathname: `/orders/${order.id}`
+                        })}>
                             <View className="bg-[#F5F6FA] rounded-[12px] py-[16px]">
                                 <Text className="text-[#0F172A] font-semibold text-center">Xem chi tiết đơn hàng</Text>
                             </View>

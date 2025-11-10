@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { View, ScrollView, Text, ActivityIndicator } from "react-native";
-import { Stack } from "expo-router";
 import api from "@/api/api";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
@@ -53,7 +52,6 @@ function ListOrder() {
 
     return (
         <>
-            <Stack.Screen options={{ title: "Danh sách đơn hàng" }} />
             <ScrollView className="flex-1 py-[12px] px-[16px] gap-y-[20px]">
                 {orders.map((order) => (
                     <ItemOrder key={order.id} item={order} />

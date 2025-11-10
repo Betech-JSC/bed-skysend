@@ -6,13 +6,17 @@ interface UserState {
     name: string | null;
     email: string | null;
     role: string | null;
+    password: string | null;
+    phone: string | null;
 }
 
 const initialState: UserState = {
     id: null,
     name: null,
+    password: null,
     email: null,
     role: null,
+    phone: null,
 };
 
 const userSlice = createSlice({

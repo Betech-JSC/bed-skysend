@@ -60,7 +60,7 @@ export default function ChatListScreen() {
     }, [user.id]);
 
     const openChat = (chatId: string) => {
-        router.push(`home/chat/${chatId}`);
+        router.push(`/chat/${chatId}`);
     };
 
     return (

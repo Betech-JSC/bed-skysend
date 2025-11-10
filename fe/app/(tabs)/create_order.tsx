@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { View, Text, TouchableOpacity, TextInput, Image, ScrollView, Pressable, Alert } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons'; // Icons
 import DateTimePicker from '@react-native-community/datetimepicker'; // Date Picker
@@ -69,7 +69,10 @@ function CreateOrder() {
 
             if (response.status === 200) {
                 Alert.alert('Tạo đơn thành công!', 'Đơn hàng của bạn đã được tạo.');
-                router.push('/create_order_success'); // Navigate to success page
+                router.push({
+                    pathname: '/create_order_success',
+                    params: { order: response.data.data.order.id },
+                }); // Navigate to success page
             } else {
                 Alert.alert('Tạo đơn thất bại', response.data.message || 'Vui lòng thử lại.');
             }
@@ -81,11 +84,6 @@ function CreateOrder() {
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "Tạo đơn hàng",
-                }}
-            />
             <View className="p-4 h-full">
                 <ScrollView className="gap-y-[12px]">
                     <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
@@ -94,9 +92,8 @@ function CreateOrder() {
                         <LocationForm formData={formData} handleInputChange={handleInputChange} />
                     </View>
 
-                    <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
+                    {/* <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
                         <Text className="text-lg text-[#0F172A] mb-2">Thời gian khởi hành</Text>
-                        {/* Date Picker for Flight Time */}
                         <TouchableOpacity
                             onPress={() => setShowDatePicker(true)}
                             className="flex-row items-center justify-between bg-white border border-[#D0D5DD] p-3 rounded-xl w-full"
@@ -114,30 +111,39 @@ function CreateOrder() {
                                 onChange={handleDateChange}
                             />
                         )}
-                    </View>
+                    </View> */}
 
                     <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
                         <Text className="text-lg text-[#0F172A] mb-2">Hàng hóa</Text>
                         <PackageSelector formData={formData} handleInputChange={handleInputChange} />
                         <TextInput
                             className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-                            placeholder="Cân nặng ước tính"
+                            placeholder="Cân nặng ước tính (kg)"
+                            keyboardType="numeric"
                             value={formData.package_weight}
-                            onChangeText={(text) => handleInputChange("package_weight", text)}
+                            onChangeText={(text) => {
+                                const numericText = text.replace(/[^0-9.]/g, '');
+                                handleInputChange("package_weight", numericText);
+                            }}
                         />
+
                         <TextInput
                             className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
                             placeholder="Ghi chú"
                             value={formData.shipment_description}
                             onChangeText={(text) => handleInputChange("shipment_description", text)}
+                            multiline={true}
+                            numberOfLines={4}
+                            textAlignVertical="top"
+                            style={{ minHeight: 120 }}
                         />
                     </View>
                     {/* Image Upload Section */}
-                    <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px]">
+                    <View className="gap-y-[12px] bg-white p-[12px] rounded-[12px] pb-[80px]">
                         <View className="flex-row justify-center items-center py-[24px] border border-dashed border-[#D0D5DD] rounded-[12px]">
-                            <View className="flex-col items-center justify-center gap-y-[12px]">
-                                <TouchableOpacity onPress={handleImagePick}>
-                                    <Image source={require("@assets/images/upload.webp")} className="w-[28px]" />
+                            <View className="flex-col items-center justify-center ">
+                                <TouchableOpacity onPress={handleImagePick} className="gap-y-[12px]">
+                                    <View className="flex-row justify-center"><Image source={require("@assets/images/upload.webp")} className="w-[28px]" /></View>
                                     <Text>Tải ảnh hàng hóa</Text>
                                 </TouchableOpacity>
                             </View>
@@ -146,7 +152,7 @@ function CreateOrder() {
                         <View>
                             <Text className="text-[#0F172A] font-semibold">Ảnh đã tải lên:</Text>
                             {formData.images.length > 0 && (
-                                <View className=" flex-row gap-x-2 justify-center">
+                                <View className=" flex-row gap-x-2 justify-center items-center">
                                     {formData.images.map((image, index) => (
                                         <Image key={index} source={{ uri: image }} className="w-[100px] h-[100px] mt-2" />
                                     ))}
@@ -156,7 +162,7 @@ function CreateOrder() {
                     </View>
                 </ScrollView>
 
-                <View className="absolute inset-x-0 bottom-0 gap-y-[16px] px-[20px] bg-white py-[40px]">
+                <View className="absolute inset-x-0 bottom-0 px-[20px] bg-white pb-[20px]">
                     <Pressable onPress={handleSubmit}>
                         <View className="bg-[#FFD700] rounded-[12px] py-[16px]">
                             <Text className="text-[#0F172A] font-semibold text-center">Tạo đơn</Text>

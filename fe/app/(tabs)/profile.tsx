@@ -48,9 +48,10 @@ const Profile = () => {
                         <View className="gap-y-[12px]">
                             <View className="flex-row gap-x-[12px]">
                                 <Text className="font-semibold"> {user.name} </Text>
+                                <Text className="font-semibold"> {user.phone} </Text>
                                 <View className="flex-row gap-x-[8px] rounded-[300px] bg-[#12B76A] px-[6px] py-[4px]">
                                     <Image source={require('@assets/images/comfirm.webp')} />
-                                    <Text className="text-white">Đã định danh</Text>
+                                    <Text className="text-white">Hoạt động</Text>
                                 </View>
                             </View>
                             <View className="flex-row gap-x-[12px]">
@@ -60,19 +61,17 @@ const Profile = () => {
                             </View>
                         </View>
                         <View className="flex-row gap-x-[12px] ">
-                            <Pressable
+                            <TouchableOpacity
                                 onPress={toggleRole}
                                 className="w-1/2 rounded-[12px] bg-[#EFF8FF] p-[10px]">
                                 <Text className="text-center text-[#1570EF]">
                                     {`Chuyển sang ${role === 'sender' ? 'Carrier' : 'Sender'}`}
                                 </Text>
-                            </Pressable>
+                            </TouchableOpacity>
                             <Pressable
                                 onPress={() => router.push('/update_profile')}
                                 className="w-1/2  rounded-[12px] bg-[#EFF8FF] p-[10px]">
-                                <View className="w-1/2 rounded-[12px] bg-[#FFFAEB] p-[10px]">
-                                    <Text className="text-center text-[#F79009]">Cập nhật hồ sơ</Text>
-                                </View>
+                                <Text className="text-center text-[#F79009]">Cập nhật hồ sơ</Text>
                             </Pressable>
                         </View>
                     </View>
@@ -88,22 +87,14 @@ const Profile = () => {
                                 </View>
                                 <View className="flex-col items-center justify-center gap-y-[8px]">
                                     <Image source={require('@assets/images/icon-order.webp')} />
-                                    <Text className="text-center">Chờ lấy hàng</Text>
-                                </View>
-                                <View className="flex-col items-center justify-center gap-y-[8px]">
-                                    <Image source={require('@assets/images/icon-order.webp')} />
-                                    <Text className="text-center">Đang vận chuyển</Text>
-                                </View>
-                                <View className="flex-col items-center justify-center gap-y-[8px]">
-                                    <Image source={require('@assets/images/icon-order.webp')} />
                                     <Text className="text-center">Hoàn thành</Text>
+                                </View>
+                                <View className="flex-col items-center justify-center gap-y-[8px]">
+                                    <Image source={require('@assets/images/icon-order.webp')} />
+                                    <Text className="text-center">Đã match</Text>
                                 </View>
                             </View>
                         </ScrollView>
-                        <View className="flex-row items-center justify-between border-t border-[#EAECF0] py-[12px]">
-                            <Text>Lịch sử đơn hàng</Text>
-                            <Image source={require('@assets/images/icon-right.webp')} />
-                        </View>
                     </View>
                     <View className="gap-y-[12px] rounded-[22px] bg-white p-[16px]">
                         <View className="gap-y-[12px]">

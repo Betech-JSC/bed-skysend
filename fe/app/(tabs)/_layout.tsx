@@ -32,10 +32,10 @@ export default function HomeTabsLayout() {
         }}
       />
 
-      {/* Create Order Tab (special button) */}
       <Tabs.Screen
         name="create_order"
         options={{
+          tabBarLabel: () => null,
           tabBarIcon: () => (
             <View style={styles.plusButton}>
               <Text style={{ fontSize: 30, color: '#fff' }}>+</Text>

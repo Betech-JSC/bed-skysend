@@ -59,8 +59,8 @@ function OrderDetails() {
                     <View className="bg-white p-[12px] rounded-[12px] gap-y-[12px]">
                         {/* Mô tả đơn hàng */}
                         <View className="gap-y-[4px]">
-                            <Text className="text-[#667085] font-medium">Mô tả</Text>
-                            <Text>{order.shipment_description}</Text>
+                            <Text className="text-[#667085] font-medium">Hàng hóa</Text>
+                            <Text>{order.special_instructions}</Text>
                         </View>
 
                         <View className="gap-y-[4px]">
@@ -70,7 +70,7 @@ function OrderDetails() {
 
                         <View className="gap-y-[4px]">
                             <Text className="text-[#667085] font-medium">Lời nhắn</Text>
-                            <Text>{order.special_instructions || "Không có"}</Text>
+                            <Text>{order.shipment_description || "Không có"}</Text>
                         </View>
 
                         {/* User đã match */}
@@ -107,11 +107,13 @@ function OrderDetails() {
 
             {/* Footer */}
             <View className="absolute inset-x-0 bottom-0 gap-y-[10px] px-[20px] bg-white py-[20px]">
-                <View className="bg-[#F5F6FA] rounded-[12px] py-[16px]">
-                    <Text className="font-semibold text-center text-[#D92D20]">
-                        Báo cáo sự cố
-                    </Text>
-                </View>
+                <Pressable onPress={() => router.push("/report")}>
+                    <View className="bg-[#F5F6FA] rounded-[12px] py-[16px]">
+                        <Text className="font-semibold text-center text-[#D92D20]">
+                            Báo cáo sự cố
+                        </Text>
+                    </View>
+                </Pressable>
                 <Pressable onPress={() => router.push("/successful_transaction")}>
                     <View className="bg-[#FFD700] rounded-[12px] py-[16px]">
                         <Text className="text-[#0F172A] font-semibold text-center">

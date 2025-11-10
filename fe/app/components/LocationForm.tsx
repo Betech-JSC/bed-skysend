@@ -61,7 +61,7 @@ export default function LocationForm({ formData, handleInputChange }) {
             </View>
 
             {/* Delivery */}
-            <View style={{ marginTop: 16, zIndex: openDelivery ? 3000 : 1000, elevation: openDelivery ? 3000 : 1000 }}>
+            <View style={{ marginTop: 2, zIndex: openDelivery ? 3000 : 1000, elevation: openDelivery ? 3000 : 1000 }}>
                 <DropDownPicker
                     open={openDelivery}
                     value={formData.delivery_location}

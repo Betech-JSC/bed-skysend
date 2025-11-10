@@ -17,11 +17,6 @@ export default function Page() {
         <View>
           <Image className="w-[50px] h-[50px]" source={require("../assets/icon.png")} />
         </View>
-        <View className="gap-x-[10px] flex-row">
-          <View className="w-[20px] h-[2px] bg-[#0D6EFD]"></View>
-          <View className="w-[20px] h-[2px] bg-gray-300"></View>
-          <View className="w-[20px] h-[2px] bg-gray-300"></View>
-        </View>
       </View>
       <View className="overflow-hidden">
         <Image source={require("../assets/images/onboard/onboard.png")} className="w-full h-auto max-h-[600px] object-cover object-bottom" />

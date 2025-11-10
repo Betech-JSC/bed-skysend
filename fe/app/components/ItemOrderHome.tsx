@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
 
-function ItemOrder({ item }: any) {
+function ItemOrderHome({ item }: any) {
 
     const router = useRouter();
 
@@ -45,7 +45,6 @@ function ItemOrder({ item }: any) {
                                 <Text className="font-semibold"> {item.pickup_location?.name} </Text>
                             </View>
                         </View>
-
                         <View className="flex-row items-center gap-x-2">
 
                             <View className="w-3 h-3 bg-blue-900 rounded-full" />
@@ -53,20 +52,7 @@ function ItemOrder({ item }: any) {
                                 <Text className="font-semibold"> {item.delivery_location?.name} </Text>
                             </View>
                         </View>
-                        <View className="flex-row items-center gap-x-[8px]">
-                            <View className="rounded-[80px]">
-                                {item.package_weight && <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">{item.package_weight} </Text>}
-                            </View>
-                            <View className="rounded-[80px]">
-                                {item.package_dimensions && <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">{item.package_dimensions} </Text>}
-                            </View>
-                        </View>
-                        <View className="flex-row items-center gap-x-[8px]">
-                            <View className="rounded-[80px]">
-                                {item.shipment_description && <Text className="py-[2px] px-[6px] bg-[#DCEDFF] ">{item.shipment_description} </Text>}
 
-                            </View>
-                        </View>
                     </View>
                 </View>
             </View>
@@ -74,4 +60,4 @@ function ItemOrder({ item }: any) {
     )
 }
 
-export default ItemOrder
+export default ItemOrderHome

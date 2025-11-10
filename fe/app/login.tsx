@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import api from "@/api/api";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useDispatch } from 'react-redux';
 import { setUser } from "@/reducers/userSlice";
 
 function Login() {
 
   const dispatch = useDispatch();
-  const router = useRouter();
   const { role } = useLocalSearchParams<{ role?: string }>();
 
   const [formData, setFormData] = useState({
