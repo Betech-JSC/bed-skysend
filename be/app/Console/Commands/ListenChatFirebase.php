@@ -51,7 +51,7 @@ class ListenChatFirebase extends Command
                             $user = \App\Models\User::find($toUserId);
 
                             if ($user && $user->fcm_token) {
-                                FCMService::sendNotification(
+                                ExpoPushService::sendNotification(
                                     $user->fcm_token,
                                     "Tin nhắn mới",
                                     $text,

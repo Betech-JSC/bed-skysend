@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "skysend",
+    "scheme": "skysend",
     "slug": "react-native-boilerplate",
     "version": "1.0.0",
     "projectId": "363ab25f-f7bc-4a57-869d-c054d3e254f7",
@@ -15,9 +16,21 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/icon.png",
           "color": "#ffffff",
           "defaultChannel": "default",
-          "enableBackgroundRemoteNotifications": false
+          "enableBackgroundRemoteNotifications": false,
+            "sounds": [
+            "./assets/noti.wav"
+          ]
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "skysend",
+          "organization": "betech-gg"
         }
       ]
     ],
@@ -38,7 +51,10 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesNonExemptEncryption": false
+      "usesNonExemptEncryption": false,
+      "config": {
+        "usesPushNotifications": true
+      }
     },
     "android": {
       "adaptiveIcon": {

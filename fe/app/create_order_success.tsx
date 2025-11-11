@@ -18,7 +18,7 @@ function CreateOrderSuccess() {
     useOrderMatchList(
         orders.map(o => o.id),
         (chatId) => {
-            router.push(`home/chat/${chatId}`);
+            router.push(`/chat/${chatId}`);
         }
     );
 

@@ -25,7 +25,7 @@ const Roles = () => {
           title: 'Roles',
         }}
       />
-      <View className="container bg-white px-[16px] py-[24px]">
+      <View className="container bg-white h-full px-[16px] py-[24px]">
         <View className="gap-y-2">
           <Text className="text-primary-600 text-center text-[28px] font-bold text-[#1570EF]">
             Chọn vai trò để bắt đầu

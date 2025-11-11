@@ -1,4 +1,3 @@
-// app/components/ChatRoom.tsx
 import React, { useEffect, useState } from 'react';
 import {
     View,
@@ -14,6 +13,7 @@ import { getDatabase, ref, onValue, push, serverTimestamp, get } from 'firebase/
 import { app } from '@/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { NotificationService } from '@/NotificationService';
 
 interface Message {
     id: string;
@@ -32,19 +32,27 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [text, setText] = useState('');
     const [otherUserId, setOtherUserId] = useState<number | null>(null);
+    const [otherUserPushToken, setOtherUserPushToken] = useState<string | null>(null);
 
     const db = getDatabase(app);
 
-    // Lấy user khác từ node chat
+    // Lấy user khác và token push
     useEffect(() => {
         const chatRef = ref(db, `chats/${chatId}`);
-        get(chatRef).then(snapshot => {
+        get(chatRef).then(async snapshot => {
             const chat = snapshot.val();
-            console.log(chat?.users);
 
             if (chat?.users) {
                 const other = chat.users.find((id: number) => id !== user.id);
                 setOtherUserId(other ?? null);
+
+                // Lấy token push từ user node
+                if (other) {
+                    const userRef = ref(db, `users/${other}`);
+                    const userSnap = await get(userRef);
+                    const otherUserData = userSnap.val() || {};
+                    setOtherUserPushToken(otherUserData.expo_push_token ?? null);
+                }
             }
         });
     }, [chatId]);
@@ -68,23 +76,31 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         return () => unsubscribe();
     }, [chatId]);
 
-    // Gửi tin nhắn
-    const sendMessage = () => {
-
+    // Gửi tin nhắn + push notification
+    const sendMessage = async () => {
         if (!text.trim() || !otherUserId) return;
 
         const messagesRef = ref(db, `chats/${chatId}/messages`);
-        push(messagesRef, {
+        await push(messagesRef, {
             text,
             sender_id: user.id,
             to: otherUserId,
             timestamp: serverTimestamp(),
         });
 
+        // Gửi push notification
+        if (otherUserPushToken) {
+            NotificationService.sendPushNotification(
+                otherUserPushToken,
+                "Tin nhắn mới",
+                text
+            );
+        }
+
         setText('');
     };
 
-    // Render từng message
+    // Render message
     const renderItem = ({ item }: { item: Message }) => {
         const isMe = item.sender_id === user.id;
         return (
@@ -138,7 +154,10 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         flexDirection: 'row',
-        padding: 8,
+        paddingBottom: 40,
+        paddingTop: 30,
+        paddingLeft: 20,
+        paddingRight: 20,
         borderTopWidth: 1,
         borderColor: '#ccc',
         alignItems: 'center',

@@ -6,6 +6,7 @@ import api from '@/api/api';
 import ItemOrder from 'app/components/ItemOrder';
 import { router } from 'expo-router';
 import ItemOrderHome from 'app/components/ItemOrderHome';
+import { useOrderMatchList } from '@/hooks/useOrderMatchList';
 
 const home = () => {
 
@@ -41,6 +42,13 @@ const home = () => {
 
         fetchOrders();
     }, [role]);
+
+    useOrderMatchList(
+        orders.map(o => o.id),
+        (chatId) => {
+            router.push(`/chat/${chatId}`);
+        }
+    );
 
     if (loading) {
         return (
@@ -84,12 +92,12 @@ const home = () => {
             <ScrollView className="gap-y-[12px] pb-[120px]">
                 {
                     orders.length === 0 ? (
-                        <>
+                        <View className='flex-col justify-center'>
                             <Image source={require("@assets/images/create-order.webp")} className="w-[64px] h-[64px]" />
                             <Text className="text-[#0F172A] font-semibold text-[16px]">
                                 Tạo hành trình đầu tiên
                             </Text>
-                        </>
+                        </View>
                     ) : <View className=" py-[12px] px-[16px]">
                         {orders.map((order) => (
                             <ItemOrderHome key={order.id} item={order} />
