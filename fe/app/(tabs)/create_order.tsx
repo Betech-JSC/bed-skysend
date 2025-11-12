@@ -224,7 +224,8 @@ function CreateOrder() {
                             onPress={() => pickImage(true)}
                             className="items-center gap-y-2"
                         >
-                            <View className="bg-blue-100 p-4 rounded-full">
+                            <View className="bg-blue-100 p-4 ro
+                            unded-full">
                                 <Image
                                     source={require("@assets/images/camera.webp")}
                                     className="w-8 h-8"

@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Alert } from "react-native";
 import { getDatabase, ref, onValue } from "firebase/database";
+import * as Notifications from "expo-notifications";
 import { app } from "@/firebaseConfig";
 import api from "@/api/api";
+import { Alert } from "react-native";
 
 const db = getDatabase(app);
 
@@ -24,7 +25,8 @@ export function useOrderMatchList(
 
         const unsubscribes = orderIds.map(orderId => {
             const matchRef = ref(db, `matches/${orderId}`);
-            return onValue(matchRef, snapshot => {
+
+            return onValue(matchRef, async snapshot => {
                 const data: MatchData = snapshot.val();
 
                 if (
@@ -35,12 +37,25 @@ export function useOrderMatchList(
 
                     const message = `Đơn ${orderId} đã được ghép với đơn ${data.matched_order_id}`;
 
+                    // 🔔 Gửi thông báo local bằng Expo Notifications
+                    await Notifications.scheduleNotificationAsync({
+                        content: {
+                            title: "Đơn hàng đã được ghép!",
+                            body: message,
+                            data: { orderId, matched_order_id: data.matched_order_id },
+                            sound: true,
+                        },
+                        trigger: null, // gửi ngay lập tức
+                    });
+
+                    // Nếu app đang mở, vẫn có thể hiển thị alert xác nhận
                     const confirmMatch = async () => {
                         try {
-                            const res = await api.post("/orders/confirm-match", { orderId, action: "confirm" });
-                            if (res.data.chat_id) {
-                                onConfirm(res.data.chat_id);
-                            }
+                            const res = await api.post("/orders/confirm-match", {
+                                orderId,
+                                action: "confirm",
+                            });
+                            if (res.data.chat_id) onConfirm(res.data.chat_id);
                         } catch (err) {
                             console.error("Error confirming match", err);
                         }
@@ -48,24 +63,22 @@ export function useOrderMatchList(
 
                     const rejectMatch = async () => {
                         try {
-                            await api.post("/orders/confirm-match", { orderId, action: "reject" });
+                            await api.post("/orders/confirm-match", {
+                                orderId,
+                                action: "reject",
+                            });
                             if (onReject) onReject(orderId);
-                            // Backend sẽ tự động match lại order khác → Firebase node cập nhật
-                            // Loại bỏ khỏi shownMatches để có thể show alert match mới
                             shownMatchesRef.current.delete(orderId);
                         } catch (err) {
                             console.error("Error rejecting match", err);
                         }
                     };
 
-                    Alert.alert(
-                        "Đơn hàng đã được ghép",
-                        message,
-                        [
-                            { text: "Từ chối", onPress: rejectMatch, style: "cancel" },
-                            { text: "Xác nhận", onPress: confirmMatch }
-                        ]
-                    );
+                    // (Tùy chọn) Nếu muốn vẫn hiển thị Alert khi app đang foreground
+                    Alert.alert("Đơn hàng đã được ghép", message, [
+                        { text: "Từ chối", onPress: rejectMatch, style: "cancel" },
+                        { text: "Xác nhận", onPress: confirmMatch },
+                    ]);
                 }
             });
         });
