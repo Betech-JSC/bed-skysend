@@ -1,10 +1,12 @@
 import axios from "axios";
 import { store } from "@/store"; // import store trực tiếp
+import { API_URL } from "@env";
+console.log(API_URL);
 
 // Tạo instance axios
 const api = axios.create({
     // baseURL: "http://192.168.1.92:8000/api",
-    baseURL: "http://localhost:8000/api",
+    baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
     },

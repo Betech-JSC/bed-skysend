@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { getDatabase, ref, onValue, get } from 'firebase/database';
-import { useNavigation } from '@react-navigation/native';
 import { app } from '@/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
