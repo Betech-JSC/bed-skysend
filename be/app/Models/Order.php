@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Order extends Model
 {
@@ -26,11 +27,13 @@ class Order extends Model
         'matched_order_id', // Liên kết với đơn đã được match
         'shipping_fee',
         'special_instructions',
+        'images',
     ];
 
     protected $casts = [
         'shipping_fee' => 'decimal:2', // Định dạng số cho phí vận chuyển
         'flight_time' => 'datetime', // Nếu có thời gian bay, cần ánh xạ vào kiểu datetime
+        'images' => 'array',
     ];
 
     // Trong Order.php
@@ -71,13 +74,11 @@ class Order extends Model
         return $this->belongsTo(User::class, 'user_id')->where('role', 'carrier');
     }
 
-    public function images()
-    {
-        return $this->hasMany(OrderImage::class);
-    }
-
     public function transform()
     {
+
+        $baseUrl = config('app.url');
+
         return [
             'id' => $this->id,
             'shipment_description' => $this->shipment_description,
@@ -92,7 +93,9 @@ class Order extends Model
             'shipping_fee' => $this->shipping_fee,
             'special_instructions' => $this->special_instructions,
             'chat_id' => $this->chat_id,
-            'images' => $this->images->map(fn($img) => $img->transform()),
+            'images' => $this->images
+                ? array_map(fn($path) => $baseUrl . Storage::url($path), $this->images)
+                : [],
             'user' => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,

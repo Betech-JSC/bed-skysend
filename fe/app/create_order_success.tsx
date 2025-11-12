@@ -1,40 +1,10 @@
-import api from '@/api/api';
-import { useOrderMatchList } from '@/hooks/useOrderMatchList';
-import { RootState } from '@/store';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react'
 import { Image, Pressable, Text, View } from "react-native";
-import { useSelector } from 'react-redux';
 
 function CreateOrderSuccess() {
     const router = useRouter();
     const { order } = useLocalSearchParams();
-
-    const user = useSelector((state: RootState) => state.user);
-    const role = user?.role;
-
-    const [orders, setOrders] = useState([]);
-
-    useOrderMatchList(
-        orders.map(o => o.id),
-        (chatId) => {
-            router.push(`/chat/${chatId}`);
-        }
-    );
-
-    useEffect(() => {
-        const fetchOrders = async () => {
-            if (!role) return;
-
-            const response = await api.get("orders", { params: { role } });
-
-            if (response.data.status === "success") {
-                setOrders(response.data.data.orders.data);
-            }
-        };
-
-        fetchOrders();
-    }, [role]);
 
     return (
         <>
@@ -52,9 +22,7 @@ function CreateOrderSuccess() {
                         </View>
                     </View>
                     <View className="gap-y-[10px] py-[20px]">
-                        <Pressable onPress={() => router.push({
-                            pathname: `/orders/${order.id}`
-                        })}>
+                        <Pressable onPress={() => router.push(`/orders/${order.id}`)}>
                             <View className="bg-[#F5F6FA] rounded-[12px] py-[16px]">
                                 <Text className="text-[#0F172A] font-semibold text-center">Xem chi tiết đơn hàng</Text>
                             </View>

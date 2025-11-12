@@ -41,8 +41,6 @@ function OrderDetails() {
         );
     }
 
-    console.log(order);
-
     return (
         <View className="container h-full">
             <View className="bg-white flex-row justify-between py-[12px] px-[16px]">
@@ -58,6 +56,23 @@ function OrderDetails() {
                 <View className="py-[12px] px-[16px] gap-y-[20px]">
                     <View className="bg-white p-[12px] rounded-[12px] gap-y-[12px]">
                         {/* Mô tả đơn hàng */}
+                        <View className="flex-row items-center gap-x-[6px]">
+                            {
+                                order.images && order.images.length > 0 ? (
+                                    order.images.map((imageUrl: string, index: number) => {
+                                        console.log(imageUrl);
+
+                                        return <Image
+                                            key={index}
+                                            source={{ uri: imageUrl }}
+                                            className="w-[60px] h-[60px] rounded-[8px]"
+                                        />
+                                    })
+                                ) : (
+                                    <Text className="text-[#667085]">Không có hình ảnh</Text>
+                                )
+                            }
+                        </View>
                         <View className="gap-y-[4px]">
                             <Text className="text-[#667085] font-medium">Hàng hóa</Text>
                             <Text>{order.special_instructions}</Text>

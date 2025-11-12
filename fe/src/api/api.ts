@@ -1,7 +1,6 @@
 import axios from "axios";
 import { store } from "@/store"; // import store trực tiếp
 import { API_URL } from "@env";
-console.log(API_URL);
 
 // Tạo instance axios
 const api = axios.create({

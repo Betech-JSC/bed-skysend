@@ -18,46 +18,47 @@ class OrderController extends Controller
 
     public function create(Request $request, FirebaseService $firebase)
     {
-        // Validate the incoming request
-        $validated = $request->validate([
-            'role' => 'required|in:sender,carrier',
-            'shipment_description' => 'required|string',
-            'pickup_location' => 'required|string',
-            'delivery_location' => 'required|string',
-            'flight_number' => 'nullable|string',
-            'flight_time' => 'nullable|date',
-            'package_weight' => 'nullable|numeric',
-            'package_dimensions' => 'nullable|string',
-            'special_instructions' => 'nullable|string',
-        ]);
+        \Log::info($request->all());
+        try {
+            // Validate the incoming request
+            $validated = $request->validate([
+                'role' => 'required|in:sender,carrier',
+                'shipment_description' => 'required|string',
+                'pickup_location' => 'required|string',
+                'delivery_location' => 'required|string',
+                'flight_number' => 'nullable|string',
+                'flight_time' => 'nullable|date',
+                'package_weight' => 'nullable|numeric',
+                'package_dimensions' => 'nullable|string',
+                'special_instructions' => 'nullable|string',
+                'images.*' => 'nullable|file|image|max:5120',
+            ]);
 
-        // Create the order
-        $order = Order::create([
-            'user_id' => auth()->id(),
-            'role' => $validated['role'],
-            'shipment_description' => $validated['shipment_description'],
-            'pickup_location' => $validated['pickup_location'],
-            'delivery_location' => $validated['delivery_location'],
-            'flight_number' => $validated['flight_number'] ?? null,
-            'flight_time' => $validated['flight_time'] ?? null,
-            'package_weight' => $validated['package_weight'] ?? null,
-            'package_dimensions' => $validated['package_dimensions'] ?? null,
-            'special_instructions' => $validated['special_instructions'] ?? null,
-            'status' => 'pending',
-        ]);
+            // Create the order
+            $order = Order::create([
+                'user_id' => auth()->id(),
+                'role' => $validated['role'],
+                'shipment_description' => $validated['shipment_description'],
+                'pickup_location' => $validated['pickup_location'],
+                'delivery_location' => $validated['delivery_location'],
+                'flight_number' => $validated['flight_number'] ?? null,
+                'flight_time' => $validated['flight_time'] ?? null,
+                'package_weight' => $validated['package_weight'] ?? null,
+                'package_dimensions' => $validated['package_dimensions'] ?? null,
+                'special_instructions' => $validated['special_instructions'] ?? null,
+                'status' => 'pending',
+                'images' => $request->hasFile('images') ? array_map(function ($image) {
+                    return $image->store('order_images', 'public');
+                }, $request->file('images')) : [],
+            ]);
 
-        // Save images if uploaded
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('order_images', 'public');
-                $order->images()->create(['image_path' => $path]);
-            }
+            $firebase->pushOrder($order->toArray());
+            $firebase->checkAndMatchOrder($order->toArray());
+
+            return ApiResponse::success(['order' => $order], 'Order created successfully and synced with Firebase');
+        } catch (\Throwable $th) {
+            \Log::info($th);
         }
-
-        $firebase->pushOrder($order->toArray());
-        $firebase->checkAndMatchOrder($order->toArray());
-
-        return ApiResponse::success(['order' => $order], 'Order created successfully and synced with Firebase');
     }
 
     public function confirmMatch(Request $request, FirebaseService $firebase)
