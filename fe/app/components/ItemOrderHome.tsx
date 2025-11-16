@@ -35,6 +35,23 @@ function ItemOrderHome({ item }: any) {
                             <Text className="text-white py-[2px] px-[6px]  text-center"> {item.status} </Text>
                         </View>
                     </View>
+                    <View className="flex-row items-center gap-x-[6px]">
+                        {
+                            item.images && item.images.length > 0 ? (
+                                item.images.map((imageUrl: string, index: number) => {
+                                    console.log(imageUrl);
+
+                                    return <Image
+                                        key={index}
+                                        source={{ uri: imageUrl }}
+                                        className="w-[60px] h-[60px] rounded-[8px]"
+                                    />
+                                })
+                            ) : (
+                                <Text className="text-[#667085]">Không có hình ảnh</Text>
+                            )
+                        }
+                    </View>
                     <View className="gap-y-3">
                         <View>
                             <Text className="font-medium text-[16px]">Đơn hàng {item.id} </Text>

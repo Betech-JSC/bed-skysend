@@ -38,38 +38,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::controller(AuthController::class)->group(function () {
-    Route::get('auth/{provider}/redirect', 'redirectToProvider'); // google / facebook
+    Route::get('auth/{provider}/redirect', 'redirectToProvider');
     Route::get('auth/{provider}/callback', 'handleProviderCallback');
-});
-
-
-Route::get('/test-firebase', function () {
-    try {
-        // Khởi tạo Firebase
-        $firebase = (new Factory)
-            ->withServiceAccount(base_path(config('services.firebase.credentials')))
-            ->withDatabaseUri(config('services.firebase.database_url'));
-
-        $database = $firebase->createDatabase();
-
-        // Ghi dữ liệu test
-        $ref = $database->getReference('test_connection')->set([
-            'message' => 'Firebase connected successfully!',
-            'connected_at' => now()->toDateTimeString(),
-        ]);
-
-        // Đọc lại dữ liệu vừa ghi
-        $data = $database->getReference('test_connection')->getValue();
-
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-            'status' => '✅ Connected successfully',
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => '❌ Firebase connection failed: ' . $e->getMessage(),
-        ], 500);
-    }
 });

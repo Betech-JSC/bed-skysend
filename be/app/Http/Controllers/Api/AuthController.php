@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\Controller;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -41,7 +42,7 @@ class AuthController extends Controller
                 'user' => array_merge($user->toArray(), ['token' => $token]),
             ], 'User created successfully');
         } catch (\Throwable $th) {
-            dd($th);
+            return ApiResponse::error('An error occurred: ' . $th->getMessage());
         }
     }
 
@@ -70,6 +71,8 @@ class AuthController extends Controller
             return ApiResponse::success([
                 'user' => array_merge($user->toArray(), ['token' => $token]),
             ], 'User Login successful');
+        } catch (ValidationException $e) {
+            return ApiResponse::validationError($e->validator);
         } catch (\Exception $e) {
             return ApiResponse::error('An error occurred while logging in: ' . $e->getMessage());
         }
@@ -81,44 +84,101 @@ class AuthController extends Controller
         return ApiResponse::success(null, 'Logged out successfully');
     }
 
+    /**
+     * Redirect to provider (Google/Facebook)
+     */
     public function redirectToProvider($provider)
     {
-        if (!in_array($provider, ['google', 'facebook'])) {
-            return response()->json(['error' => 'Unsupported provider'], 400);
+        $validProviders = ['google', 'facebook'];
+
+        if (!in_array($provider, $validProviders)) {
+            return ApiResponse::error('Unsupported provider', 400);
         }
 
-        return Socialite::driver($provider)->stateless()->redirect()->getTargetUrl();
+        try {
+            $redirectUrl = Socialite::driver($provider)
+                ->stateless()
+                ->redirect()
+                ->getTargetUrl();
+
+            return ApiResponse::success(['redirect_url' => $redirectUrl], 'Redirecting to ' . ucfirst($provider));
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to redirect: ' . $e->getMessage(), 500);
+        }
     }
 
-    public function handleProviderCallback($provider)
+    /**
+     * Handle callback from provider
+     */
+    public function handleProviderCallback(Request $request, $provider)
     {
-        try {
-            $socialUser = Socialite::driver($provider)->stateless()->user();
+        $validProviders = ['google', 'facebook'];
 
-            $user = User::where('provider_id', $socialUser->getId())
-                ->orWhere('email', $socialUser->getEmail())
+        if (!in_array($provider, $validProviders)) {
+            return ApiResponse::error('Unsupported provider', 400);
+        }
+
+        try {
+            // Lấy access_token từ frontend (Expo gửi qua POST)
+            $accessToken = $request->input('access_token');
+
+            if (!$accessToken) {
+                return ApiResponse::error('Access token is required', 400);
+            }
+
+            // Dùng access_token để lấy thông tin user từ provider
+            $socialUser = Socialite::driver($provider)
+                ->stateless()
+                ->userFromToken($accessToken);
+
+            // Tìm user theo provider_id hoặc email
+            $user = User::where('provider', $provider)
+                ->where('provider_id', $socialUser->getId())
                 ->first();
 
             if (!$user) {
-                $user = User::create([
-                    'name' => $socialUser->getName(),
-                    'email' => $socialUser->getEmail(),
-                    'provider' => $provider,
-                    'provider_id' => $socialUser->getId(),
-                    'password' => bcrypt(Str::random(16)), // random password
-                    'avatar' => $socialUser->getAvatar(),
-                ]);
+                // Kiểm tra email đã tồn tại chưa (tránh duplicate)
+                $existingUser = User::where('email', $socialUser->getEmail())->first();
+
+                if ($existingUser) {
+                    // Gộp tài khoản: cập nhật provider
+                    $existingUser->update([
+                        'provider' => $provider,
+                        'provider_id' => $socialUser->getId(),
+                        'avatar' => $socialUser->getAvatar(),
+                    ]);
+                    $user = $existingUser;
+                } else {
+                    // Tạo user mới
+                    $user = User::create([
+                        'name' => $socialUser->getName() ?? 'User',
+                        'email' => $socialUser->getEmail(),
+                        'provider' => $provider,
+                        'provider_id' => $socialUser->getId(),
+                        'password' => Hash::make(Str::random(16)),
+                        'avatar' => $socialUser->getAvatar(),
+                    ]);
+                }
+            } else {
+                // Cập nhật avatar nếu thay đổi
+                if ($user->avatar !== $socialUser->getAvatar()) {
+                    $user->avatar = $socialUser->getAvatar();
+                    $user->save();
+                }
             }
 
-            $token = $user->createToken('auth_token')->plainTextToken;
+            // Tạo token
+            $token = $user->createToken('MyApp')->plainTextToken;
 
-            return response()->json([
-                'status' => 'success',
-                'token' => $token,
-                'user' => $user,
-            ]);
+            return ApiResponse::success([
+                'user' => array_merge($user->toArray(), ['token' => $token]),
+            ], 'Social login successful');
+        } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
+            return ApiResponse::error('Invalid state. Please try again.', 400);
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            return ApiResponse::error('Invalid access token.', 401);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return ApiResponse::error('Authentication failed: ' . $e->getMessage(), 500);
         }
     }
 }

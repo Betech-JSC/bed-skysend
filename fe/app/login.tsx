@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, Alert, TouchableOpacity } from "react-native";
 import api from "@/api/api";
 import { useLocalSearchParams, router } from "expo-router";
 import { useDispatch } from 'react-redux';
@@ -14,8 +14,8 @@ function Login() {
   const { role } = useLocalSearchParams<{ role?: string }>();
 
   const [formData, setFormData] = useState({
-    email: "admin@gmail.com",
-    password: "admin@gmail.com",
+    email: role === 'sender' ? "admin@gmail.com" : "toan@gmail.com",
+    password: role === 'sender' ? "admin@gmail.com" : "toan@gmail.com",
   });
 
   const handleInputChange = (name: any, value: any) => {
@@ -32,23 +32,24 @@ function Login() {
       try {
         const response = await api.post("login", { email, password });
 
+
         if (response.status === 200) {
           const { user } = response.data.data;
           const userWithRole = { ...user, role: role || "sender" };
 
           // 1️⃣ Lấy expo push token
           let expoPushToken = '';
-          // if (Constants.isDevice) {
-          //   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-          //   let finalStatus = existingStatus;
-          //   if (existingStatus !== 'granted') {
-          //     const { status } = await Notifications.requestPermissionsAsync();
-          //     finalStatus = status;
-          //   }
-          //   if (finalStatus === 'granted') {
-          //     expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
-          //   }
-          // }
+          if (Constants.isDevice) {
+            const { status: existingStatus } = await Notifications.getPermissionsAsync();
+            let finalStatus = existingStatus;
+            if (existingStatus !== 'granted') {
+              const { status } = await Notifications.requestPermissionsAsync();
+              finalStatus = status;
+            }
+            if (finalStatus === 'granted') {
+              expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
+            }
+          }
 
           expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
 
@@ -99,12 +100,13 @@ function Login() {
           </View>
         </View>
         <View>
-          <Pressable
-            onPress={handlePress}
+          <TouchableOpacity
+            onPress={() => handlePress()
+            }
             className="bg-[#0D6EFD] w-full py-[14px] px-[32px] rounded-[14px]"
           >
             <Text className="text-center text-white">Đăng nhập</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
