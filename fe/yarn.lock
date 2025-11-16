@@ -6466,7 +6466,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-dev-client@npm:~6.0.16":
+"expo-dev-client@npm:~6.0.17":
   version: 6.0.17
   resolution: "expo-dev-client@npm:6.0.17"
   dependencies:
@@ -11266,7 +11266,7 @@ __metadata:
     expo-apple-authentication: "npm:~8.0.7"
     expo-auth-session: "npm:~7.0.8"
     expo-constants: "npm:~18.0.10"
-    expo-dev-client: "npm:~6.0.16"
+    expo-dev-client: "npm:~6.0.17"
     expo-facebook: "npm:12.2.0"
     expo-file-system: "npm:~19.0.17"
     expo-google-app-auth: "npm:~8.3.0"

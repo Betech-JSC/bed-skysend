@@ -23,14 +23,6 @@ export default function Page() {
     return () => subscription.remove();
   }, []);
 
-  const sendTest = async () => {
-    await NotificationService.sendLocalNotification({
-      title: "SkySend",
-      body: "Bạn có thông báo mới!",
-      attachments: [{ url: "@assets/icon.png" }], // hình lớn notification
-    });
-  };
-
   return (
     <>
       <Stack.Screen

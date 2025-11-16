@@ -5,6 +5,11 @@
     "slug": "react-native-boilerplate",
     "version": "1.0.0",
     "projectId": "363ab25f-f7bc-4a57-869d-c054d3e254f7",
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
+    "jsEngine": "hermes",
     "web": {
       "favicon": "./assets/favicon.png"
     },
@@ -20,7 +25,7 @@
           "color": "#ffffff",
           "defaultChannel": "default",
           "enableBackgroundRemoteNotifications": false,
-            "sounds": [
+          "sounds": [
             "./assets/noti.wav"
           ]
         }

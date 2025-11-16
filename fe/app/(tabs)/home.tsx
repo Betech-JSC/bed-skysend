@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, Image, ScrollView, ActivityIndicator, Pressable } from "react-native";
 import { useSelector } from 'react-redux';
-import { registerPushToken } from '@/notifications/registerPushToken';
 import api from '@/api/api';
 import ItemOrder from 'app/components/ItemOrder';
 import { router } from 'expo-router';
@@ -11,10 +10,6 @@ import { useOrderMatchList } from '@/hooks/useOrderMatchList';
 const home = () => {
 
     const user = useSelector((state) => state.user);
-
-    useEffect(() => {
-        registerPushToken(user.id);
-    }, []);
 
     const role = user?.role;
 
@@ -92,7 +87,7 @@ const home = () => {
             <ScrollView className="gap-y-[12px] pb-[120px]">
                 {
                     orders.length === 0 ? (
-                        <View className='flex-col justify-center'>
+                        <View className='flex-col items-center justify-center mt-[80px]'>
                             <Image source={require("@assets/images/create-order.webp")} className="w-[64px] h-[64px]" />
                             <Text className="text-[#0F172A] font-semibold text-[16px]">
                                 Tạo hành trình đầu tiên

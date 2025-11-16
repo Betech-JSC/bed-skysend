@@ -1,10 +1,10 @@
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, Pressable, Text, View } from 'react-native';
+import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
 
 const Roles = () => {
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string | null>('sender');
 
   const handlePress = () => {
     if (!selectedRole) {
@@ -39,7 +39,7 @@ const Roles = () => {
         </View>
         <View className="w-full gap-y-[12px]">
           <View className="w-full flex-row justify-between">
-            <Pressable
+            <TouchableOpacity
               onPress={() => setSelectedRole('sender')}
               className={`flex-1 gap-y-[8px] rounded-[12px] p-[12px] ${selectedRole === 'sender' ? 'bg-[#0D6EFD]' : 'border bg-white text-[#0D6EFD]'
                 }`}>
@@ -47,10 +47,10 @@ const Roles = () => {
               <Text className="text-center ">
                 Tạo yêu cầu vận chuyển, chờ người đi {'\n'} đường nhận giao.
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
           <View className="w-full flex-row justify-between">
-            <Pressable
+            <TouchableOpacity
               onPress={() => setSelectedRole('carrier')}
               className={`flex-1 gap-y-[8px] rounded-[12px] p-[12px] ${selectedRole === 'carrier' ? 'bg-[#0D6EFD]' : 'border border-[#0D6EFD] bg-white'
                 }`}>
@@ -58,15 +58,15 @@ const Roles = () => {
               <Text className="text-center ">
                 Nhận đơn phù hợp với lịch trình, hỗ {'\n'} trợ giao hàng.
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </View>
         <View className="mt-[24px]">
-          <Pressable
+          <TouchableOpacity
             onPress={handlePress}
             className="w-full rounded-[14px]  bg-[#0D6EFD] px-[32px] py-[14px]">
             <Text className="text-center text-white">Tiếp tục</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </View>
     </>
