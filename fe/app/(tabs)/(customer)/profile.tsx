@@ -86,7 +86,7 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Menu List */}
-                <View className="mt-8 px-4 space-y-4 pb-20">
+                <View className="mt-8 px-4 gap-y-4 pb-20">
                     {/* Group 1 */}
                     <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
                         {/* Hồ sơ & KYC */}

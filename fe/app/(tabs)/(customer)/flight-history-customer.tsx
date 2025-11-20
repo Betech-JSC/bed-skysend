@@ -155,7 +155,7 @@ export default function FlightHistoryScreen() {
                                         <Text className="text-sm font-semibold">{status.text}</Text>
                                     </View>
 
-                                    <TouchableOpacity className="h-9 px-4 rounded-full bg-primary justify-center items-center shadow-sm">
+                                    <TouchableOpacity onPress={() => router.push('edit-flight-customer')} className="h-9 px-4 rounded-full bg-primary justify-center items-center shadow-sm">
                                         <Text className="text-white text-sm font-medium">Xem chi tiết</Text>
                                     </TouchableOpacity>
                                 </View>

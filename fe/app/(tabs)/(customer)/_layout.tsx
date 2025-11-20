@@ -52,19 +52,7 @@ export default function CustomerLayout() {
                 }}
             />
 
-            {/* Tab giữa: ẨN HOÀN TOÀN khỏi tab bar, chỉ dùng để render FAB */}
-            <Tabs.Screen
-                name="create_order"
-                options={{
-                    tabBarButton: () => null, // Ẩn tab thật sự
-                }}
-                listeners={{
-                    tabPress: (e) => {
-                        e.preventDefault(); // Chặn navigation mặc định
-                        router.push('/(customer)/create_order');
-                    },
-                }}
-            />
+            <Tabs.Screen name="chat" options={{ title: "Chat", tabBarIcon: ({ color }) => <MaterialIcons name="chat" size={28} color={color} /> }} />
 
             {/* Tab 4 */}
             <Tabs.Screen

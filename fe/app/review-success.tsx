@@ -38,7 +38,7 @@ export default function ReviewSuccessScreen() {
             </View>
 
             {/* Bottom Buttons */}
-            <View className="p-4 space-y-3 bg-background-light dark:bg-background-dark">
+            <View className="p-4 gap-y-3 bg-background-light dark:bg-background-dark">
                 {/* Nút chính */}
                 <TouchableOpacity
                     onPress={() => router.push("/home")}

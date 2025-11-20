@@ -98,7 +98,7 @@ export default function NotificationScreen() {
 
             {/* Notification List */}
             <ScrollView className="flex-1">
-                <View className="px-4 pb-6 space-y-3">
+                <View className="px-4 pb-6 gap-y-3">
                     {hasNotifications ? (
                         filteredNotifications.map((notif) => (
                             <View

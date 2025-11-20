@@ -57,7 +57,7 @@ export default function FlightPostedSuccessScreen() {
                 </View>
 
                 {/* 2 nút dưới cùng */}
-                <View className="space-y-3">
+                <View className="gap-y-3">
                     <TouchableOpacity
                         onPress={() => router.push("/flight-detail")}
                         className="h-14 bg-primary rounded-lg justify-center items-center shadow-sm"

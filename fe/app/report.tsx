@@ -42,7 +42,7 @@ export default function ReportScreen({ navigation }) {
 
                 {/* Type */}
                 <Text className="text-sm text-gray-700 mb-2">Loại phản hồi</Text>
-                <View className="flex-row mb-4 space-x-3">
+                <View className="flex-row mb-4 gap-x-3">
                     {['Lỗi hệ thống', 'Vận đơn', 'Đề xuất'].map((type) => (
                         <TouchableOpacity
                             key={type}

@@ -13,10 +13,10 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import api from "@/api/api";
-import LocationForm from "../../components/LocationForm";
-import PackageSelector from "../../components/PackageSelector";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import LocationForm from "./components/LocationForm";
+import PackageSelector from "./components/PackageSelector";
 
 interface ImageFile {
     uri: string;

@@ -32,7 +32,7 @@ export default function RequestDetailScreen() {
             </View>
 
             <ScrollView className="flex-1 px-4 pb-32">
-                <View className="space-y-4">
+                <View className="gap-y-4">
 
                     {/* Chuyến bay */}
                     <View className="flex-row items-center gap-4 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">

@@ -178,7 +178,7 @@ export default function ConfirmRequestScreen() {
             {/* Footer cố định */}
             <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 shadow-lg">
                 <View className="max-w-lg mx-auto">
-                    <View className="space-y-2 mb-4 text-sm">
+                    <View className="gap-y-2 mb-4 text-sm">
                         <View className="flex-row justify-between">
                             <Text className="text-text-secondary dark:text-gray-400">
                                 Phí dịch vụ SkySend:

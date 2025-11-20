@@ -252,7 +252,7 @@ const home = () => {
 
                         <View className="h-px bg-gray-200 dark:bg-gray-700 my-4" />
 
-                        <View className="space-y-3">
+                        <View className="gap-y-3">
                             <View className="flex-row items-center">
                                 <MaterialIcons name="flight" size={20} color="#6B7280" />
                                 <Text className="ml-2 text-sm text-text-secondary dark:text-gray-300">
