@@ -4,8 +4,7 @@ import { API_URL } from "@env";
 
 // Tạo instance axios
 const api = axios.create({
-    baseURL: "https://mekongcuulongfruits.com/api",
-    // baseURL: API_URL,
+    baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
     },

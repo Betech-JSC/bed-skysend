@@ -17,7 +17,7 @@ const Profile = () => {
     const toggleRole = () => {
         if (!user) return;
 
-        const newRole: string = role === 'sender' ? 'carrier' : 'sender';
+        const newRole: string = role === 'sender' ? 'customer' : 'sender';
 
         dispatch(setUser({ ...user, role: newRole }));
     };
@@ -65,7 +65,7 @@ const Profile = () => {
                                 onPress={toggleRole}
                                 className="w-1/2 rounded-[12px] bg-[#EFF8FF] p-[10px]">
                                 <Text className="text-center text-[#1570EF]">
-                                    {`Chuyển sang ${role === 'sender' ? 'Carrier' : 'Sender'}`}
+                                    {`Chuyển sang ${role === 'sender' ? 'customer' : 'Sender'}`}
                                 </Text>
                             </TouchableOpacity>
                             <Pressable

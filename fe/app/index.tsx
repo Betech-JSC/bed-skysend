@@ -1,62 +1,50 @@
-import { router } from "expo-router";
-import { Image, Pressable, Text, View, Platform, Button } from "react-native";
-import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import * as Notifications from 'expo-notifications';
-import * as Permissions from 'expo-permissions';
-
+// app/index.tsx
+import React, { useEffect } from "react";
+import { View, Text, Image, Pressable } from "react-native";
+import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
 import '../global.css';
-import { NotificationService } from "@/NotificationService";
 
-export default function Page() {
+export default function Onboarding() {
+  const router = useRouter();
+  const user = useSelector((state: any) => state.user);
 
+  // DÙNG useEffect ĐỂ REDIRECT → KHÔNG GÂY LỖI RENDER
   useEffect(() => {
-    NotificationService.setup();
-  }, []);
+    if (user?.role === "sender") {
+      router.replace("/(sender)/home");
+    } else if (user?.role === "customer") {
+      router.replace("/(customer)/home_customer");
+    }
+  }, [user, router]);
 
-  useEffect(() => {
-
-    const subscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
-    });
-
-    return () => subscription.remove();
-  }, []);
+  // Nếu đã đăng nhập → không hiện gì (để redirect)
+  if (user?.role) {
+    return null;
+  }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
-      <View className="flex-1 justify-center p-[20px] bg-white h-full gap-y-[20px]">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Image className="w-[50px] h-[50px]" source={require("../assets/icon.png")} />
-          </View>
-        </View>
-        <View className="overflow-hidden">
-          <Image source={require("../assets/images/onboard/onboard.png")} className="w-full h-auto max-h-[600px] object-cover object-bottom" />
-        </View>
-        <View>
-          <Text className="font-bold text-[#1B1B1B] text-[24px]">Welcome to our skysend. we help you with your luggage</Text>
-        </View>
-        <View className="flex-row items-center justify-between gap-y-[40px]">
-          <Pressable
-            onPress={() => router.push("/home")}
-          >
-          </Pressable>
-          <Pressable
-            onPress={() => router.push("roles")}
-            className="bg-[#0D6EFD]  py-[14px] px-[32px] rounded-[14px]"
-          >
-            <Text className="text-white">Next</Text>
-          </Pressable>
-        </View>
+    <View className="flex-1 bg-white px-6 pt-12 justify-between">
+      <View>
+        <Image source={require("../assets/icon.png")} className="w-16 h-16 mb-10" />
+        <Image source={require("../assets/images/onboard/onboard.png")} className="w-full h-80" resizeMode="contain" />
+        <Text className="text-3xl font-bold text-center mt-12">SkySend</Text>
+        <Text className="text-lg text-center text-gray-600 mt-4 px-4">
+          Mang đồ giúp người khác – Kiếm tiền dễ dàng{'\n'}
+          Gửi đồ nhanh chóng – Tiết kiệm chi phí
+        </Text>
       </View>
-    </>
+
+      <View className="mb-12">
+        <Pressable
+          onPress={() => router.push("/roles")}
+          className="bg-primary py-5 rounded-2xl"
+        >
+          <Text className="text-white text-center text-xl font-bold">
+            Bắt đầu ngay
+          </Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
-
-

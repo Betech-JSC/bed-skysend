@@ -1,116 +1,175 @@
+// app/login.tsx  (hoặc app/(auth)/login.tsx)
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, Alert, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
 import api from "@/api/api";
 import { useLocalSearchParams, router } from "expo-router";
-import { useDispatch } from 'react-redux';
+import { useDispatch } from "react-redux";
 import { setUser } from "@/reducers/userSlice";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { getDatabase, ref, set } from "firebase/database";
 import { app } from "@/firebaseConfig";
 
-function Login() {
+export default function Login() {
   const dispatch = useDispatch();
   const { role } = useLocalSearchParams<{ role?: string }>();
 
   const [formData, setFormData] = useState({
-    email: role === 'sender' ? "admin@gmail.com" : "toan@gmail.com",
-    password: role === 'sender' ? "admin@gmail.com" : "toan@gmail.com",
+    email: role === "sender" ? "admin@gmail.com" : "toan@gmail.com",
+    password: role === "sender" ? "admin@gmail.com" : "toan@gmail.com",
   });
 
-  const handleInputChange = (name: any, value: any) => {
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (name: "email" | "password", value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePress = async () => {
+  const handleLogin = async () => {
     const { email, password } = formData;
 
-    if (email && password) {
-      try {
-        const response = await api.post("login", { email, password });
+    if (!email || !password) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ email và mật khẩu");
+      return;
+    }
 
+    setLoading(true);
 
-        if (response.status === 200) {
-          const { user } = response.data.data;
-          const userWithRole = { ...user, role: role || "sender" };
+    try {
+      const response = await api.post("login", { email, password });
 
-          // 1️⃣ Lấy expo push token
-          let expoPushToken = '';
+      if (response.status === 200) {
+        const { user } = response.data.data;
+
+        // Gán role từ param (sender hoặc customer)
+        const userWithRole = {
+          ...user,
+          role: role === "sender" ? "sender" : "customer", // ép kiểu rõ ràng
+        };
+
+        // Lấy Expo Push Token (chỉ trên thiết bị thật)
+        let expoPushToken = "";
+        try {
           if (Constants.isDevice) {
-            const { status: existingStatus } = await Notifications.getPermissionsAsync();
-            let finalStatus = existingStatus;
-            if (existingStatus !== 'granted') {
-              const { status } = await Notifications.requestPermissionsAsync();
-              finalStatus = status;
-            }
-            if (finalStatus === 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            if (status === "granted") {
               expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
             }
+          } else {
+            // Emulator thì dùng token giả hoặc bỏ qua
+            expoPushToken = "ExponentPushToken[emulator]";
           }
-
-          expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
-
-          // 2️⃣ Lưu token vào Firebase
-          if (expoPushToken) {
-            const db = getDatabase(app);
-            await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
-
-            // 3️⃣ Lưu vào redux và chuyển màn hình
-            dispatch(setUser(userWithRole));
-            router.push("/home");
-          }
-
-        } else {
-          Alert.alert("Đăng nhập thất bại", response.data.message || "Vui lòng thử lại.");
+        } catch (error) {
+          console.warn("Không lấy được push token:", error);
         }
-      } catch (error) {
-        Alert.alert("Lỗi mạng", "Không thể kết nối đến server. Vui lòng thử lại.");
+
+        // Lưu token lên Firebase nếu có
+        if (expoPushToken && user.id) {
+          const db = getDatabase(app);
+          await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
+        }
+
+        // Lưu user vào Redux
+        dispatch(setUser(userWithRole));
+
+        // QUAN TRỌNG: Redirect đúng theo role + cấu trúc folder mới
+        if (userWithRole.role === "sender") {
+          router.replace("/(sender)/home");
+        } else {
+          router.replace("/(customer)/home_customer");
+        }
+      } else {
+        Alert.alert("Đăng nhập thất bại", response.data.message || "Sai email hoặc mật khẩu");
       }
-    } else {
-      Alert.alert("Vui lòng điền đầy đủ thông tin");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      Alert.alert(
+        "Lỗi kết nối",
+        error.response?.data?.message || "Không thể kết nối đến server"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View className="px-[20px] py-[32px] bg-white h-full">
-      <Text className="text-[24px] font-bold py-[16px]">Đăng nhập</Text>
-      <View className="gap-y-[24px]">
-        <View className="gap-y-[24px]">
-          <View className="gap-y-[4px]">
-            <Text>Tên tài khoản</Text>
-            <TextInput
-              className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-              placeholder="Nhập tên tài khoản"
-              value={formData.email}
-              onChangeText={(value) => handleInputChange("email", value)}
-            />
-          </View>
-          <View className="gap-y-[4px]">
-            <Text>Mật khẩu</Text>
-            <TextInput
-              className="p-4 border border-gray-300 rounded-[16px] text-lg w-full"
-              placeholder="Nhập mật khẩu"
-              secureTextEntry
-              value={formData.password}
-              onChangeText={(value) => handleInputChange("password", value)}
-            />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1 bg-white"
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <View className="flex-1 justify-center px-5 py-8">
+          {/* Logo hoặc tiêu đề */}
+          <Text className="text-3xl font-bold text-center text-primary mb-2">SkySend</Text>
+          <Text className="text-lg text-center text-gray-600 mb-10">
+            Đăng nhập {role === "sender" ? "người gửi" : "khách hàng"}
+          </Text>
+
+          {/* Form */}
+          <View className="gap-y-6">
+            <View>
+              <Text className="text-gray-700 mb-2 font-medium">Email</Text>
+              <TextInput
+                className="border border-gray-300 rounded-2xl px-4 py-4 text-base"
+                placeholder="nhập email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={formData.email}
+                onChangeText={(v) => handleInputChange("email", v)}
+                editable={!loading}
+              />
+            </View>
+
+            <View>
+              <Text className="text-gray-700 mb-2 font-medium">Mật khẩu</Text>
+              <TextInput
+                className="border border-gray-300 rounded-2xl px-4 py-4 text-base"
+                placeholder="nhập mật khẩu"
+                secureTextEntry
+                value={formData.password}
+                onChangeText={(v) => handleInputChange("password", v)}
+                editable={!loading}
+              />
+            </View>
+
+            <TouchableOpacity
+              onPress={handleLogin}
+              disabled={loading}
+              className={`mt-6 py-4 rounded-2xl ${loading ? "bg-blue-400" : "bg-primary"
+                }`}
+            >
+              <Text className="text-white text-center text-lg font-bold">
+                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Nút chuyển role (test nhanh) */}
+            <View className="flex-row justify-center gap-4 mt-8">
+              <TouchableOpacity
+                onPress={() => router.push("/login?role=sender")}
+                className="px-4 py-2 bg-gray-200 rounded-lg"
+              >
+                <Text>Test Sender</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push("/login?role=customer")}
+                className="px-4 py-2 bg-gray-200 rounded-lg"
+              >
+                <Text>Test Customer</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-        <View>
-          <TouchableOpacity
-            onPress={() => handlePress()
-            }
-            className="bg-[#0D6EFD] w-full py-[14px] px-[32px] rounded-[14px]"
-          >
-            <Text className="text-center text-white">Đăng nhập</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-
-export default Login;

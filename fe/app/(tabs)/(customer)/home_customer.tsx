@@ -183,35 +183,6 @@ export default function HomeScreen() {
                 </View>
             </ScrollView>
 
-            {/* Bottom Navigation */}
-            <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg rounded-t-xl border-t border-gray-200 dark:border-gray-700">
-                <View className="flex-row justify-around items-center h-20">
-                    <Link href="/(tabs)" asChild>
-                        <TouchableOpacity className="items-center gap-1">
-                            <MaterialIcons name="home" size={28} color="#2563EB" />
-                            <Text className="text-xs font-bold text-primary">Trang chủ</Text>
-                        </TouchableOpacity>
-                    </Link>
-                    <Link href="/orders" asChild>
-                        <TouchableOpacity className="items-center gap-1">
-                            <MaterialIcons name="work" size={28} color="#6B7280" />
-                            <Text className="text-xs text-gray-500">Đơn hàng</Text>
-                        </TouchableOpacity>
-                    </Link>
-                    <Link href="/wallet" asChild>
-                        <TouchableOpacity className="items-center gap-1">
-                            <MaterialIcons name="account-balance-wallet" size={28} color="#6B7280" />
-                            <Text className="text-xs text-gray-500">Ví tiền</Text>
-                        </TouchableOpacity>
-                    </Link>
-                    <Link href="/profile" asChild>
-                        <TouchableOpacity className="items-center gap-1">
-                            <MaterialIcons name="person" size={28} color="#6B7280" />
-                            <Text className="text-xs text-gray-500">Tài khoản</Text>
-                        </TouchableOpacity>
-                    </Link>
-                </View>
-            </View>
         </SafeAreaView>
     );
 }
