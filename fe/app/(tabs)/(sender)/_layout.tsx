@@ -16,6 +16,7 @@ export default function SenderLayout() {
             <Tabs.Screen name="list_orders" options={{ title: "Đơn hàng", tabBarIcon: ({ color }) => <MaterialIcons name="work" size={28} color={color} /> }} />
             <Tabs.Screen name="wallet" options={{ title: "Ví tiền", tabBarIcon: ({ color }) => <MaterialIcons name="account-balance-wallet" size={28} color={color} /> }} />
             <Tabs.Screen name="profile" options={{ title: "Tài khoản", tabBarIcon: ({ color }) => <MaterialIcons name="person" size={28} color={color} /> }} />
+            <Tabs.Screen name="chat" options={{ title: "Chat", tabBarIcon: ({ color }) => <MaterialIcons name="chat" size={28} color={color} /> }} />
         </Tabs>
     );
 }
