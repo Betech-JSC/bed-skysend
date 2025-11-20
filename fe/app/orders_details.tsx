@@ -1,110 +1,130 @@
-import { useRouter } from "expo-router";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import React from "react";
+import {
+    SafeAreaView,
+    ScrollView,
+    View,
+    Text,
+    TouchableOpacity,
+    ImageBackground,
+} from "react-native";
+import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 
-function OrdersDetails() {
-
-    const router = useRouter();
-
+export default function OrderDetailScreen() {
     return (
-        <>
-            <View className="container h-full">
-                <View className="bg-white flex-row justify-between py-[12px] px-[16px]">
-                    <Text className="text-[#344054]">Đơn hàng #12345</Text>
-                    <View className="rounded-[80px] overflow-hidden"><Text className="text-center bg-[#2DD4BF]  text-white py-[2px] px-[8px]">Đang vận chuyển</Text></View>
+        <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+            {/* Top App Bar */}
+            <View className="flex-row items-center justify-between px-4 py-3 bg-card-light dark:bg-card-dark shadow-sm">
+                <TouchableOpacity>
+                    <MaterialIcons name="arrow-back" size={28} color="#2463EB" />
+                </TouchableOpacity>
+                <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                    Chi tiết đơn hàng
+                </Text>
+                <View className="w-10" />
+            </View>
+
+            <ScrollView className="flex-1 px-4 pb-32">
+                {/* Progress Bar */}
+                <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
+                    <View className="flex-row justify-between mb-3">
+                        <Text className="font-bold text-base">Đang vận chuyển</Text>
+                        <Text className="text-sm font-medium text-secondary-light dark:text-secondary-dark">
+                            3/4 bước
+                        </Text>
+                    </View>
+
+                    <View className="h-2 bg-border-light dark:bg-border-dark rounded-full overflow-hidden">
+                        <View className="h-full bg-primary rounded-full" style={{ width: "75%" }} />
+                    </View>
+
+                    <View className="flex-row justify-between mt-2 text-xs text-secondary-light dark:text-secondary-dark">
+                        <Text>Tìm đối tác</Text>
+                        <Text>Ghép nối</Text>
+                        <Text className="font-bold text-primary">Vận chuyển</Text>
+                        <Text>Hoàn thành</Text>
+                    </View>
                 </View>
-                <ScrollView>
-                    <View className="py-[12px] px-[16px] gap-y-[20px]">
-                        <View className="bg-white p-[12px] rounded-[12px] gap-y-[12px]">
-                            <View className="gap-y-[12px]">
-                                <View className="flex-row items-center gap-x-[6px]">
-                                    <Image source={require("../assets/images/bag.png")} className="rounded-[4px] w-[48px] h-[48px]" />
-                                    <Image source={require("../assets/images/bag.png")} className="rounded-[4px] w-[48px] h-[48px]" />
-                                    <Image source={require("../assets/images/bag.png")} className="rounded-[4px] w-[48px] h-[48px]" />
-                                </View>
-                                <View className="flex-row gap-x-[8px]">
-                                    <View className="py-[2px] px-[8px] bg-[#D3E8FF] rounded-[30px] font-medium">
-                                        <Text className="font-medium">500.000 VNĐ</Text>
-                                    </View>
-                                    <View className="py-[2px] px-[8px] bg-[#FFF5E0] rounded-[30px] font-medium">
-                                        <Text className="text-[#FF9500]">Luggage - 2kg</Text>
-                                    </View>
-                                </View>
-                                <View className="gap-y-[12px]">
-                                    <View className="gap-y-[4px]">
-                                        <Text className="text-[#667085] font-medium" >Cân nặng</Text>
-                                        <Text>8kg</Text>
-                                    </View>
-                                    <View className="gap-y-[4px]">
-                                        <Text className="text-[#667085] font-medium" >Lời nhắn</Text>
-                                        <Text>Giao trước 10h sáng, vui lòng giữ thẳng đứng</Text>
-                                    </View>
-                                </View>
-                                <View className="flex-row items-center justify-between ">
-                                    <View className="gap-x-[12px] flex-row items-center">
-                                        <View>
-                                            <Image source={require("../assets/images/avatar.webp")} className="w-[48px] h-[48px]" />
-                                        </View>
-                                        <View className="flex-row">
-                                            <View>
-                                                <View className="flex-row items-center gap-x-2">
-                                                    <Text className="text-[#1B1B1B] font-semibold">Tony Trần</Text>
-                                                    <View className="bg-[#2DD4BF]  rounded-[80px]">
-                                                        <Text className="text-white py-[2px] px-[6px]  text-center">Verified</Text>
-                                                    </View>
-                                                </View>
-                                                <View className="flex-row items-center gap-x-[2px] ">
-                                                    <Image source={require("../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                                    <Image source={require("../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                                    <Image source={require("../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                                    <Image source={require("../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                                    <Image source={require("../assets/images/star.png")} className="w-[10px] h-[10px]" />
-                                                </View>
-                                            </View>
-                                        </View>
-                                    </View>
 
-                                </View>
-                                <View className="gap-y-4">
-                                    <View className="flex-row items-center gap-x-[8px]">
-                                        <Image source={require("../assets/images/icon-flight.webp")} className="w-[24px] h-[24px]" />
-                                        <View>
-                                            <Text>Chuyến bay VN662</Text>
-                                            <Text>Đang bay – 1h20m còn lại</Text>
-                                        </View>
-                                    </View>
-                                    <View className="flex-row items-center gap-x-2">
-                                        <View className="w-3 h-3 bg-blue-500 rounded-full" />
-                                        <View className="flex-1">
-                                            <Text className="font-semibold">Hồ Chí Minh (SGN)</Text>
-                                            <Text className="text-gray-600">10.08.2025, 10:00</Text>
-                                        </View>
-                                    </View>
-
-                                    <View className="flex-row items-center gap-x-2">
-                                        <View className="w-3 h-3 bg-blue-900 rounded-full" />
-                                        <View className="flex-1">
-                                            <Text className="font-semibold">Hà Nội (HAN)</Text>
-                                            <Text className="text-gray-600">10.08.2025, 15:00</Text>
-                                        </View>
-                                    </View>
-                                </View>
+                {/* Thông tin đơn hàng */}
+                <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
+                    <Text className="text-lg font-bold mb-4">Thông tin đơn hàng</Text>
+                    {[
+                        { icon: "flight-takeoff", label: "Tuyến đường", value: "SGN → HAN" },
+                        { icon: "schedule", label: "Thời gian", value: "10:00 - 12:00, 25/12/2023" },
+                        { icon: "folder", label: "Loại tài liệu", value: "Hợp đồng kinh doanh" },
+                        { icon: "payments", label: "Giá trị", value: "500.000 VNĐ" },
+                    ].map((item, i) => (
+                        <View key={i} className="flex-row items-center gap-3 mb-4 last:mb-0">
+                            <MaterialIcons name={item.icon as any} size={24} color="#2463EB" />
+                            <View>
+                                <Text className="text-sm text-secondary-light dark:text-secondary-dark">
+                                    {item.label}
+                                </Text>
+                                <Text className="font-semibold text-base">{item.value}</Text>
                             </View>
                         </View>
-                    </View>
-                </ScrollView>
-                <View className="absolute inset-x-0 bottom-0 gap-y-[10px] px-[20px] bg-white py-[20px]">
-                    <View className="bg-[#F5F6FA] rounded-[12px] py-[16px]">
-                        <Text className="font-semibold text-center text-[#D92D20]">Báo cáo sự cố</Text>
-                    </View>
-                    <Pressable onPress={() => router.push("/successful_transaction")}>
-                        <View className="bg-[#FFD700] rounded-[12px] py-[16px]">
-                            <Text className="text-[#0F172A] font-semibold text-center">Xác nhận nhận hàng</Text>
+                    ))}
+                </View>
+
+                {/* Thông tin đối tác */}
+                <View className="flex-row bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4 gap-4">
+                    <View className="flex-1">
+                        <Text className="text-lg font-bold mb-1">Thông tin đối tác</Text>
+                        <Text className="font-semibold text-base">Nguyễn Văn An</Text>
+                        <View className="flex-row items-center gap-1 mt-1 text-sm text-secondary-light dark:text-secondary-dark">
+                            <FontAwesome5 name="star" size={16} color="#facc15" solid />
+                            <Text className="font-medium text-text-primary-light dark:text-text-primary-dark">
+                                4.9
+                            </Text>
+                            <Text>• Đã hoàn thành 25 chuyến</Text>
                         </View>
-                    </Pressable>
+                        <TouchableOpacity className="mt-3 px-4 py-2 border border-border-light dark:border-border-dark rounded-lg">
+                            <Text className="text-sm font-semibold text-primary">Xem hồ sơ</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <ImageBackground
+                        source={{
+                            uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCFo5XDeGQQixCh592qCFO1BMjesd1MZYmbBe-vvMxPKdvwpOWnDZAf5B4lVwDge5nGrI1PY0IPj_XlKGudJV8BR605QD4mXxJaoSOnCLFtAXAmsiP_UdmQjyLOiDIgnX9oYHMVaGN5ze6QFC1b8CFh14sj4c_4lKg8Mf8c4JjN8WZENlqsB9wXW4IZl4WpLGmxR6I75Qla6G9TDvud5DkN3GExhodb6zDKbwkb3HHyphaWXV_7ONs_JyP_blfhAUjgxop2VuqCcrrC",
+                        }}
+                        className="w-20 h-20 rounded-full overflow-hidden"
+                        resizeMode="cover"
+                    />
+                </View>
+
+                {/* Thanh toán */}
+                <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm">
+                    <Text className="text-lg font-bold mb-3">Thanh toán</Text>
+                    <View className="flex-row gap-3">
+                        <MaterialIcons name="lock" size={20} color="#F97316" className="mt-1" />
+                        <View className="flex-1">
+                            <Text className="font-semibold text-base">
+                                Tiền đang được SkySend giữ
+                            </Text>
+                            <Text className="text-sm text-secondary-light dark:text-secondary-dark mt-1">
+                                Trạng thái này đảm bảo an toàn cho cả hai bên. Tiền sẽ được chuyển cho đối tác khi đơn hàng hoàn thành.
+                            </Text>
+                        </View>
+                    </View>
+                    <TouchableOpacity className="mt-3 px-4 py-2 bg-primary/10 dark:bg-primary/20 rounded-lg self-start">
+                        <Text className="text-primary font-semibold text-sm">
+                            Xem chi tiết giao dịch
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+
+            {/* Floating Action Button */}
+            <View className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background-light dark:from-background-dark to-transparent pointer-events-none">
+                <View className="pointer-events-auto">
+                    <TouchableOpacity className="flex-row items-center justify-center bg-primary h-12 rounded-xl shadow-lg shadow-primary/30 mx-4">
+                        <MaterialIcons name="chat" size={20} color="white" />
+                        <Text className="text-white font-bold text-base ml-2">
+                            Mở chat với Nguyễn Văn An
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </View>
-        </>
-    )
+        </SafeAreaView>
+    );
 }
-
-export default OrdersDetails

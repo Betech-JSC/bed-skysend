@@ -8,6 +8,20 @@ module.exports = {
       spacing: {
         '4': '1rem',  // Đảm bảo spacing có sẵn
       },
+      colors: {
+        primary: "#2463eb",
+        secondary: "#F97316",
+        "background-light": "#F5F7FB",
+        "background-dark": "#111621",
+        "text-primary-light": "#1F2937",
+        "text-primary-dark": "#F5F7FB",
+        "text-secondary-light": "#6b7280",
+        "text-secondary-dark": "#9ca3af",
+        "card-light": "#ffffff",
+        "card-dark": "#1F2937",
+        "border-light": "#e5e7eb",
+        "border-dark": "#374151",
+      },
     },
   },
   plugins: [],

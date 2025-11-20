@@ -6,7 +6,6 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Services\OrderMatcherService;
 use App\Services\FirebaseService;
 
 class OrderController extends Controller
@@ -16,7 +15,7 @@ class OrderController extends Controller
      */
 
 
-    public function create(Request $request, FirebaseService $firebase)
+    public function create(Request $request)
     {
         \Log::info($request->all());
         try {
@@ -52,8 +51,8 @@ class OrderController extends Controller
                 }, $request->file('images')) : [],
             ]);
 
-            $firebase->pushOrder($order->toArray());
-            $firebase->checkAndMatchOrder($order->toArray());
+            // $firebase->pushOrder($order->toArray());
+            // $firebase->checkAndMatchOrder($order->toArray());
 
             return ApiResponse::success(['order' => $order], 'Order created successfully and synced with Firebase');
         } catch (\Throwable $th) {
@@ -179,46 +178,5 @@ class OrderController extends Controller
         $order->update(['status' => 'cancelled']);
 
         return ApiResponse::success(['order' => $order], 'Order cancelled successfully');
-    }
-
-    /**
-     * Match two orders.
-     */
-    public function matchOrder(Request $request)
-    {
-        $validated = $request->validate([
-            'order_id' => 'required|exists:orders,id',
-            'matched_order_id' => 'required|exists:orders,id',
-        ]);
-
-        $order = Order::findOrFail($validated['order_id']);
-        $matchedOrder = Order::findOrFail($validated['matched_order_id']);
-
-        // Tạo chat node mới
-        $chatRef = app('firebase.database')->getReference('chats')->push([]);
-        $chatId = $chatRef->getKey();
-
-        // Cập nhật order đã match
-        $order->update([
-            'matched_order_id' => $matchedOrder->id,
-            'status' => 'matched',
-            'chat_id' => $chatId,
-        ]);
-
-        $matchedOrder->update([
-            'matched_order_id' => $order->id,
-            'status' => 'matched',
-            'chat_id' => $chatId,
-        ]);
-
-        // Push notification realtime tới 2 user
-        $this->pushNotification($order->user_id, 'Order Matched', 'Your order has been matched!', ['chat_id' => $chatId]);
-        $this->pushNotification($matchedOrder->user_id, 'Order Matched', 'Your order has been matched!', ['chat_id' => $chatId]);
-
-        return ApiResponse::success([
-            'order' => $order,
-            'matched_order' => $matchedOrder,
-            'chat_id' => $chatId
-        ], 'Orders matched successfully');
     }
 }
