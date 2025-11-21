@@ -233,7 +233,7 @@ const home = () => {
                     <View className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm mb-4">
                         <View className="flex-row items-center">
                             <Image
-                                source={{ uri: "https://lh3.googleusercontent.com/... (link ảnh Bình An)" }}
+                                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCt1uclnQVmRt4FpXFSBOmqwkd7L1z-v6wELp4awVZPFJvpgEMQxPwfI81Umsb1Ioxb-8x74MbwZwQBQx5BULoT206OeocHce63_UGWhTcJvyO1fbozdfC0OrBdgAOzmPd8-HoiOSZ9qsA0VuBkeqq9V3kRCrtRsvlkWLeQ8trYnuKqRCBjLQ3saRSJfc-1LxeUOPZ8gt5cjbqA_SU9KMzQhTRlXgzWWR9n_tHcDczWFQNsBgsN-Gk7_2fNPqRYhcISQtax1Wcc8gaC" }}
                                 className="w-14 h-14 rounded-full mr-4"
                             />
                             <View className="flex-1">

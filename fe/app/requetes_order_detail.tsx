@@ -170,7 +170,7 @@ export default function OrderDetailScreen() {
             <View className="absolute bottom-0 left-0 right-0 bg-background-light/80 dark:bg-background-dark/80 p-4 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700">
                 <View className="gap-y-3">
                     <TouchableOpacity
-                        onPress={() => router.push('/sender_profile')}
+                        onPress={() => router.push('/customer_profile')}
                         className="w-full h-12 rounded-xl bg-primary justify-center shadow-lg shadow-primary/30"
                     >
                         <Text className="text-center text-base font-bold text-white">

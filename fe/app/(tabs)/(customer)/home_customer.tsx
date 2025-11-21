@@ -111,7 +111,7 @@ export default function HomeScreen() {
 
                     <Input label="Khối lượng cho phép cho tài liệu (kg)" placeholder="VD: 5" keyboardType="numeric" />
 
-                    <TouchableOpacity className="mt-6 h-14 bg-primary rounded-lg justify-center items-center">
+                    <TouchableOpacity onPress={() => router.push('flight_posted_success')} className="mt-6 h-14 bg-primary rounded-lg justify-center items-center">
                         <Text className="text-white text-base font-bold">Đăng chuyến bay</Text>
                     </TouchableOpacity>
                 </View>
@@ -140,7 +140,7 @@ export default function HomeScreen() {
                                 </Text>
                                 <Text className="text-base font-bold text-primary mt-1">+ {item.reward}</Text>
                             </View>
-                            <TouchableOpacity className="mt-4 bg-secondary rounded-lg py-2.5 items-center">
+                            <TouchableOpacity onPress={() => router.push('order_accepted_success')} className="mt-4 bg-secondary rounded-lg py-2.5 items-center">
                                 <Text className="text-white font-bold text-sm">Nhận ngay</Text>
                             </TouchableOpacity>
                         </View>
