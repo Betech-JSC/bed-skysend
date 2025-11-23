@@ -16,10 +16,18 @@ import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useOrderMatchList } from '@/hooks/useOrderMatchList';
 import CitySelectModal from '../../components/CitySelectModal';
-import useApi from '../../../hooks/useApi';
+import ItemTypeSelect from '../../components/ItemTypeSelect';
+import { useApi } from '../../../hooks/useApi';
+interface RootState {
+  user: {
+    role?: string;
+    token?: string;
+    [key: string]: any;
+  };
+}
 
-const home = () => {
-  const user = useSelector((state) => state.user);
+const Home = () => {
+  const user = useSelector((state: RootState) => state.user);
   const role = user?.role;
 
   const [orders, setOrders] = useState([]);
@@ -31,8 +39,8 @@ const home = () => {
   const [arrivalCity, setArrivalCity] = useState({ value: '', label: '' });
   const [date, setDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
-  // const [documentType, setDocumentType] = useState('');
-  // const [estimatedValue, setEstimatedValue] = useState('');
+  const [itemType, setItemType] = useState('');
+  const [itemValue, setItemValue] = useState('');
 
   // Use API call hook
   const { callApi, loading: searchLoading } = useApi();
@@ -84,28 +92,19 @@ const home = () => {
       return;
     }
 
-    // Convert date from dd-mm-yyyy to yyyy-mm-dd for API
-    const convertDateFormat = (dateStr: string) => {
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1]}-${parts[0]}`; // yyyy-mm-dd
-      }
-      return dateStr;
-    };
-
-    const formattedDate = convertDateFormat(date);
-
-    // Prepare params for API
+    // Prepare params for API (date already in yyyy-mm-dd format)
     const searchParams = {
       from_airport: departureCity.value,
       to_airport: arrivalCity.value,
-      date: formattedDate,
+      date: date, // Already in yyyy-mm-dd format
       time_slot: timeSlot,
+      ...(itemType && { item_type: itemType }),
+      ...(itemValue && { item_value: itemValue }),
     };
 
     console.log('Dữ liệu gửi lên API:', searchParams);
 
-    // Call API using useApiCall hook
+    // Call API using useApi hook
     const result = await callApi('flights/search', {
       method: 'GET',
       params: searchParams,
@@ -119,7 +118,7 @@ const home = () => {
             departureLabel: departureCity.label,
             arrivalCode: arrivalCity.value,
             arrivalLabel: arrivalCity.label,
-            date: formattedDate,
+            date: date,
             timeSlot: timeSlot,
             searchResults: JSON.stringify(data.data || []),
           },
@@ -227,47 +226,38 @@ const home = () => {
             </View>
 
             {/* Loại tài liệu - COMMENTED */}
-            {/* <View className="col-span-2">
-                            <Text className="text-sm font-medium text-text-primary dark:text-gray-300 pb-2">
-                                Loại tài liệu
-                            </Text>
-                            <View className="relative">
-                                <MaterialIcons
-                                    name="description"
-                                    size={20}
-                                    color="#6b7280"
-                                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                                />
-                                <TextInput
-                                    placeholder="Tài liệu thông thường"
-                                    value={documentType}
-                                    onChangeText={setDocumentType}
-                                    className="pl-10 pr-4 h-14 bg-background-light dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base text-text-primary dark:text-white"
-                                />
-                            </View>
-                        </View> */}
+            <View className="col-span-2">
+              <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
+                Loại tài liệu
+              </Text>
+              <ItemTypeSelect
+                placeholder="Chọn loại tài liệu"
+                value={itemType}
+                onValueChange={(value, label) => setItemType(value)}
+              />
+            </View>
 
             {/* Giá trị ước tính - COMMENTED */}
-            {/* <View className="col-span-2">
-                            <Text className="text-sm font-medium text-text-primary dark:text-gray-300 pb-2">
-                                Giá trị ước tính tài liệu (VND)
-                            </Text>
-                            <View className="relative">
-                                <MaterialIcons
-                                    name="payments"
-                                    size={20}
-                                    color="#6b7280"
-                                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                                />
-                                <TextInput
-                                    placeholder="Ví dụ: 5,000,000"
-                                    keyboardType="numeric"
-                                    value={estimatedValue}
-                                    onChangeText={setEstimatedValue}
-                                    className="pl-10 pr-4 h-14 bg-background-light dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base text-text-primary dark:text-white"
-                                />
-                            </View>
-                        </View> */}
+            <View className="col-span-2">
+              <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
+                Giá trị ước tính tài liệu (VND)
+              </Text>
+              <View className="relative">
+                <MaterialIcons
+                  name="payments"
+                  size={20}
+                  color="#6b7280"
+                  style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                />
+                <TextInput
+                  placeholder="Ví dụ: 5,000,000"
+                  keyboardType="numeric"
+                  value={itemValue}
+                  onChangeText={setItemValue}
+                  className="text-text-primary h-14 rounded-lg border border-gray-200 bg-background-light pl-10 pr-4 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+              </View>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -300,6 +290,12 @@ const home = () => {
               </Text>
               <Text className="text-xs text-gray-600 dark:text-gray-400">
                 time_slot: {timeSlot || 'Chưa nhập'}
+              </Text>
+                <Text className="text-xs text-gray-600 dark:text-gray-400">
+                item_type: {itemType || 'Chưa nhập'}
+              </Text>
+                 <Text className="text-xs text-gray-600 dark:text-gray-400">
+                item_value: {itemValue || 'Chưa nhập'}
               </Text>
               <Text className="mt-2 text-xs italic text-gray-500 dark:text-gray-500">
                 API endpoint: GET /api/flights/search
@@ -404,4 +400,4 @@ const home = () => {
   );
 };
 
-export default home;
+export default Home;
