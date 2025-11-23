@@ -60,19 +60,18 @@ class OrderController extends Controller
     /**
      * Chi tiết 1 đơn hàng
      */
-    public function show(string $uuid)
+    public function show(string $id)
     {
         $user = auth()->user();
 
         $order = Order::with([
             'flight',
             'flight',
-            'sender:id,name,avatar,phone',
-            'customer:id,name,avatar,phone',
+            'sender',
+            'customer',
             'request',
-            'attachments'
         ])
-            ->where('uuid', $uuid)
+            ->where('id', $id)
             ->firstOrFail();
 
         // Chỉ cho phép xem đơn của chính mình
