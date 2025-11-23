@@ -27,7 +27,7 @@ export default function SenderProfileScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-                <View className="px-4 pt-4 pb-32 space-y-4">
+                <View className="px-4 pt-4 pb-32 gap-y-4">
                     {/* Avatar + Info */}
                     <View className="items-center rounded-xl bg-card-light dark:bg-card-dark p-6 shadow-sm">
                         <View className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-xl">
@@ -52,7 +52,7 @@ export default function SenderProfileScreen() {
                     </View>
 
                     {/* Stats */}
-                    <View className="rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-sm space-y-4">
+                    <View className="rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-sm gap-y-4">
                         {/* Số chuyến */}
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center gap-3">
