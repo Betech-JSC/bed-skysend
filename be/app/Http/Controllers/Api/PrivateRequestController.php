@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Flight;
-use App\Models\PrivateRequest;
+use App\Models\Request as PrivateRequest;
 use Illuminate\Http\Request;
 
 class PrivateRequestController extends Controller
@@ -16,7 +16,7 @@ class PrivateRequestController extends Controller
             'reward'              => 'required|numeric|min:50000|max:10000000',
             'item_value'          => 'required|numeric|min:100000',
             'item_description'    => 'required|string|max:1000',
-            'preferred_time_slot' => 'required|in:morning,afternoon,evening,any',
+            'time_slot' => 'required|in:morning,afternoon,evening,any',
             'note'                => 'nullable|string|max:500',
         ]);
 
@@ -45,20 +45,17 @@ class PrivateRequestController extends Controller
             'reward'            => $validated['reward'],
             'item_value'        => $validated['item_value'],
             'item_description'  => $validated['item_description'],
-            'preferred_time_slot' => $validated['preferred_time_slot'],
+            'time_slot' => $validated['time_slot'],
             'note'              => $validated['note'],
             'status'            => 'pending',
             'expires_at'        => now()->addHours(24),
         ]);
 
-        // Gửi thông báo realtime + push
-        broadcast(new PrivateRequestReceived($privateReq))->to($flight->customer_id);
-
         return response()->json([
             'success' => true,
             'message' => 'Đã gửi yêu cầu thành công! Hành khách sẽ phản hồi trong 24h.',
-            'data'    => $privateReq->load('flight')
-        ], 201);
+            'data'    => $privateReq
+        ], 200);
     }
 
     // Danh sách yêu cầu riêng đã gửi

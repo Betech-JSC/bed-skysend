@@ -7,8 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
+
 use Illuminate\Support\Str;
 
 class Request extends Model
@@ -16,12 +15,9 @@ class Request extends Model
     protected $fillable = [
         'uuid',
         'sender_id',
-        'city_from',
-        'from_airport',
-        'city_to',
-        'to_airport',
-        'send_date',
-        'preferred_time_slot',
+        'flight_id',
+
+        'time_slot',
         'item_type',
         'item_description',
         'item_value',
@@ -33,10 +29,10 @@ class Request extends Model
         'confirmed_at',
         'expires_at',
         'note',
+
     ];
 
     protected $casts = [
-        'send_date'     => 'date',
         'accepted_at'   => 'datetime',
         'confirmed_at'  => 'datetime',
         'expires_at'    => 'datetime',

@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Attachment extends Model
 {
-    use HasFactory, SoftDeletes;
-
     protected $fillable = [
         'uuid',
         'attachable_type',

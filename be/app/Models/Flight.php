@@ -20,7 +20,7 @@ class Flight extends Model
         'flight_date',
         'airline',
         'flight_number',
-        'boarding_pass_url',     // giữ lại cho backward compatible (nếu cần)
+        'boarding_pass_url',
         'verified',
         'verified_at',
         'verified_by',
