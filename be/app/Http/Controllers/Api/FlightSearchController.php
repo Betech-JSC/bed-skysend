@@ -10,80 +10,59 @@ class FlightSearchController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Flight::with([
-            'customer' => fn($q) => $q->select('id', 'name', 'avatar', 'rating', 'total_trips', 'kyc_verified')
-        ])
-            ->where('verified', true)
-            ->where('flight_date', '>=', now()->subHours(6)) // chỉ hiển thị chuyến bay sắp tới
-            ->whereRaw('max_weight - booked_weight > 0.5'); // còn ít nhất 0.5kg trống
+        $request->validate([
+            'from_airport' => 'nullable|string|size:3',
+            'to_airport'   => 'nullable|string|size:3',
+            'date'         => 'nullable|date',
+            'time_slot'    => 'nullable|in:morning,afternoon,evening,any',
+        ]);
 
-        // 1. Thành phố đi
-        if ($request->filled('from_city')) {
-            $query->whereHas(
-                'fromAirportMapping',
-                fn($q) =>
-                $q->where('city_name', 'LIKE', "%{$request->from_city}%")
-            );
+        $query = Flight::with(['customer']);
+        // ->where('verified', true);
+        // ->where('flight_date', '>=', now()->subDay())
+        // ->whereRaw('max_weight - booked_weight >= 0.5');
+
+        // 1. Sân bay đi (bắt buộc)
+        if ($request->filled('from_airport')) {
+            $query->where('from_airport', strtoupper($request->from_airport));
         }
 
-        // 2. Thành phố đến
-        if ($request->filled('to_city')) {
-            $query->whereHas(
-                'toAirportMapping',
-                fn($q) =>
-                $q->where('city_name', 'LIKE', "%{$request->to_city}%")
-            );
+        // 2. Sân bay đến (bắt buộc)
+        if ($request->filled('to_airport')) {
+            $query->where('to_airport', strtoupper($request->to_airport));
         }
 
         // 3. Ngày bay (±1 ngày để tăng kết quả)
         if ($request->filled('date')) {
-            $date = $request->date;
+            $date = \Carbon\Carbon::parse($request->date);
             $query->whereBetween('flight_date', [
-                \Carbon\Carbon::parse($date)->subDay(),
-                \Carbon\Carbon::parse($date)->addDay()
+                $date->clone()->subDay(),
+                $date->clone()->addDay()
             ]);
         }
 
         // 4. Khung giờ ưu tiên
-        if ($request->filled('time_slot')) {
-            $slot = $request->time_slot; // morning, afternoon, evening, any
-            if ($slot !== 'any') {
-                $ranges = [
-                    'morning'    => ['05:00', '11:59'],
-                    'afternoon'  => ['12:00', '17:59'],
-                    'evening'    => ['18:00', '23:59'],
-                ];
-                if (isset($ranges[$slot])) {
-                    $query->whereTime('departure_time', '>=', $ranges[$slot][0])
-                        ->whereTime('departure_time', '<=', $ranges[$slot][1]);
-                }
+        if ($request->filled('time_slot') && $request->time_slot !== 'any') {
+            $ranges = [
+                'morning'   => ['05:00:00', '11:59:59'],
+                'afternoon' => ['12:00:00', '17:59:59'],
+                'evening'   => ['18:00:00', '23:59:59'],
+            ];
+
+            if (isset($ranges[$request->time_slot])) {
+                $query->whereTime('departure_time', '>=', $ranges[$request->time_slot][0])
+                    ->whereTime('departure_time', '<=', $ranges[$request->time_slot][1]);
             }
         }
 
-        // 5. Rating tối thiểu
-        if ($request->filled('min_rating')) {
-            $query->whereHas(
-                'customer',
-                fn($q) =>
-                $q->where('rating', '>=', $request->min_rating)
-            );
-        }
-
-        // Sắp xếp ưu tiên
-        $flights = $query->orderByDesc('customer.rating')
-            ->orderBy('flight_date')
-            ->orderBy('departure_time')
-            ->paginate(20);
-
-        // Thêm thông tin khả dụng cho frontend
-        $flights->getCollection()->transform(function ($flight) {
-            $flight->available_weight = $flight->max_weight - $flight->booked_weight;
-            $flight->can_send_request = true; // có thể gửi
-            return $flight;
-        });
+        // Phân trang
+        $flights = $query->paginate(9)
+            ->through(fn($item) => $item->transform())
+            ->withQueryString();
 
         return response()->json([
             'success' => true,
+            'message' => 'Tìm thấy ' . $flights->total() . ' hành khách phù hợp',
             'data'    => $flights,
         ]);
     }

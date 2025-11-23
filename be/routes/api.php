@@ -58,7 +58,6 @@ Route::controller(AuthController::class)->group(function () {
     Route::get('auth/{provider}/callback', 'handleProviderCallback');
 });
 
-
 // Lấy danh sách tất cả sân bay
 Route::get('/airports', [AirportController::class, 'index']);
 

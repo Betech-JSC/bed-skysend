@@ -182,4 +182,22 @@ class Flight extends Model
 
         return $this->save();
     }
+
+    public function transform()
+    {
+        return [
+            'id'               => $this->id,
+            'uuid'             => $this->uuid,
+            'from_airport'     => $this->from_airport,
+            'to_airport'       => $this->to_airport,
+            'flight_date'      => $this->flight_date->format('Y-m-d'),
+            'airline'          => $this->airline,
+            'flight_number'    => $this->flight_number,
+            'available_weight' => round($this->max_weight - $this->booked_weight, 2),
+            'max_weight'       => $this->max_weight,
+            'customer'         => $this->customer,
+            'can_send_request' => true,
+            'created_at'       => $this->created_at->format('Y-m-d H:i:s'),
+        ];
+    }
 }
