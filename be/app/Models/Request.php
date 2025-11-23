@@ -18,8 +18,8 @@ class Request extends Model
         'flight_id',
 
         'time_slot',
-        'item_type',
         'item_description',
+        'item_type',
         'item_value',
         'reward',
         'status',

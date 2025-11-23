@@ -14,6 +14,9 @@ class FlightSearchController extends Controller
             'from_airport' => 'nullable|string|size:3',
             'to_airport'   => 'nullable|string|size:3',
             'date'         => 'nullable|date',
+            'time_slot'    => 'nullable',
+            'item_type'    => 'nullable|in:document,contract,package,gift,other',
+            'item_value'   => 'nullable|numeric|min:0',
         ]);
 
         $query = Flight::with(['customer']);
@@ -38,6 +41,16 @@ class FlightSearchController extends Controller
                 $date->clone()->subDay(),
                 $date->clone()->addDay()
             ]);
+        }
+
+        // Filter theo loại hàng (enum chính xác)
+        if ($request->filled('item_type')) {
+            $query->where('item_type', $request->item_type);
+        }
+
+        // Filter chính xác theo giá trị món hàng
+        if ($request->filled('item_value')) {
+            $query->where('item_value', $request->item_value);
         }
 
         // Phân trang
