@@ -24,8 +24,8 @@ export default function Login() {
   const { role } = useLocalSearchParams<{ role?: string }>();
 
   const [formData, setFormData] = useState({
-    email: role === "sender" ? "admin@gmail.com" : "toan@gmail.com",
-    password: role === "sender" ? "admin@gmail.com" : "toan@gmail.com",
+    email: role === "sender" ? "sender@gmail.com" : "customer@gmail.com",
+    password: role === "sender" ? "sender@gmail.com" : "customer@gmail.com",
   });
 
   const [loading, setLoading] = useState(false);

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AirportController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\FlightSearchController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionsController;
@@ -36,6 +37,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('user/profile', [UserController::class, 'update']);
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
+
+    // 1. Tìm kiếm Flight phù hợp (Filter Search cho Sender)
+    Route::get('/flights/search', [FlightSearchController::class, 'index'])
+        ->name('flights.search');
+
+    // 2. Gửi yêu cầu riêng cho 1 hành khách (Private Request)
+    Route::post('/private-requests', [PrivateRequestController::class, 'store']);
+
+    // 3. (Bonus) Lấy danh sách yêu cầu riêng đã gửi
+    Route::get('/private-requests', [PrivateRequestController::class, 'index']);
 });
 
 Route::controller(AuthController::class)->group(function () {

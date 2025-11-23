@@ -2,115 +2,214 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
-    use HasFactory;
-
-    /**
-     * The attributes that are mass assignable.
-     */
     protected $fillable = [
-        'user_id', // Trường này thay cho sender_id và receiver_id
-        'role',    // Loại người tạo đơn (sender hoặc carrier)
-        'shipment_description',
-        'pickup_location',
-        'delivery_location',
-        'flight_number',
-        'flight_time',
-        'package_weight',
-        'package_dimensions',
+        'uuid',
+        'request_id',
+        'sender_id',
+        'customer_id',
+        'flight_id',
+        'reward',
+        'service_fee',
+        'insurance_fee',
+        'total_amount',
+        'escrow_amount',
+        'escrow_status',
+        'tracking_code',
         'status',
-        'matched_order_id', // Liên kết với đơn đã được match
-        'shipping_fee',
-        'special_instructions',
-        'images',
+        'confirmed_at',
+        'picked_up_at',
+        'delivered_at',
+        'completed_at',
+        'cancelled_at',
+        'cancelled_by',
+        'cancel_reason',
+        'meeting_point_departure',
+        'meeting_time_departure',
+        'delivery_point_arrival',
+        'delivery_time_arrival',
+        'customer_note',
+        'sender_note',
+        'sender_rating',
+        'sender_review',
+        'customer_rating',
+        'customer_review',
+        'insured',
+        'insured_amount',
+        'compensation_claimed',
+        'compensation_paid',
+        'metadata',
     ];
 
     protected $casts = [
-        'shipping_fee' => 'decimal:2', // Định dạng số cho phí vận chuyển
-        'flight_time' => 'datetime', // Nếu có thời gian bay, cần ánh xạ vào kiểu datetime
-        'images' => 'array',
+        'reward'              => 'decimal:2',
+        'service_fee'         => 'decimal:2',
+        'insurance_fee'       => 'decimal:2',
+        'total_amount'        => 'decimal:2',
+        'escrow_amount'       => 'decimal:2',
+        'insured_amount'      => 'decimal:2',
+        'compensation_paid'   => 'decimal:2',
+        'confirmed_at'        => 'datetime',
+        'picked_up_at'        => 'datetime',
+        'delivered_at'        => 'datetime',
+        'completed_at'        => 'datetime',
+        'cancelled_at'        => 'datetime',
+        'meeting_time_departure' => 'datetime',
+        'delivery_time_arrival'  => 'datetime',
+        'insured'             => 'boolean',
+        'compensation_claimed' => 'boolean',
+        'metadata'            => 'array',
+        'sender_rating'       => 'integer',
+        'customer_rating'     => 'integer',
     ];
 
-    // Trong Order.php
-    public function pickupRegion()
+    protected $appends = [
+        'can_pickup',
+        'can_deliver',
+        'is_completed',
+        'is_cancelled',
+    ];
+
+    // ==================================================================
+    // QUAN HỆ
+    // ==================================================================
+
+    public function request(): BelongsTo
     {
-        return $this->belongsTo(Region::class, 'pickup_location'); // pickup_location lưu region_id
+        return $this->belongsTo(Request::class);
     }
 
-    public function deliveryRegion()
+    public function sender(): BelongsTo
     {
-        return $this->belongsTo(Region::class, 'delivery_location'); // delivery_location lưu region_id
+        return $this->belongsTo(User::class, 'sender_id');
     }
 
-    // Đơn đã match với đơn này
-    public function matchedOrder()
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(Order::class, 'matched_order_id');
+        return $this->belongsTo(User::class, 'customer_id');
     }
 
-    public function user()
+    public function flight(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Flight::class);
     }
 
-    /**
-     * Get the sender (user who created the order).
-     */
-    public function sender()
+    public function cancelledBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id')->where('role', 'sender');
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
-    /**
-     * Get the carrier (user who matches the order).
-     */
-    public function carrier()
+    /** Ảnh/video giao nhận hàng */
+    public function attachments(): MorphMany
     {
-        return $this->belongsTo(User::class, 'user_id')->where('role', 'carrier');
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 
-    public function transform()
+    // ==================================================================
+    // ACCESSOR
+    // ==================================================================
+
+    public function getCanPickupAttribute(): bool
     {
+        return $this->status === 'confirmed';
+    }
 
-        $baseUrl = config('app.url');
+    public function getCanDeliverAttribute(): bool
+    {
+        return $this->status === 'picked_up' || $this->status === 'in_transit';
+    }
 
+    public function getIsCompletedAttribute(): bool
+    {
+        return $this->status === 'completed';
+    }
+
+    public function getIsCancelledAttribute(): bool
+    {
+        return in_array($this->status, ['cancelled', 'failed']);
+    }
+
+    public function getTimelineAttribute(): array
+    {
         return [
-            'id' => $this->id,
-            'shipment_description' => $this->shipment_description,
-            'pickup_location' => $this->pickupRegion ? $this->pickupRegion->transform() : null,
-            'delivery_location' => $this->deliveryRegion ? $this->deliveryRegion->transform() : null,
-            'flight_number' => $this->flight_number,
-            'flight_time' => $this->flight_time,
-            'package_weight' => $this->package_weight,
-            'package_dimensions' => $this->package_dimensions,
-            'status' => $this->status,
-            'matched_order_id' => $this->matched_order_id,
-            'shipping_fee' => $this->shipping_fee,
-            'special_instructions' => $this->special_instructions,
-            'chat_id' => $this->chat_id,
-            'images' => $this->images
-                ? array_map(fn($path) => $baseUrl . Storage::url($path), $this->images)
-                : [],
-            'user' => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-            ],
-            'matched_order' => $this->matchedOrder ? [
-                'id' => $this->matchedOrder->id,
-                'role' => $this->matchedOrder->role,
-                'status' => $this->matchedOrder->status,
-                'user' => [
-                    'id' => $this->matchedOrder->user->id,
-                    'name' => $this->matchedOrder->user->name,
-                    'email' => $this->matchedOrder->user->email,
-                ]
-            ] : null,
+            ['status' => 'confirmed',      'time' => $this->confirmed_at,      'label' => 'Đã xác nhận'],
+            ['status' => 'picked_up',      'time' => $this->picked_up_at,      'label' => 'Đã nhận đồ'],
+            ['status' => 'in_transit',     'time' => $this->picked_up_at,      'label' => 'Đang vận chuyển'],
+            ['status' => 'arrived',        'time' => null,                     'label' => 'Đã đến nơi'],
+            ['status' => 'delivered',      'time' => $this->delivered_at,      'label' => 'Đã giao hàng'],
+            ['status' => 'completed',      'time' => $this->completed_at,      'label' => 'Hoàn tất'],
         ];
+    }
+
+    // ==================================================================
+    // SCOPE
+    // ==================================================================
+
+    public function scopeActive($query)
+    {
+        return $query->whereIn('status', ['confirmed', 'picked_up', 'in_transit', 'arrived', 'delivered']);
+    }
+
+    public function scopeForSender($query, $userId)
+    {
+        return $query->where('sender_id', $userId);
+    }
+
+    public function scopeForCustomer($query, $userId)
+    {
+        return $query->where('customer_id', $userId);
+    }
+
+    public function scopeToday($query)
+    {
+        return $query->whereDate('created_at', today());
+    }
+
+    // ==================================================================
+    // HÀM TIỆN ÍCH (rất hay dùng)
+    // ==================================================================
+
+    /** Cập nhật trạng thái + thời gian */
+    public function updateStatus(string $status, ?User $by = null): bool
+    {
+        $this->status = $status;
+
+        match ($status) {
+            'confirmed' => $this->confirmed_at = now(),
+            'picked_up' => $this->picked_up_at = now(),
+            'delivered' => $this->delivered_at = now(),
+            'completed' => $this->completed_at = now(),
+            'cancelled' => $this->cancelled_at = now(),
+            default     => null,
+        };
+
+        if ($status === 'cancelled' && $by) {
+            $this->cancelled_by = $by->id;
+        }
+
+        return $this->save();
+    }
+
+    /** Giải ngân tiền khi hoàn tất */
+    public function releaseEscrow(): bool
+    {
+        $this->escrow_status = 'released';
+        return $this->save();
+    }
+
+    /** Hoàn tiền khi hủy */
+    public function refundEscrow(): bool
+    {
+        $this->escrow_status = 'refunded';
+        return $this->save();
     }
 }

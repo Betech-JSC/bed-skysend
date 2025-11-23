@@ -3,18 +3,183 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
-// app/Models/Flight.php
 class Flight extends Model
 {
-    public function attachments()
+    protected $fillable = [
+        'uuid',
+        'customer_id',
+        'from_airport',
+        'to_airport',
+        'flight_date',
+        'airline',
+        'flight_number',
+        'boarding_pass_url',     // giữ lại cho backward compatible (nếu cần)
+        'verified',
+        'verified_at',
+        'verified_by',
+        'max_weight',
+        'booked_weight',
+        'note',
+    ];
+
+    protected $casts = [
+        'flight_date' => 'date',
+        'verified_at' => 'datetime',
+        'verified'    => 'boolean',
+        'max_weight'  => 'decimal:2',
+        'booked_weight' => 'decimal:2',
+    ];
+
+    protected $appends = [
+        'available_weight',
+        'is_fully_booked',
+    ];
+
+    // ==================================================================
+    // QUAN HỆ
+    // ==================================================================
+
+    /** Hành khách sở hữu chuyến bay */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'customer_id')->withDefault();
+    }
+
+    /** Người xác thực vé (admin hoặc AI) */
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    /** Ảnh/video/file đính kèm (vé máy bay, hành lý thừa…) */
+    public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable')->orderBy('order');
     }
 
-    // Chủ yếu là ảnh vé máy bay
-    public function boardingPass()
+    /** Ảnh vé máy bay (hỗ trợ nhiều ảnh, lấy cái đầu tiên) */
+    public function boardingPass(): HasOne
     {
-        return $this->attachments()->where('type', 'image')->first();
+        return $this->attachments()
+            ->where('type', 'image')
+            ->oldest('order');
+    }
+
+    /** Các ảnh vé (nếu up nhiều) */
+    public function boardingPasses(): MorphMany
+    {
+        return $this->attachments()->where('type', 'image');
+    }
+
+    /** Các order đã được tạo từ chuyến bay này */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /** Private request gửi riêng cho hành khách này */
+    public function privateRequests(): HasMany
+    {
+        return $this->hasMany(PrivateRequest::class);
+    }
+
+    // ==================================================================
+    // ACCESSOR & MUTATOR
+    // ==================================================================
+
+    /** Còn bao nhiêu kg mang thêm */
+    public function getAvailableWeightAttribute(): float
+    {
+        return round($this->max_weight - $this->booked_weight, 2);
+    }
+
+    /** Đã hết chỗ chưa */
+    public function getIsFullyBookedAttribute(): bool
+    {
+        return $this->available_weight < 0.5; // dưới 0.5kg coi như hết
+    }
+
+    /** URL ảnh vé (dễ dùng ở frontend) */
+    public function getBoardingPassUrlAttribute(): ?string
+    {
+        return $this->boardingPass?->url ?? $this->attributes['boarding_pass_url'] ?? null;
+    }
+
+    // ==================================================================
+    // SCOPE TIỆN ÍCH
+    // ==================================================================
+
+    /** Chỉ lấy chuyến bay đã được duyệt vé */
+    public function scopeVerified($query)
+    {
+        return $query->where('verified', true);
+    }
+
+    /** Chỉ lấy chuyến bay còn chỗ trống */
+    public function scopeHasAvailableWeight($query, float $minKg = 0.5)
+    {
+        return $query->whereRaw('max_weight - booked_weight >= ?', [$minKg]);
+    }
+
+    /** Chỉ lấy chuyến bay trong tương lai (từ giờ trở đi) */
+    public function scopeUpcoming($query)
+    {
+        return $query->where('flight_date', '>=', today())
+            ->orWhere(function ($q) {
+                $q->where('flight_date', today())
+                    ->whereTime('created_at', '>=', now()->subHours(6));
+            });
+    }
+
+    /** Tìm chuyến bay theo tuyến + ngày */
+    public function scopeByRouteAndDate($query, string $from, string $to, string $date = null)
+    {
+        $query->where('from_airport', $from)
+            ->where('to_airport', $to);
+
+        if ($date) {
+            $query->whereDate('flight_date', $date);
+        }
+
+        return $query;
+    }
+
+    // ==================================================================
+    // HÀM TIỆN ÍCH
+    // ==================================================================
+
+    /** Tăng booked_weight khi có đơn hàng mới */
+    public function increaseBookedWeight(float $kg): bool
+    {
+        if ($this->available_weight < $kg) {
+            return false;
+        }
+
+        $this->booked_weight += $kg;
+        return $this->save();
+    }
+
+    /** Giảm booked_weight khi hủy đơn */
+    public function decreaseBookedWeight(float $kg): bool
+    {
+        $this->booked_weight = max(0, $this->booked_weight - $kg);
+        return $this->save();
+    }
+
+    /** Đánh dấu đã xác thực vé */
+    public function markAsVerified(?User $verifier = null): bool
+    {
+        $this->verified    = true;
+        $this->verified_at = now();
+        $this->verified_by = $verifier?->id;
+
+        return $this->save();
     }
 }

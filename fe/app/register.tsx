@@ -9,9 +9,9 @@ function Register() {
   // Set up state for form data
   const [formData, setFormData] = useState({
     name: "toannguyen",
-    email: "toan@gmail.com",
-    password: "toan@gmail.com",
-    confirmPassword: "toan@gmail.com",
+    email: "customer@gmail.com",
+    password: "customer@gmail.com",
+    confirmPassword: "customer@gmail.com",
   });
 
   const handleInputChange = (name, value) => {

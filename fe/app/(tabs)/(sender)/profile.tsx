@@ -26,12 +26,6 @@ export default function ProfileScreen() {
     const role = user?.role || 'customer';
     const isSender = role === 'sender';
 
-    const toggleRole = () => {
-        if (!user) return;
-        const newRole = isSender ? 'customer' : 'sender';
-        dispatch(setUser({ ...user, role: newRole }));
-    };
-
     const logout = async () => {
         try {
             await api.post('logout');
@@ -117,12 +111,6 @@ export default function ProfileScreen() {
                                     Vai trò của tôi
                                 </Text>
                             </View>
-                            <Switch
-                                value={isSender}
-                                onValueChange={toggleRole}
-                                trackColor={{ false: '#D1D5DB', true: '#2563EB' }}
-                                thumbColor={isSender ? '#ffffff' : '#f4f3f4'}
-                            />
                         </View>
 
                         <View className="mx-4 border-t border-slate-100 dark:border-slate-700" />
