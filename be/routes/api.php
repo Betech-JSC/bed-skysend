@@ -37,18 +37,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
 
-    // 1. Tìm kiếm Flight phù hợp (Filter Search cho Sender)
+    // Tìm kiếm Flight phù hợp (Filter Search cho Sender)
     Route::get('/flights/search', [FlightSearchController::class, 'index'])
         ->name('flights.search');
 
     Route::post('/flights/store', [FlightController::class, 'store'])
         ->name('flights.store');
 
-    // 2. Gửi yêu cầu riêng cho 1 hành khách (Private Request)
+    // Gửi yêu cầu riêng cho 1 hành khách (Private Request)
     Route::post('private-requests/store', [RequestController::class, 'store']);
 
-    // 3. (Bonus) Lấy danh sách yêu cầu riêng đã gửi
+    // Lấy danh sách yêu cầu riêng đã gửi
     Route::get('private-requests', [RequestController::class, 'index']);
+
+    // Chi tiết requests
+    Route::get('private-requests/{id}/show', [RequestController::class, 'show']);
 
     // Xác nhận request 
     Route::post('/requests/{id}/accept', [RequestController::class, 'accept']);

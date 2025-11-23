@@ -14,7 +14,6 @@ class FlightSearchController extends Controller
             'from_airport' => 'nullable|string|size:3',
             'to_airport'   => 'nullable|string|size:3',
             'date'         => 'nullable|date',
-            'time_slot'    => 'nullable',
             'item_type'    => 'nullable',
             'item_value'   => 'nullable',
         ]);

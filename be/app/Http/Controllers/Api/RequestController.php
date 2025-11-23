@@ -168,4 +168,90 @@ class RequestController extends Controller
             'data' => $requests
         ]);
     }
+
+    public function show(string $uuid)
+    {
+        $user = auth()->user();
+
+        $request = ModelsRequest::with([
+            'sender:id,name,avatar,phone,rating',
+            'flight:id,uuid,from_airport,to_airport,flight_date,airline,flight_number,max_weight,booked_weight',
+            'flight.customer:id,name,avatar,phone',
+            'order' // nếu đã được chấp nhận thì có đơn hàng
+        ])
+            ->where('uuid', $uuid)
+            ->firstOrFail();
+
+        // === KIỂM TRA QUYỀN TRUY CẬP ===
+        $isSender   = $request->sender_id === $user->id;
+        $isCustomer = $request->flight->customer_id === $user->id;
+
+        if (!$isSender && !$isCustomer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xem yêu cầu này.'
+            ], 403);
+        }
+
+        // Chỉ Customer mới được xem nếu request còn pending hoặc đã xử lý của chính mình
+        if (!$isSender && !in_array($request->status, ['pending', 'accepted', 'declined', 'auto_declined'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Yêu cầu này không còn tồn tại hoặc đã hết hạn.'
+            ], 404);
+        }
+
+        // Transform dữ liệu đẹp cho frontend
+        $data = [
+            'uuid'              => $request->uuid,
+            'status'            => $request->status,
+            'status_label'      => $this->getStatusLabel($request->status),
+            'created_at'        => $request->created_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i'),
+            'expires_at'        => $request->expires_at?->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i'),
+            'responded_at'      => $request->responded_at?->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i'),
+            'can_accept'        => $isCustomer && $request->status === 'pending' && !$request->expires_at?->isPast(),
+            'can_decline'       => $isCustomer && $request->status === 'pending' && !$request->expires_at?->isPast(),
+
+            // Thông tin người gửi (Sender)
+            'sender' => [
+                'id'      => $request->sender->id,
+                'name'    => $request->sender->name,
+                'avatar'  => $request->sender->avatar,
+                'phone'   => $request->sender->phone,
+                'rating'  => $request->sender->rating ?? 0,
+            ],
+
+            // Thông tin chuyến bay
+            'flight' => [
+                'uuid'          => $request->flight->uuid,
+                'flight_number' => $request->flight->flight_number,
+                'airline'       => $request->flight->airline,
+                'from_airport'  => $request->flight->from_airport,
+                'to_airport'    => $request->flight->to_airport,
+                'flight_date'   => $request->flight->flight_date->format('d/m/Y'),
+                'available_weight' => round($request->flight->max_weight - $request->flight->booked_weight, 2),
+            ],
+
+            // Nội dung yêu cầu
+            'reward'            => (int) $request->reward,
+            'item_value'        => (int) $request->item_value,
+            'item_description'  => $request->item_description,
+            'time_slot'         => $request->time_slot,
+            'time_slot_label'   => $this->getTimeSlotLabel($request->time_slot),
+            'note'              => $request->note,
+
+            // Nếu đã được chấp nhận → có đơn hàng
+            'order' => $request->order ? [
+                'uuid'          => $request->order->uuid,
+                'tracking_code' => $request->order->tracking_code,
+                'status'        => $request->order->status,
+                'escrow_status' => $request->order->escrow_status,
+            ] : null,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data
+        ]);
+    }
 }
