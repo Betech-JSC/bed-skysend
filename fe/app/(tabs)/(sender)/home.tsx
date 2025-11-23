@@ -6,6 +6,7 @@ import ItemOrder from 'app/components/ItemOrder';
 import { router } from 'expo-router';
 import { MaterialIcons } from "@expo/vector-icons";
 import { useOrderMatchList } from '@/hooks/useOrderMatchList';
+import CitySelectModal from '../../components/CitySelectModal';
 
 const home = () => {
 
@@ -78,17 +79,7 @@ const home = () => {
                             <Text className="text-sm font-medium text-text-primary dark:text-gray-300 pb-2">
                                 Thành phố đi
                             </Text>
-                            <View className="relative">
-                                <MaterialIcons
-                                    name="flight-takeoff"
-                                    size={20}
-                                    className="absolute left-3 top-4 text-text-secondary dark:text-gray-400 z-10"
-                                />
-                                <TextInput
-                                    placeholder="Ví dụ: Hà Nội"
-                                    className="pl-10 pr-4 h-14 bg-background-light dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base"
-                                />
-                            </View>
+                            <CitySelectModal placeholder="Ví dụ: Hà Nội" iconName="flight-takeoff" />
                         </View>
 
                         {/* Thành phố đến */}
@@ -96,17 +87,7 @@ const home = () => {
                             <Text className="text-sm font-medium text-text-primary dark:text-gray-300 pb-2">
                                 Thành phố đến
                             </Text>
-                            <View className="relative">
-                                <MaterialIcons
-                                    name="flight-land"
-                                    size={20}
-                                    className="absolute left-3 top-4 text-text-secondary dark:text-gray-400 z-10"
-                                />
-                                <TextInput
-                                    placeholder="Ví dụ: TP. HCM"
-                                    className="pl-10 pr-4 h-14 bg-background-light dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base"
-                                />
-                            </View>
+                            <CitySelectModal placeholder="Ví dụ: TP. HCM" iconName="flight-land" />
                         </View>
 
                         {/* Ngày gửi */}
