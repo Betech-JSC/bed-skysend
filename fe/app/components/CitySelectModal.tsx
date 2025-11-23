@@ -1,16 +1,32 @@
+// CitySelectModal.tsx
 import React, { useEffect, useState } from 'react';
-import { View, useColorScheme, Text, Modal, FlatList, Pressable, TouchableOpacity, Platform } from 'react-native';
+import {
+  View,
+  useColorScheme,
+  Text,
+  Modal,
+  FlatList,
+  Pressable,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+
+interface CitySelectModalProps {
+  placeholder: string;
+  iconName: 'flight-takeoff' | 'flight-land';
+  value?: string;
+  onValueChange?: (value: string, label: string) => void;
+}
 
 const CitySelectModal = ({
   placeholder,
   iconName,
-}: {
-  placeholder: string;
-  iconName: 'flight-takeoff' | 'flight-land';
-}) => {
+  value: externalValue,
+  onValueChange,
+}: CitySelectModalProps) => {
   const isDark = useColorScheme() === 'dark';
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(externalValue || '');
   const [open, setOpen] = useState(false);
   const [cities, setCities] = useState<{ label: string; value: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,7 +47,6 @@ const CitySelectModal = ({
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        // Kiểm tra response có đúng format: { status, message, data: [...] }
         if (data.status === 'success' && Array.isArray(data.data)) {
           const mapped = data.data
             .map((airport: any) => ({
@@ -42,16 +57,10 @@ const CitySelectModal = ({
 
           if (mounted && mapped.length > 0) {
             setCities(mapped);
-          } else {
-            setCities('Không có dữ liệu');
           }
-        } else {
-          // Nếu API trả về format khác, dùng fallback
-          setCities('Không có dữ liệu');
         }
       } catch (err: any) {
         setError(err?.message || 'Không thể tải danh sách');
-        setCities('Không có dữ liệu');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -63,6 +72,22 @@ const CitySelectModal = ({
       mounted = false;
     };
   }, []);
+
+  // Sync external value
+  useEffect(() => {
+    if (externalValue !== undefined) {
+      setValue(externalValue);
+    }
+  }, [externalValue]);
+
+  const handleSelect = (itemValue: string) => {
+    setValue(itemValue);
+    const selectedCity = cities.find((c) => c.value === itemValue);
+    if (onValueChange && selectedCity) {
+      onValueChange(itemValue, selectedCity.label);
+    }
+    setOpen(false);
+  };
 
   return (
     <View className="relative">
@@ -77,17 +102,24 @@ const CitySelectModal = ({
         <View
           className={`h-14 border bg-background-light pl-10 pr-4 dark:bg-gray-700 ${
             isDark ? 'border-gray-600' : 'border-gray-200'
-          } justify-center rounded-lg`}
-        >
-          <Text style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>{selectedLabel || placeholder}</Text>
+          } justify-center rounded-lg`}>
+          <Text style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>
+            {selectedLabel || placeholder}
+          </Text>
         </View>
       </Pressable>
 
-      <Modal visible={open} animationType="slide" transparent={Platform.OS === 'ios'} onRequestClose={() => setOpen(false)}>
+      <Modal
+        visible={open}
+        animationType="slide"
+        transparent={Platform.OS === 'ios'}
+        onRequestClose={() => setOpen(false)}>
         <View className="flex-1 justify-end">
-          <View className="bg-white dark:bg-gray-800 rounded-t-xl p-4" style={{ maxHeight: '60%' }}>
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-base font-semibold text-text-primary dark:text-white">Chọn thành phố</Text>
+          <View className="rounded-t-xl bg-white p-4 dark:bg-gray-800" style={{ maxHeight: '60%' }}>
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-text-primary text-base font-semibold dark:text-white">
+                Chọn thành phố
+              </Text>
               <TouchableOpacity onPress={() => setOpen(false)}>
                 <Text className="text-primary">Đóng</Text>
               </TouchableOpacity>
@@ -97,15 +129,16 @@ const CitySelectModal = ({
               data={cities}
               keyExtractor={(item) => item.value}
               keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                <View className="py-8 items-center">
+                  <Text className="text-gray-500 dark:text-gray-400">Không có dữ liệu</Text>
+                </View>
+              }
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  onPress={() => {
-                    setValue(item.value);
-                    setOpen(false);
-                  }}
-                  className="py-3 border-b border-gray-100 dark:border-gray-700"
-                >
-                  <Text className="text-base text-text-primary dark:text-white">{item.label}</Text>
+                  onPress={() => handleSelect(item.value)}
+                  className="border-b border-gray-100 py-3 dark:border-gray-700">
+                  <Text className="text-text-primary text-base dark:text-white">{item.label}</Text>
                 </TouchableOpacity>
               )}
             />
