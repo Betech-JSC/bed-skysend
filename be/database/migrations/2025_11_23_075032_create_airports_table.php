@@ -15,13 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('code', 10)->unique(); // nên thêm unique cho mã sân bay
             $table->string('city_code', 10);
-            $table->string('name_vi');
-            $table->string('name_en');
-            $table->string('latitude_deg');
-            $table->string('longitude_deg');
-            $table->string('country');
-            $table->string('country_code');
-            $table->string('continent');
+            $table->string('name_vi')->nullable();;
+            $table->string('name_en')->nullable();;
+            $table->string('latitude_deg')->nullable();
+            $table->string('longitude_deg')->nullable();;
+            $table->string('country')->nullable();;
+            $table->string('country_code')->nullable();;
+            $table->string('continent')->nullable();;
             $table->string('timezone')->nullable();
             $table->timestamps();
 
