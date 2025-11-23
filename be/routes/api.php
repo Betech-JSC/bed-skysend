@@ -55,6 +55,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Xác nhận request 
     Route::post('/requests/{id}/accept', [RequestController::class, 'accept']);
     Route::post('/requests/{id}/decline', [RequestController::class, 'decline']);
+
+    // Danh sách requets đang chờ
+    Route::get('/requests/listPendingRequests', [RequestController::class, 'listPendingRequests']);
 });
 
 Route::controller(AuthController::class)->group(function () {

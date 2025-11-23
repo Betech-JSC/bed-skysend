@@ -39,6 +39,7 @@ return new class extends Migration
                 'in_transit',     // Đang trên máy bay
                 'arrived',        // Đã đến sân bay đích
                 'delivered',      // Đã giao cho người gửi
+                'declined',        // Từ chối
                 'completed',      // Hoàn tất + giải ngân
                 'cancelled',      // Hủy
                 'failed'          // Thất lạc, hỏng

@@ -115,7 +115,7 @@ class RequestController extends Controller
                     ->where('id', '!=', $request->id)
                     ->where('status', 'pending')
                     ->update([
-                        'status' => 'auto_declined', // hoặc 'cancelled_by_system'
+                        'status' => 'auto_declined', // hoặc 'declined_by_system'
                     ]);
             }
         });
@@ -131,8 +131,8 @@ class RequestController extends Controller
         ], 200);
     }
 
-    // danh sách đang chờ
-    public function myPendingRequests()
+    // danh sách requests đang chờ
+    public function listPendingRequests()
     {
         $requests = ModelsRequest::with(['sender', 'flight'])
             ->whereHas('flight', fn($q) => $q->where('customer_id', auth()->id()))
