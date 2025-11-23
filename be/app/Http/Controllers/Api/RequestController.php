@@ -169,17 +169,16 @@ class RequestController extends Controller
         ]);
     }
 
-    public function show(string $uuid)
+    public function show(string $id)
     {
         $user = auth()->user();
 
         $request = ModelsRequest::with([
-            'sender:id,name,avatar,phone,rating',
-            'flight:id,uuid,from_airport,to_airport,flight_date,airline,flight_number,max_weight,booked_weight',
-            'flight.customer:id,name,avatar,phone',
-            'order' // nếu đã được chấp nhận thì có đơn hàng
+            'sender',
+            'flight',
+            'order'
         ])
-            ->where('uuid', $uuid)
+            ->where('id', $id)
             ->firstOrFail();
 
         // === KIỂM TRA QUYỀN TRUY CẬP ===
@@ -203,9 +202,10 @@ class RequestController extends Controller
 
         // Transform dữ liệu đẹp cho frontend
         $data = [
+            'id'              => $request->id,
             'uuid'              => $request->uuid,
             'status'            => $request->status,
-            'status_label'      => $this->getStatusLabel($request->status),
+            'status_label'      => $request->status,
             'created_at'        => $request->created_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i'),
             'expires_at'        => $request->expires_at?->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i'),
             'responded_at'      => $request->responded_at?->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i'),
@@ -218,7 +218,7 @@ class RequestController extends Controller
                 'name'    => $request->sender->name,
                 'avatar'  => $request->sender->avatar,
                 'phone'   => $request->sender->phone,
-                'rating'  => $request->sender->rating ?? 0,
+                'rating'  =>  0,
             ],
 
             // Thông tin chuyến bay
@@ -236,8 +236,6 @@ class RequestController extends Controller
             'reward'            => (int) $request->reward,
             'item_value'        => (int) $request->item_value,
             'item_description'  => $request->item_description,
-            'time_slot'         => $request->time_slot,
-            'time_slot_label'   => $this->getTimeSlotLabel($request->time_slot),
             'note'              => $request->note,
 
             // Nếu đã được chấp nhận → có đơn hàng
