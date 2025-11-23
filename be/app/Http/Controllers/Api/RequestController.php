@@ -12,7 +12,7 @@ class RequestController extends Controller
 {
     public function index()
     {
-        $requests = ModelsRequest::with(['flight', 'customer'])
+        $requests = ModelsRequest::with(['flight'])
             ->where('sender_id', auth()->id())
             ->orderByDesc('created_at')
             ->paginate(20);
@@ -169,6 +169,7 @@ class RequestController extends Controller
         ]);
     }
 
+    // CHi tiết
     public function show(string $id)
     {
         $user = auth()->user();
@@ -251,5 +252,56 @@ class RequestController extends Controller
             'success' => true,
             'data'    => $data
         ]);
+    }
+
+    /**
+     * Sender hủy request đã gửi (chỉ được hủy khi còn pending)
+     */
+    public function cancel(string $id)
+    {
+        $user = auth()->user();
+
+        $request = ModelsRequest::with('flight.customer')
+            ->where('id', $id)
+            ->firstOrFail();
+
+        // 1. Chỉ người gửi mới được hủy
+        if ($request->sender_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền hủy yêu cầu này.'
+            ], 403);
+        }
+
+        // 2. Chỉ được hủy khi còn pending hoặc expired (không được hủy nếu đã accepted)
+        if (!in_array($request->status, ['pending', 'expired'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể hủy yêu cầu này vì đã được xử lý.'
+            ], 400);
+        }
+
+        // 3. Nếu đã hết hạn thì chỉ đánh dấu, không cần thông báo
+        if ($request->expires_at?->isPast()) {
+            $request->update(['status' => 'expired']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Yêu cầu đã hết hạn từ trước.'
+            ]);
+        }
+
+        // 4. HỦY THÀNH CÔNG → cập nhật trạng thái
+        $request->update([
+            'status'       => 'cancelled',
+        ]);
+
+        // 5. (Tùy chọn) Gửi thông báo cho Customer (nếu bạn có notification system)
+        // Notification::send($request->flight->customer, new RequestCancelled($request));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã hủy yêu cầu thành công!',
+            'data'    => $request
+        ], 200);
     }
 }

@@ -47,6 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Gửi yêu cầu riêng cho 1 hành khách (Private Request)
     Route::post('private-requests/store', [RequestController::class, 'store']);
 
+    // Hủy request
+    Route::post('private-requests/{id}/cancel', [RequestController::class, 'cancel']);
+
     // Lấy danh sách yêu cầu riêng đã gửi
     Route::get('private-requests', [RequestController::class, 'index']);
 
