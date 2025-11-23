@@ -41,20 +41,6 @@ class FlightSearchController extends Controller
             ]);
         }
 
-        // 4. Khung giờ ưu tiên
-        if ($request->filled('time_slot') && $request->time_slot !== 'any') {
-            $ranges = [
-                'morning'   => ['05:00:00', '11:59:59'],
-                'afternoon' => ['12:00:00', '17:59:59'],
-                'evening'   => ['18:00:00', '23:59:59'],
-            ];
-
-            if (isset($ranges[$request->time_slot])) {
-                $query->whereTime('departure_time', '>=', $ranges[$request->time_slot][0])
-                    ->whereTime('departure_time', '<=', $ranges[$request->time_slot][1]);
-            }
-        }
-
         // Phân trang
         $flights = $query->paginate(9)
             ->through(fn($item) => $item->transform())
