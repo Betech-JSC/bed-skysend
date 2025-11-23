@@ -2,181 +2,219 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
-use App\Helpers\ApiResponse;
-use App\Http\Controllers\Controller;
-use App\Services\FirebaseService;
 
 class OrderController extends Controller
 {
     /**
-     * Store a newly created order.
-     */
-
-
-    public function create(Request $request)
-    {
-        \Log::info($request->all());
-        try {
-            // Validate the incoming request
-            $validated = $request->validate([
-                'role' => 'required|in:sender,carrier',
-                'shipment_description' => 'required|string',
-                'pickup_location' => 'required|string',
-                'delivery_location' => 'required|string',
-                'flight_number' => 'nullable|string',
-                'flight_time' => 'nullable|date',
-                'package_weight' => 'nullable|numeric',
-                'package_dimensions' => 'nullable|string',
-                'special_instructions' => 'nullable|string',
-                'images.*' => 'nullable|file|image|max:5120',
-            ]);
-
-            // Create the order
-            $order = Order::create([
-                'user_id' => auth()->id(),
-                'role' => $validated['role'],
-                'shipment_description' => $validated['shipment_description'],
-                'pickup_location' => $validated['pickup_location'],
-                'delivery_location' => $validated['delivery_location'],
-                'flight_number' => $validated['flight_number'] ?? null,
-                'flight_time' => $validated['flight_time'] ?? null,
-                'package_weight' => $validated['package_weight'] ?? null,
-                'package_dimensions' => $validated['package_dimensions'] ?? null,
-                'special_instructions' => $validated['special_instructions'] ?? null,
-                'status' => 'pending',
-                'images' => $request->hasFile('images') ? array_map(function ($image) {
-                    return $image->store('order_images', 'public');
-                }, $request->file('images')) : [],
-            ]);
-
-            // $firebase->pushOrder($order->toArray());
-            // $firebase->checkAndMatchOrder($order->toArray());
-
-            return ApiResponse::success(['order' => $order], 'Order created successfully and synced with Firebase');
-        } catch (\Throwable $th) {
-            \Log::info($th);
-        }
-    }
-
-    public function confirmMatch(Request $request, FirebaseService $firebase)
-    {
-        $orderId = $request->input('orderId');
-        $action  = $request->input('action'); // "confirm" hoặc "reject"
-
-        if (!$orderId || !in_array($action, ['confirm', 'reject'])) {
-            return response()->json(['status' => 'error', 'message' => 'Invalid parameters'], 400);
-        }
-
-        $result = $firebase->confirmMatch($orderId, $request->user()->id, $action);
-
-        if ($action === 'confirm') {
-            return response()->json([
-                'status' => 'success',
-                'chat_id' => $result['chat_id'] ?? null
-            ]);
-        }
-
-        return response()->json(['status' => 'success']);
-    }
-
-    /**
-     * Display a listing of orders.
+     * Danh sách đơn hàng của user hiện tại
+     * - Sender thấy đơn mình đặt
+     * - Customer thấy đơn mình nhận mang
      */
     public function index(Request $request)
     {
         $user = auth()->user();
 
-        $query = Order::where('user_id', $user->id)
-            ->where('role', $request->role);
+        $query = Order::with([
+            'flight',
+        ])
+            ->when($user->role === 'sender' || !$user->role, function ($q) use ($user) {
+                $q->where('sender_id', $user->id);
+            })
+            ->when($user->role === 'customer', function ($q) use ($user) {
+                $q->where('customer_id', $user->id);
+            })
+            ->orderByDesc('created_at');
 
-        // Optional filter
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        // Bộ lọc theo trạng thái (từ query string)
+        if ($status = $request->query('status')) {
+            $allowed = ['confirmed', 'picked_up', 'in_transit', 'delivered', 'completed', 'cancelled'];
+            if (in_array($status, $allowed)) {
+                $query->where('status', $status);
+            }
         }
 
-        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
+        // Phân trang đẹp
+        $orders = $query->paginate(15);
 
-        // Map collection bên trong paginate sang transform
-        $orders->getCollection()->transform(function ($order) {
-            return $order->transform(); // gọi method transform() trong model Order
+        // Thêm thông tin ngắn gọn cho frontend
+        $orders->getCollection()->transform(function ($order) use ($user) {
+            $order->is_sender = $order->sender_id === $user->id;
+            $order->partner = $order->is_sender ? $order->customer : $order->sender;
+            $order->can_chat = in_array($order->status, ['confirmed', 'picked_up', 'in_transit']);
+            $order->can_rate = $order->status === 'completed' && (
+                ($order->is_sender && !$order->sender_rating) ||
+                (!$order->is_sender && !$order->customer_rating)
+            );
+            return $order;
         });
 
-        return ApiResponse::success(['orders' => $orders], 'Orders retrieved successfully');
-    }
-
-
-    /**
-     * Display the specified order.
-     */
-    public function show($orderId)
-    {
-        $order = Order::with(['matchedOrder']) // Giả sử quan hệ matchedUser trong model Order
-            ->findOrFail($orderId);
-
-        // Kiểm tra order thuộc về user hiện tại
-        if ($order->user_id !== auth()->id()) {
-            return ApiResponse::error('Unauthorized', 403);
-        }
-
-        // Transform order nếu muốn, ví dụ gọi method transform() trong model
-        $orderTransformed = $order->transform();
-
-        return ApiResponse::success(['order' => $orderTransformed], 'Order retrieved successfully');
+        return response()->json([
+            'success' => true,
+            'data'    => $orders
+        ]);
     }
 
     /**
-     * Update the status of the specified order.
+     * Chi tiết 1 đơn hàng
      */
-    public function updateStatus(Request $request, $orderId)
+    public function show(string $uuid)
     {
-        $order = Order::findOrFail($orderId);
+        $user = auth()->user();
 
-        // Ensure the user is authorized to update the order status
-        if ($order->user_id !== auth()->id()) {
-            return ApiResponse::error('Unauthorized', 403);
+        $order = Order::with([
+            'flight',
+            'flight',
+            'sender:id,name,avatar,phone',
+            'customer:id,name,avatar,phone',
+            'request',
+            'attachments'
+        ])
+            ->where('uuid', $uuid)
+            ->firstOrFail();
+
+        // Chỉ cho phép xem đơn của chính mình
+        if ($order->sender_id !== $user->id && $order->customer_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không có quyền truy cập đơn hàng này.'
+            ], 403);
         }
 
-        $validated = $request->validate([
-            'status' => 'required|in:pending,matched,confirmed,delivered,cancelled',
+        $order->is_sender = $order->sender_id === $user->id;
+        $order->partner = $order->is_sender ? $order->customer : $order->sender;
+
+        return response()->json([
+            'success' => true,
+            'data'    => $order
+        ]);
+    }
+
+    /**
+     * Cập nhật trạng thái đơn hàng
+     * Chỉ người liên quan mới được phép đổi
+     */
+    public function updateStatus(Request $request, string $uuid)
+    {
+        $user = auth()->user();
+
+        $order = Order::with(['sender', 'customer', 'flight'])
+            ->where('uuid', $uuid)
+            ->firstOrFail();
+
+        // Kiểm tra quyền: chỉ sender hoặc customer của đơn mới được thao tác
+        if (!in_array($user->id, [$order->sender_id, $order->customer_id])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện hành động này.'
+            ], 403);
+        }
+
+        $request->validate([
+            'status' => [
+                'required',
+                'string',
+                Rule::in([
+                    'picked_up',      // Customer đã nhận hàng từ Sender
+                    'in_transit',     // Đang trên máy bay
+                    'arrived',        // Đã đến sân bay đích
+                    'delivered',      // Customer đã giao hàng cho Sender
+                    'completed',      // Cả hai xác nhận hoàn tất
+                    'cancelled'       // Hủy đơn (có lý do)
+                ])
+            ],
+            'cancel_reason' => 'required_if:status,cancelled|string|max:500',
         ]);
 
-        // Update the status only if it is valid and update the matched_order_id accordingly
-        if ($validated['status'] == 'delivered') {
-            // Allow creating a new order only when the previous one is delivered
-            $order->update([
-                'status' => 'delivered'
-            ]);
-        } else {
-            $order->update([
-                'status' => $validated['status']
-            ]);
+        $newStatus = $request->status;
+
+        // Kiểm tra luồng trạng thái hợp lệ (rất quan trọng!)
+        $validTransitions = [
+            'confirmed'   => ['picked_up', 'cancelled'],
+            'picked_up'   => ['in_transit', 'cancelled'],
+            'in_transit'  => ['arrived'],
+            'arrived'     => ['delivered'],
+            'delivered'   => ['completed'],
+        ];
+
+        if (
+            !isset($validTransitions[$order->status]) ||
+            !in_array($newStatus, $validTransitions[$order->status])
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể chuyển sang trạng thái này lúc này.'
+            ], 400);
         }
 
-        return ApiResponse::success(['order' => $order], 'Order status updated successfully');
+        // Kiểm tra người được phép đổi trạng thái nào
+        $isSender = $order->sender_id === $user->id;
+        $isCustomer = $order->customer_id === $user->id;
+
+        $allowedByRole = [
+            'picked_up'   => $isCustomer,  // Chỉ Customer mới xác nhận đã nhận hàng
+            'in_transit'  => $isCustomer,
+            'arrived'     => $isCustomer,
+            'delivered'   => $isCustomer,
+            'completed'   => true,         // Cả 2 đều được bấm hoàn tất
+            'cancelled'   => true,
+        ];
+
+        if (!$allowedByRole[$newStatus]) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không được phép thực hiện hành động này.'
+            ], 403);
+        }
+
+        // Bắt đầu transaction
+        return DB::transaction(function () use ($order, $newStatus, $request, $user) {
+
+            // Dùng hàm tiện ích có sẵn trong model Order của bạn
+            $order->updateStatus($newStatus, $user);
+
+            // Nếu hủy đơn
+            if ($newStatus === 'cancelled') {
+                $order->cancel_reason = $request->cancel_reason;
+                $order->save();
+
+                // Hoàn tiền escrow (nếu đã nạp)
+                if (in_array($order->escrow_status, ['held', 'paid'])) {
+                    $order->refundEscrow();
+                }
+            }
+
+            // Nếu hoàn tất → giải ngân tiền thưởng cho Customer
+            if ($newStatus === 'completed') {
+                if ($order->escrow_status === 'held') {
+                    $order->releaseEscrow();
+                }
+            }
+
+            // Load lại dữ liệu đẹp cho frontend
+            $order->load(['sender', 'customer', 'flight']);
+
+            return response()->json([
+                'success' => true,
+                'message' => $this->getStatusMessage($newStatus),
+                'data'    => $order
+            ], 200);
+        });
     }
 
-
-    /**
-     * Cancel the specified order.
-     */
-    public function cancel($orderId)
+    // Thông báo thân thiện theo từng trạng thái
+    private function getStatusMessage(string $status): string
     {
-        $order = Order::findOrFail($orderId);
-
-        // Ensure the user is authorized to cancel the order
-        if ($order->user_id !== auth()->id()) {
-            return ApiResponse::error('Unauthorized', 403);
-        }
-
-        // You can also add additional logic to prevent cancellation based on the order status
-        if ($order->status == 'delivered') {
-            return ApiResponse::error('Cannot cancel a delivered order', 400);
-        }
-
-        $order->update(['status' => 'cancelled']);
-
-        return ApiResponse::success(['order' => $order], 'Order cancelled successfully');
+        return match ($status) {
+            'picked_up'   => 'Đã nhận hàng từ người gửi thành công!',
+            'in_transit'  => 'Hàng đang trên chuyến bay.',
+            'arrived'     => 'Đã đến sân bay đích.',
+            'delivered'   => 'Đã giao hàng cho người nhận thành công!',
+            'completed'   => 'Đơn hàng đã hoàn tất. Cảm ơn bạn!',
+            'cancelled'   => 'Đơn hàng đã được hủy.',
+            default       => 'Trạng thái đã được cập nhật.',
+        };
     }
 }

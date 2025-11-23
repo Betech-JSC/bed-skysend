@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Flight;
 use App\Models\Request as ModelsRequest;
 use App\Http\Requests\StorePrivateRequestRequest;
+use App\Models\Order;
 
 class RequestController extends Controller
 {
@@ -101,34 +102,55 @@ class RequestController extends Controller
                 'message' => 'Yêu cầu đã hết hạn.'
             ], 400);
         }
-
-        // 3. Bắt đầu transaction để đảm bảo an toàn
-        \DB::transaction(function () use ($request, $status) {
-            // Cập nhật trạng thái request hiện tại
-            $request->update([
-                'status' => $status === 'accepted' ? 'accepted' : 'declined',
+        // 3. Tạo Order + cập nhật trạng thái trong transaction (an toàn tuyệt đối)
+        return \DB::transaction(function () use ($request) {
+            // Tạo đơn hàng
+            $order = Order::create([
+                'uuid'                   => \Str::uuid(),
+                'request_id'             => $request->id,
+                'sender_id'              => $request->sender_id,
+                'customer_id'            => $request->flight->customer_id,
+                'flight_id'              => $request->flight_id,
+                'reward'                 => $request->reward,
+                'service_fee'            => 0, // bạn tính sau hoặc để config
+                'insurance_fee'          => 0,
+                'total_amount'           => $request->reward, // tạm thời = reward
+                'escrow_amount'          => $request->reward, // tiền sẽ giữ hộ
+                'tracking_code'          => \Str::upper(\Str::random(8)), // VD: ABC123XY
+                'status'                 => 'confirmed', // trạng thái đầu tiên
+                'confirmed_at'           => now(),
+                'customer_note'          => $request->note,
+                'meeting_point_departure' => null, // sẽ update sau khi chat
+                'insured'                => false,
+                'metadata'               => [
+                    'time_slot' => $request->time_slot,
+                    'item_value' => $request->item_value,
+                ],
             ]);
 
-            // Nếu CHẤP NHẬN → tự động từ chối tất cả request pending khác cùng chuyến bay
-            if ($status === 'accepted') {
-                ModelsRequest::where('flight_id', $request->flight_id)
-                    ->where('id', '!=', $request->id)
-                    ->where('status', 'pending')
-                    ->update([
-                        'status' => 'auto_declined', // hoặc 'declined_by_system'
-                    ]);
-            }
+            // Cập nhật request
+            $request->update([
+                'status'        => 'accepted',
+            ]);
+
+            // Tự động từ chối các request pending khác cùng chuyến bay
+            ModelsRequest::where('flight_id', $request->flight_id)
+                ->where('id', '!=', $request->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status'        => 'auto_declined',
+                ]);
+
+            // Trả về thông tin đẹp cho Customer
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã chấp nhận yêu cầu và tạo đơn hàng thành công!',
+                'data' => [
+                    'order'    => $order->load('sender', 'flight'),
+                    'request'  => $request,
+                ]
+            ], 200);
         });
-
-        $message = $status === 'accepted'
-            ? 'Bạn đã chấp nhận yêu cầu mang hàng này!'
-            : 'Bạn đã từ chối yêu cầu này.';
-
-        return response()->json([
-            'success' => true,
-            'message' => $message,
-            'data' => $request
-        ], 200);
     }
 
     // danh sách requests đang chờ

@@ -20,14 +20,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/chat/send', [ChatController::class, 'sendMessage']);
     Route::post('logout', [AuthController::class, 'logout']);
+
     // Orders
-    Route::get('orders', [OrderController::class, 'index']);
-    Route::post('orders/create', [OrderController::class, 'create']);
+    Route::get('orders/getList', [OrderController::class, 'index']);
+    Route::post('orders/store', [OrderController::class, 'store']);
     Route::get('orders/{order}/show', [OrderController::class, 'show']);
     Route::put('orders/{order}/status', [OrderController::class, 'updateStatus']);
-    Route::delete('orders/{orderId}/cancel', [OrderController::class, 'cancel']);
-    Route::post('orders/match', [OrderController::class, 'matchOrder']);
-    Route::post('/orders/confirm-match', [OrderController::class, 'confirmMatch']);
 
 
     // Notifications
