@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AirportController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\OrderController;
@@ -41,3 +42,13 @@ Route::controller(AuthController::class)->group(function () {
     Route::get('auth/{provider}/redirect', 'redirectToProvider');
     Route::get('auth/{provider}/callback', 'handleProviderCallback');
 });
+
+
+// Lấy danh sách tất cả sân bay
+Route::get('/airports', [AirportController::class, 'index']);
+
+// Tìm kiếm sân bay theo từ khóa (code, name_vi, name_en, city_code)
+Route::get('/airports/search', [AirportController::class, 'search']);
+
+// Lấy chi tiết 1 sân bay theo code (IATA/ICAO)
+Route::get('/airports/{code}', [AirportController::class, 'show']);
