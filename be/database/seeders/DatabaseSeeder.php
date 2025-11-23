@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
             'last_name'  => 'customer',
             'name'       => 'customer',
             'email'      => 'customer@gmail.com',
-            'password'   => Hash::make('customer@gmail.coms'),
+            'password'   => Hash::make('customer@gmail.com'),
             'role'      => 'customer',
         ]);
 
