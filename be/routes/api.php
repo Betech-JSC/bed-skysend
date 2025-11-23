@@ -51,6 +51,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 3. (Bonus) Lấy danh sách yêu cầu riêng đã gửi
     Route::get('private-requests', [RequestController::class, 'index']);
+
+    // Xác nhận request 
+    Route::post('/requests/{id}/accept', [RequestController::class, 'accept']);
+    Route::post('/requests/{id}/decline', [RequestController::class, 'decline']);
 });
 
 Route::controller(AuthController::class)->group(function () {

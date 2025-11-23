@@ -81,6 +81,11 @@ class Request extends Model
         return $this->morphMany(Attachment::class, 'attachable')->orderBy('order');
     }
 
+    public function flight(): BelongsTo
+    {
+        return $this->belongsTo(Flight::class);
+    }
+
     /** Chỉ ảnh */
     public function images(): MorphMany
     {
@@ -150,19 +155,6 @@ class Request extends Model
         return $query->where('status', 'accepted')
             ->whereNull('confirmed_at')
             ->where('expires_at', '>', now());
-    }
-
-    /** Tìm theo tuyến + ngày */
-    public function scopeByRoute($query, string $from, string $to, ?string $date = null)
-    {
-        $query->where('from_airport', $from)
-            ->where('to_airport', $to);
-
-        if ($date) {
-            $query->whereDate('send_date', $date);
-        }
-
-        return $query;
     }
 
     /** Request của người dùng hiện tại */

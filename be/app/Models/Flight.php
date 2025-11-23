@@ -64,20 +64,6 @@ class Flight extends Model
         return $this->morphMany(Attachment::class, 'attachable')->orderBy('order');
     }
 
-    /** Ảnh vé máy bay (hỗ trợ nhiều ảnh, lấy cái đầu tiên) */
-    public function boardingPass(): HasOne
-    {
-        return $this->attachments()
-            ->where('type', 'image')
-            ->oldest('order');
-    }
-
-    /** Các ảnh vé (nếu up nhiều) */
-    public function boardingPasses(): MorphMany
-    {
-        return $this->attachments()->where('type', 'image');
-    }
-
     /** Các order đã được tạo từ chuyến bay này */
     public function orders(): HasMany
     {

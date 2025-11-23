@@ -63,4 +63,87 @@ class RequestController extends Controller
             'data'    => $privateReq
         ], 201);
     }
+
+    public function accept(string $id)
+    {
+        return $this->updateStatus($id, 'accepted');
+    }
+
+    public function decline(string $id)
+    {
+        return $this->updateStatus($id, 'declined');
+    }
+
+    private function updateStatus(string $id, string $status)
+    {
+        $request = ModelsRequest::with('flight')->where('id', $id)->firstOrFail();
+
+        // 1. Kiểm tra quyền: chỉ customer của chuyến bay mới được thao tác
+        if ($request->flight->customer_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện hành động này.'
+            ], 403);
+        }
+
+        // 2. Không cho thao tác nếu đã hết hạn hoặc đã xử lý rồi
+        if ($request->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Yêu cầu này đã được xử lý trước đó.'
+            ], 400);
+        }
+
+        if ($request->expires_at->isPast()) {
+            $request->update(['status' => 'expired']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Yêu cầu đã hết hạn.'
+            ], 400);
+        }
+
+        // 3. Bắt đầu transaction để đảm bảo an toàn
+        \DB::transaction(function () use ($request, $status) {
+            // Cập nhật trạng thái request hiện tại
+            $request->update([
+                'status' => $status === 'accepted' ? 'accepted' : 'declined',
+            ]);
+
+            // Nếu CHẤP NHẬN → tự động từ chối tất cả request pending khác cùng chuyến bay
+            if ($status === 'accepted') {
+                ModelsRequest::where('flight_id', $request->flight_id)
+                    ->where('id', '!=', $request->id)
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'auto_declined', // hoặc 'cancelled_by_system'
+                    ]);
+            }
+        });
+
+        $message = $status === 'accepted'
+            ? 'Bạn đã chấp nhận yêu cầu mang hàng này!'
+            : 'Bạn đã từ chối yêu cầu này.';
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => $request
+        ], 200);
+    }
+
+    // danh sách đang chờ
+    public function myPendingRequests()
+    {
+        $requests = ModelsRequest::with(['sender', 'flight'])
+            ->whereHas('flight', fn($q) => $q->where('customer_id', auth()->id()))
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $requests
+        ]);
+    }
 }
