@@ -31,7 +31,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
     const user = useSelector((state: RootState) => state.user);
     const [messages, setMessages] = useState<Message[]>([]);
     const [text, setText] = useState('');
-    const [otherUserId, setOtherUserId] = useState<number | null>(null);
+    const [otherUserId, setOtherUserId] = useState<number | string | null>(null);
     const [otherUserPushToken, setOtherUserPushToken] = useState<string | null>(null);
 
     const db = getDatabase(app);
@@ -42,18 +42,20 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         get(chatRef).then(async snapshot => {
             const chat = snapshot.val();
 
-            if (chat?.users) {
-                const other = chat.users.find((id: number) => id !== user.id);
-                setOtherUserId(other ?? null);
+                if (chat?.users) {
+                    // chat.users can be an array or an object (Firebase). Normalize to array of ids.
+                    const usersList: any[] = Array.isArray(chat.users) ? chat.users : Object.keys(chat.users || {});
+                    const other = usersList.find((id: any) => String(id) !== String(user.id));
+                    setOtherUserId(other ?? null);
 
-                // Lấy token push từ user node
-                if (other) {
-                    const userRef = ref(db, `users/${other}`);
-                    const userSnap = await get(userRef);
-                    const otherUserData = userSnap.val() || {};
-                    setOtherUserPushToken(otherUserData.expo_push_token ?? null);
+                    // Lấy token push từ user node
+                    if (other != null) {
+                        const userRef = ref(db, `users/${other}`);
+                        const userSnap = await get(userRef);
+                        const otherUserData = userSnap.val() || {};
+                        setOtherUserPushToken(otherUserData.expo_push_token ?? null);
+                    }
                 }
-            }
         });
     }, [chatId]);
 
