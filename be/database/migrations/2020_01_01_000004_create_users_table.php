@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name', 25)->nullable();;
+            $table->string('first_name', 25)->nullable();
             $table->string('last_name', 25)->nullable();;
             $table->string('name', 25)->nullable();;
             $table->string('email', 50)->unique();
@@ -22,6 +22,8 @@ return new class extends Migration
             $table->boolean('owner')->default(false);
             $table->string('image', 100)->nullable();
 
+            $table->string('role')->default('sender')
+                ->comment('User role: sender, customer');
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();

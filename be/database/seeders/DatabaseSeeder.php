@@ -14,21 +14,22 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::factory()->create([
-            'first_name' => 'admin',
-            'last_name'  => 'admin',
-            'name'       => 'admin',
-            'email'      => 'admin@gmail.com',
-            'password'   => Hash::make('admin123'), // đừng lưu mật khẩu dạng plain text!
+            'first_name' => 'sender',
+            'last_name'  => 'sender',
+            'name'       => 'sender',
+            'email'      => 'sender@gmail.com',
+            'password'   => Hash::make('sender@gmail.com'),
             'owner'      => true,
+            'role'      => 'sender',
         ]);
 
         User::factory()->create([
-            'first_name' => 'toan',
-            'last_name'  => 'toan',
-            'name'       => 'toan',
-            'email'      => 'toan@gmail.com',
-            'password'   => Hash::make('toan123'),
-            'owner'      => true,
+            'first_name' => 'customer',
+            'last_name'  => 'customer',
+            'name'       => 'customer',
+            'email'      => 'customer@gmail.com',
+            'password'   => Hash::make('customer@gmail.coms'),
+            'role'      => 'customer',
         ]);
 
         $this->call([
