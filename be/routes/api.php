@@ -3,12 +3,13 @@
 use App\Http\Controllers\Api\AirportController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\FlightController;
 use App\Http\Controllers\Api\FlightSearchController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionsController;
+use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\UserController;
-use Kreait\Firebase\Factory;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -42,11 +43,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/flights/search', [FlightSearchController::class, 'index'])
         ->name('flights.search');
 
+    Route::post('/flights/store', [FlightController::class, 'store'])
+        ->name('flights.store');
+
     // 2. Gửi yêu cầu riêng cho 1 hành khách (Private Request)
-    Route::post('/private-requests', [PrivateRequestController::class, 'store']);
+    Route::post('private-requests/store', [RequestController::class, 'store']);
 
     // 3. (Bonus) Lấy danh sách yêu cầu riêng đã gửi
-    Route::get('/private-requests', [PrivateRequestController::class, 'index']);
+    Route::get('private-requests', [RequestController::class, 'index']);
 });
 
 Route::controller(AuthController::class)->group(function () {

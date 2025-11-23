@@ -85,7 +85,6 @@ class FlightSearchController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $flights,
-            'filters' => $request->all()
         ]);
     }
 }
