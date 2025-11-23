@@ -15,8 +15,8 @@ class FlightSearchController extends Controller
             'to_airport'   => 'nullable|string|size:3',
             'date'         => 'nullable|date',
             'time_slot'    => 'nullable',
-            'item_type'    => 'nullable|in:document,contract,package,gift,other',
-            'item_value'   => 'nullable|numeric|min:0',
+            'item_type'    => 'nullable',
+            'item_value'   => 'nullable',
         ]);
 
         $query = Flight::with(['customer']);
