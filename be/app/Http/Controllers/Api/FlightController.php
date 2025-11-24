@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Flight;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class FlightController extends Controller
 {
@@ -34,5 +35,17 @@ class FlightController extends Controller
                 'data'    => $flight,
             ], 201);
         });
+    }
+
+    public function show($id)
+    {
+        $flight = Flight::where('customer_id', Auth::id())
+            ->where('id', $id)
+            ->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $flight
+        ]);
     }
 }

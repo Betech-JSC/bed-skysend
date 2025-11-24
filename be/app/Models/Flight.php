@@ -19,6 +19,7 @@ class Flight extends Model
         'to_airport',
         'flight_date',
         'airline',
+        'status',
         'flight_number',
         'boarding_pass_url',
         'verified',
