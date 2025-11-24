@@ -46,7 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Chi tiết chuyến bay
     Route::get('flights/{id}/show', [FlightController::class, 'show']);
-    Route::get('flights/{id}/update', [FlightController::class, 'update']);
+    Route::put('flights/{id}/update', [FlightController::class, 'update']);
 
     // Gửi yêu cầu riêng cho 1 hành khách (Private Request)
     Route::post('private-requests/store', [RequestController::class, 'store']);
