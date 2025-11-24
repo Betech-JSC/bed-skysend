@@ -310,7 +310,7 @@ const Home = () => {
         </View>
 
         {/* Đơn hàng nổi bật */}
-        <View className="mt-8">
+        {/* <View className="mt-8">
           <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-text-primary text-lg font-bold dark:text-white">
               Đơn hàng Nổi bật dành cho bạn
@@ -346,7 +346,7 @@ const Home = () => {
               </View>
             ))}
           </View>
-        </View>
+        </View> */}
 
         {/* Hành khách sẵn có */}
         <View className="mt-8">
