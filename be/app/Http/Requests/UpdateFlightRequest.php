@@ -22,6 +22,9 @@ class UpdateFlightRequest extends FormRequest
             'flight_number'  => 'sometimes|string|max:10',
             'max_weight'     => 'sometimes|numeric|min:0|max:999999.99',
             'note'           => 'nullable|string|max:1000',
+            'note'           => 'nullable|string|max:1000',
+            'item_value'     => 'nullable',
+            'item_type'      => 'nullable',
         ];
     }
 

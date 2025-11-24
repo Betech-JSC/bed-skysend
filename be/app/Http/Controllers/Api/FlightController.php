@@ -65,6 +65,8 @@ class FlightController extends Controller
                 'airline'        => $request->filled('airline') ? $request->airline : $flight->airline,
                 'flight_number'  => strtoupper($request->filled('flight_number') ? $request->flight_number : $flight->flight_number),
                 'max_weight'     => $request->filled('max_weight') ? $request->max_weight : $flight->max_weight,
+                'item_value'     => $request->item_value,
+                'item_type'     => $request->item_type,
                 'note'           => $request->filled('note') ? $request->note : $flight->note,
             ]);
 
