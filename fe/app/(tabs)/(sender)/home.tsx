@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import api from '@/api/api';
@@ -17,7 +18,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useOrderMatchList } from '@/hooks/useOrderMatchList';
 import CitySelectModal from '../../components/CitySelectModal';
 import ItemTypeSelect from '../../components/ItemTypeSelect';
-import { useApi } from '../../../hooks/useApi';
+
 interface RootState {
   user: {
     role?: string;
@@ -33,6 +34,7 @@ const Home = () => {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // State để lưu dữ liệu từ CitySelectModal
   const [departureCity, setDepartureCity] = useState({ value: '', label: '' });
@@ -41,9 +43,6 @@ const Home = () => {
   const [timeSlot, setTimeSlot] = useState('');
   const [itemType, setItemType] = useState('');
   const [itemValue, setItemValue] = useState('');
-
-  // Use API call hook
-  const { callApi, loading: searchLoading } = useApi();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -56,6 +55,7 @@ const Home = () => {
           setOrders(response.data.data.orders.data);
         }
       } catch (err) {
+        console.error('Error fetching orders:', err);
         setError('Error fetching orders');
       } finally {
         setLoading(false);
@@ -72,45 +72,48 @@ const Home = () => {
     }
   );
 
-  // Hàm xử lý khi tìm kiếm
   const handleSearch = async () => {
-    // Validate dữ liệu
+    // Validation
     if (!departureCity.value) {
-      alert('Vui lòng chọn thành phố đi');
+      Alert.alert('Thông báo', 'Vui lòng chọn thành phố đi');
       return;
     }
     if (!arrivalCity.value) {
-      alert('Vui lòng chọn thành phố đến');
+      Alert.alert('Thông báo', 'Vui lòng chọn thành phố đến');
       return;
     }
     if (!date) {
-      alert('Vui lòng chọn ngày gửi');
+      Alert.alert('Thông báo', 'Vui lòng chọn ngày gửi');
       return;
     }
     if (!timeSlot) {
-      alert('Vui lòng chọn khung giờ ưu tiên');
+      Alert.alert('Thông báo', 'Vui lòng chọn khung giờ ưu tiên');
       return;
     }
 
-    // Prepare params for API (date already in yyyy-mm-dd format)
     const searchParams = {
       from_airport: departureCity.value,
       to_airport: arrivalCity.value,
-      date: date, // Already in yyyy-mm-dd format
+      date: date,
       time_slot: timeSlot,
-      ...(itemType && { item_type: itemType }),
-      ...(itemValue && { item_value: itemValue }),
+      item_type: itemType,
+      item_value: itemValue,
     };
 
     console.log('Dữ liệu gửi lên API:', searchParams);
 
-    // Call API using useApi hook
-    const result = await callApi('flights/search', {
-      method: 'GET',
-      params: searchParams,
-      requireAuth: true,
-      onSuccess: (data) => {
-        // Chuyển sang màn hình kết quả với data
+    setSearchLoading(true);
+    
+    try {
+      // Gọi API sử dụng instance api đã config sẵn
+      const response = await api.get('flights/search', {
+        params: searchParams,
+      });
+
+      console.log('API Response:', response.data);
+
+      // Kiểm tra response thành công
+      if (response.data.status === 'success') {
         router.push({
           pathname: '/PassengerSearchResultsScreen',
           params: {
@@ -120,14 +123,25 @@ const Home = () => {
             arrivalLabel: arrivalCity.label,
             date: date,
             timeSlot: timeSlot,
-            searchResults: JSON.stringify(data.data || []),
+            searchResults: JSON.stringify(response.data.data || []),
           },
         });
-      },
-      onError: (error) => {
-        console.error('Search error:', error);
-      },
-    });
+      } else {
+        Alert.alert('Lỗi', response.data.message || 'Không tìm thấy kết quả phù hợp');
+      }
+    } catch (err: any) {
+      console.error('Search error:', err);
+      
+      // Xử lý lỗi chi tiết
+      const errorMessage = 
+        err.response?.data?.message || 
+        err.message || 
+        'Có lỗi xảy ra khi tìm kiếm';
+      
+      Alert.alert('Lỗi', errorMessage);
+    } finally {
+      setSearchLoading(false);
+    }
   };
 
   if (loading) {
@@ -196,7 +210,7 @@ const Home = () => {
                   style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
                 />
                 <TextInput
-                  placeholder="dd-mm-yyyy"
+                  placeholder="yyyy-mm-dd"
                   value={date}
                   onChangeText={setDate}
                   className="text-text-primary h-14 rounded-lg border border-gray-200 bg-background-light pl-10 pr-4 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -225,7 +239,7 @@ const Home = () => {
               </View>
             </View>
 
-            {/* Loại tài liệu - COMMENTED */}
+            {/* Loại tài liệu */}
             <View className="col-span-2">
               <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
                 Loại tài liệu
@@ -237,7 +251,7 @@ const Home = () => {
               />
             </View>
 
-            {/* Giá trị ước tính - COMMENTED */}
+            {/* Giá trị ước tính */}
             <View className="col-span-2">
               <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
                 Giá trị ước tính tài liệu (VND)
@@ -286,15 +300,15 @@ const Home = () => {
                 to_airport: {arrivalCity.value || 'Chưa chọn'}
               </Text>
               <Text className="text-xs text-gray-600 dark:text-gray-400">
-                date: {date ? `${date} (API: ${date.split('-').reverse().join('-')})` : 'Chưa nhập'}
+                date: {date || 'Chưa nhập'}
               </Text>
               <Text className="text-xs text-gray-600 dark:text-gray-400">
                 time_slot: {timeSlot || 'Chưa nhập'}
               </Text>
-                <Text className="text-xs text-gray-600 dark:text-gray-400">
+              <Text className="text-xs text-gray-600 dark:text-gray-400">
                 item_type: {itemType || 'Chưa nhập'}
               </Text>
-                 <Text className="text-xs text-gray-600 dark:text-gray-400">
+              <Text className="text-xs text-gray-600 dark:text-gray-400">
                 item_value: {itemValue || 'Chưa nhập'}
               </Text>
               <Text className="mt-2 text-xs italic text-gray-500 dark:text-gray-500">

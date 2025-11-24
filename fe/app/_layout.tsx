@@ -16,6 +16,7 @@ export default function Layout() {
   });
 
   usePushNotifications();
+
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
