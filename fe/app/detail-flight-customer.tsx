@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 export default function FlightDetailScreen({ navigation }: any) {
     const { colorScheme } = useColorScheme();
@@ -124,7 +125,7 @@ export default function FlightDetailScreen({ navigation }: any) {
 
             {/* Footer Buttons */}
             <View className="absolute bottom-0 left-0 right-0 bg-white p-4 shadow-2xl dark:bg-gray-900">
-                <TouchableOpacity className="h-14 w-full rounded-lg bg-primary justify-center items-center mb-3">
+                <TouchableOpacity onPress={() => router.push('/edit-flight-customer')} className="h-14 w-full rounded-lg bg-primary justify-center items-center mb-3">
                     <Text className="text-base font-bold text-white">Chỉnh sửa chuyến bay</Text>
                 </TouchableOpacity>
                 <TouchableOpacity className="h-14 w-full rounded-lg border border-red-600 justify-center items-center">
