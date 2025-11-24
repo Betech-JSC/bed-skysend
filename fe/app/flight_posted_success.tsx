@@ -31,17 +31,22 @@ export default function FlightPostedSuccessScreen() {
                                 name="check"
                                 size={80}
                                 color="white"
-                                style={{ fontVariationSettings: "'FILL' 1" }}
                             />
                         </View>
                     </MotiView>
 
                     {/* Text + animation */}
                     <MotiView
-                        from={{ y: 30, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
+                        from={{ 
+                            translateY: 30, 
+                            opacity: 0 
+                        }}
+                        animate={{ 
+                            translateY: 0, 
+                            opacity: 1 
+                        }}
                         transition={{
-                            delay: 300, // chỉ cần 1 delay, không cần lặp lại
+                            delay: 300,
                             type: "timing",
                             duration: 600,
                         }}
