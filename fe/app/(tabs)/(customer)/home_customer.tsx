@@ -8,12 +8,27 @@ import {
     TouchableOpacity,
     Image,
     FlatList,
+    Alert,
+    ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
+import CitySelectModal from '../../components/CitySelectModal';
+import DatePickerInput from '../../components/DatePickerInput';
+import api from '@/api/api';
 
 export default function HomeScreen() {
     const router = useRouter();
+
+    // State cho form đăng chuyến bay
+    const [departureAirport, setDepartureAirport] = useState({ value: '', label: '' });
+    const [arrivalAirport, setArrivalAirport] = useState({ value: '', label: '' });
+    const [flightDateTime, setFlightDateTime] = useState('');
+    const [airline, setAirline] = useState('');
+    const [flightCode, setFlightCode] = useState('');
+    const [allowedWeight, setAllowedWeight] = useState('');
+    const [boardingPass, setBoardingPass] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Dữ liệu Yêu cầu Ưu tiên (scroll ngang)
     const priorityRequests = [
@@ -46,6 +61,119 @@ export default function HomeScreen() {
         { name: "Trần Minh", item: "Hợp đồng", route: "SGN to DAD", reward: "120.000đ", urgent: false },
     ];
 
+    // Hàm xử lý đăng chuyến bay
+    const handlePostFlight = async () => {
+        console.log('=== BẮT ĐẦU SUBMIT CHUYẾN BAY ===');
+        
+        // Validation
+        if (!departureAirport.value) {
+            console.log('❌ Validation failed: Thiếu sân bay đi');
+            Alert.alert('Thông báo', 'Vui lòng chọn sân bay đi');
+            return;
+        }
+        if (!arrivalAirport.value) {
+            console.log('❌ Validation failed: Thiếu sân bay đến');
+            Alert.alert('Thông báo', 'Vui lòng chọn sân bay đến');
+            return;
+        }
+        if (!flightDateTime) {
+            console.log('❌ Validation failed: Thiếu ngày giờ bay');
+            Alert.alert('Thông báo', 'Vui lòng chọn ngày và giờ bay');
+            return;
+        }
+        if (!airline) {
+            console.log('❌ Validation failed: Thiếu hãng bay');
+            Alert.alert('Thông báo', 'Vui lòng nhập hãng bay');
+            return;
+        }
+        if (!flightCode) {
+            console.log('❌ Validation failed: Thiếu mã chuyến bay');
+            Alert.alert('Thông báo', 'Vui lòng nhập mã chuyến bay');
+            return;
+        }
+        if (!allowedWeight) {
+            console.log('❌ Validation failed: Thiếu khối lượng');
+            Alert.alert('Thông báo', 'Vui lòng nhập khối lượng cho phép');
+            return;
+        }
+
+        console.log('✅ Validation passed');
+
+        // Chuẩn bị dữ liệu gửi lên API
+        const flightData = {
+            from_airport: departureAirport.value,
+            to_airport: arrivalAirport.value,
+            flight_date: flightDateTime, // Format: yyyy-mm-dd
+            airline: airline,
+            flight_number: flightCode,
+            max_weight: parseFloat(allowedWeight),
+            boarding_pass: boardingPass || `boarding_pass_${flightCode}_${flightDateTime.replace(/-/g, '')}.jpg`
+        };
+
+        console.log('📦 Dữ liệu gửi lên API:');
+        console.log(JSON.stringify(flightData, null, 2));
+
+        setIsSubmitting(true);
+        console.log('⏳ Đang gửi request...');
+
+        try {
+            const response = await api.post('flights/store', flightData);
+
+            console.log('✅ API Response nhận được:');
+            console.log(JSON.stringify(response.data, null, 2));
+            console.log('Status code:', response.status);
+
+            if (response.data.status === 'success') {
+                console.log('🎉 Đăng chuyến bay thành công!');
+                
+                Alert.alert(
+                    'Thành công',
+                    'Chuyến bay đã được đăng thành công!',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => {
+                                console.log('🔄 Reset form và chuyển trang...');
+                                
+                                // Reset form
+                                setDepartureAirport({ value: '', label: '' });
+                                setArrivalAirport({ value: '', label: '' });
+                                setFlightDateTime('');
+                                setAirline('');
+                                setFlightCode('');
+                                setAllowedWeight('');
+                                setBoardingPass('');
+                                
+                                // Navigate to success screen
+                                router.push('flight_posted_success');
+                            }
+                        }
+                    ]
+                );
+            } else {
+                console.log('⚠️ API trả về status khác success:', response.data.status);
+            }
+        } catch (err: any) {
+            console.error('❌ LỖI KHI GỌI API:');
+            console.error('Error object:', err);
+            console.error('Error response:', err.response);
+            console.error('Error response data:', err.response?.data);
+            console.error('Error message:', err.message);
+            console.error('Error status:', err.response?.status);
+            
+            const errorMessage = 
+                err.response?.data?.message || 
+                err.message || 
+                'Có lỗi xảy ra khi đăng chuyến bay';
+            
+            console.log('📢 Hiển thị lỗi cho user:', errorMessage);
+            Alert.alert('Lỗi', errorMessage);
+        } finally {
+            setIsSubmitting(false);
+            console.log('=== KẾT THÚC SUBMIT ===\n');
+        }
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
             {/* Header */}
@@ -73,26 +201,57 @@ export default function HomeScreen() {
                     </Text>
 
                     <View className="grid grid-cols-2 gap-4 mb-4">
-                        <Input label="Sân bay đi" placeholder="SGN" />
-                        <Input label="Sân bay đến" placeholder="HAN" />
-                    </View>
-
-                    <View className="mb-4">
-                        <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                            Ngày & giờ bay
-                        </Text>
-                        <View className="relative">
-                            <TextInput
-                                placeholder="Chọn ngày và giờ"
-                                className="h-12 px-3 rounded-lg border border-[#dbdee6] dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-text-dark-gray dark:text-white"
+                        {/* Sân bay đi */}
+                        <View className="col-span-1">
+                            <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                Sân bay đi
+                            </Text>
+                            <CitySelectModal
+                                placeholder="VD: SGN"
+                                iconName="flight-takeoff"
+                                value={departureAirport.value}
+                                onValueChange={(value, label) => setDepartureAirport({ value, label })}
                             />
-                            <MaterialIcons name="calendar-today" size={20} color="#9CA3AF" className="absolute right-3 top-4" />
+                        </View>
+
+                        {/* Sân bay đến */}
+                        <View className="col-span-1">
+                            <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                Sân bay đến
+                            </Text>
+                            <CitySelectModal
+                                placeholder="VD: HAN"
+                                iconName="flight-land"
+                                value={arrivalAirport.value}
+                                onValueChange={(value, label) => setArrivalAirport({ value, label })}
+                            />
                         </View>
                     </View>
 
+                    {/* Ngày & giờ bay */}
+                    <View className="mb-4">
+                        <DatePickerInput
+                            label="Ngày & giờ bay"
+                            placeholder="Chọn ngày và giờ"
+                            value={flightDateTime}
+                            onValueChange={setFlightDateTime}
+                            minimumDate={new Date()}
+                        />
+                    </View>
+
                     <View className="grid grid-cols-2 gap-4 mb-4">
-                        <Input label="Hãng bay" placeholder="VD: VNA" />
-                        <Input label="Mã chuyến bay" placeholder="VN123" />
+                        <Input 
+                            label="Hãng bay" 
+                            placeholder="VD: VNA"
+                            value={airline}
+                            onChangeText={setAirline}
+                        />
+                        <Input 
+                            label="Mã chuyến bay" 
+                            placeholder="VN123"
+                            value={flightCode}
+                            onChangeText={setFlightCode}
+                        />
                     </View>
 
                     {/* Upload vé */}
@@ -109,11 +268,57 @@ export default function HomeScreen() {
                         </Text>
                     </View>
 
-                    <Input label="Khối lượng cho phép cho tài liệu (kg)" placeholder="VD: 5" keyboardType="numeric" />
+                    <Input 
+                        label="Khối lượng cho phép cho tài liệu (kg)" 
+                        placeholder="VD: 5" 
+                        keyboardType="numeric"
+                        value={allowedWeight}
+                        onChangeText={setAllowedWeight}
+                    />
 
-                    <TouchableOpacity onPress={() => router.push('flight_posted_success')} className="mt-6 h-14 bg-primary rounded-lg justify-center items-center">
-                        <Text className="text-white text-base font-bold">Đăng chuyến bay</Text>
+                    <TouchableOpacity 
+                        onPress={handlePostFlight}
+                        disabled={isSubmitting}
+                        className={`mt-6 h-14 rounded-lg justify-center items-center ${
+                            isSubmitting ? 'bg-gray-400' : 'bg-primary'
+                        }`}
+                    >
+                        {isSubmitting ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text className="text-white text-base font-bold">Đăng chuyến bay</Text>
+                        )}
                     </TouchableOpacity>
+
+                    {/* Debug: Hiển thị dữ liệu sẽ gửi */}
+                    {(departureAirport.value || arrivalAirport.value || flightDateTime) && (
+                        <View className="mt-4 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+                            <Text className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Dữ liệu sẽ gửi lên API:
+                            </Text>
+                            <Text className="text-xs text-gray-600 dark:text-gray-400">
+                                from_airport: {departureAirport.value || 'Chưa chọn'}
+                            </Text>
+                            <Text className="text-xs text-gray-600 dark:text-gray-400">
+                                to_airport: {arrivalAirport.value || 'Chưa chọn'}
+                            </Text>
+                            <Text className="text-xs text-gray-600 dark:text-gray-400">
+                                flight_date: {flightDateTime || 'Chưa chọn'}
+                            </Text>
+                            <Text className="text-xs text-gray-600 dark:text-gray-400">
+                                airline: {airline || 'Chưa nhập'}
+                            </Text>
+                            <Text className="text-xs text-gray-600 dark:text-gray-400">
+                                flight_number: {flightCode || 'Chưa nhập'}
+                            </Text>
+                            <Text className="text-xs text-gray-600 dark:text-gray-400">
+                                max_weight: {allowedWeight || 'Chưa nhập'}
+                            </Text>
+                            <Text className="mt-2 text-xs italic text-gray-500 dark:text-gray-500">
+                                API endpoint: POST /api/flights/store
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Yêu cầu Ưu tiên – Scroll ngang */}
@@ -140,7 +345,10 @@ export default function HomeScreen() {
                                 </Text>
                                 <Text className="text-base font-bold text-primary mt-1">+ {item.reward}</Text>
                             </View>
-                            <TouchableOpacity onPress={() => router.push('order_accepted_success')} className="mt-4 bg-secondary rounded-lg py-2.5 items-center">
+                            <TouchableOpacity 
+                                onPress={() => router.push('order_accepted_success')} 
+                                className="mt-4 bg-secondary rounded-lg py-2.5 items-center"
+                            >
                                 <Text className="text-white font-bold text-sm">Nhận ngay</Text>
                             </TouchableOpacity>
                         </View>
@@ -188,12 +396,26 @@ export default function HomeScreen() {
 }
 
 // Component Input nhỏ gọn
-const Input = ({ label, placeholder, keyboardType }: { label: string; placeholder: string; keyboardType?: any }) => (
+const Input = ({ 
+    label, 
+    placeholder, 
+    keyboardType,
+    value,
+    onChangeText 
+}: { 
+    label: string; 
+    placeholder: string; 
+    keyboardType?: any;
+    value?: string;
+    onChangeText?: (text: string) => void;
+}) => (
     <View>
         <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">{label}</Text>
         <TextInput
             placeholder={placeholder}
             keyboardType={keyboardType}
+            value={value}
+            onChangeText={onChangeText}
             className="h-12 px-3 rounded-lg border border-[#dbdee6] dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-text-dark-gray dark:text-white"
         />
     </View>
