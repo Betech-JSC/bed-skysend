@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 export default function FlightHistoryScreen() {
     const { colorScheme } = useColorScheme();
@@ -88,85 +89,87 @@ export default function FlightHistoryScreen() {
             <ScrollView className="flex-1 px-4 pb-32">
                 <View className="gap-4 py-2">
                     {flights.map((flight) => (
-                        <View key={flight.id} className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
-                            {/* Header */}
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center gap-3">
-                                    <View className={`h-10 w-10 items-center justify-center rounded-full ${flight.status === 'upcoming' ? 'bg-blue-100 dark:bg-blue-900/50' :
-                                        flight.status === 'completed' ? 'bg-gray-100 dark:bg-gray-700' :
-                                            'bg-gray-100 dark:bg-gray-700'
-                                        }`}>
-                                        <MaterialIcons
-                                            name={
-                                                flight.status === 'upcoming' ? 'flight-takeoff' :
-                                                    flight.status === 'completed' ? 'flight-land' :
-                                                        'no-transfer'
-                                            }
-                                            size={24}
-                                            color="#2563EB"
-                                        />
+                        <TouchableOpacity key={flight.id} onPress={() => router.push('/detail-flight-customer')} >
+                            <View className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                                {/* Header */}
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center gap-3">
+                                        <View className={`h-10 w-10 items-center justify-center rounded-full ${flight.status === 'upcoming' ? 'bg-blue-100 dark:bg-blue-900/50' :
+                                            flight.status === 'completed' ? 'bg-gray-100 dark:bg-gray-700' :
+                                                'bg-gray-100 dark:bg-gray-700'
+                                            }`}>
+                                            <MaterialIcons
+                                                name={
+                                                    flight.status === 'upcoming' ? 'flight-takeoff' :
+                                                        flight.status === 'completed' ? 'flight-land' :
+                                                            'no-transfer'
+                                                }
+                                                size={24}
+                                                color="#2563EB"
+                                            />
+                                        </View>
+                                        <View>
+                                            <Text className="text-base font-bold text-text-primary-light dark:text-text-primary-dark">
+                                                {flight.flightNumber}
+                                            </Text>
+                                            <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                                                {flight.time}
+                                            </Text>
+                                        </View>
                                     </View>
-                                    <View>
-                                        <Text className="text-base font-bold text-text-primary-light dark:text-text-primary-dark">
-                                            {flight.flightNumber}
+
+                                    {flight.requests > 0 && (
+                                        <View className="rounded-full bg-secondary px-3 py-2">
+                                            <Text className="text-sm font-bold text-white">{flight.requests} Yêu cầu</Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Route */}
+                                <View className="my-4 flex-row items-center justify-between">
+                                    <View className="items-center">
+                                        <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                                            {flight.from}
                                         </Text>
                                         <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                                            {flight.time}
+                                            {flight.fromCity}
+                                        </Text>
+                                    </View>
+
+                                    <View className="flex-1 flex-row items-center px-4">
+                                        <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
+                                        <MaterialIcons name="flight" size={24} color="#9CA3AF" />
+                                        <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
+                                    </View>
+
+                                    <View className="items-center">
+                                        <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                                            {flight.to}
+                                        </Text>
+                                        <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                                            {flight.toCity}
                                         </Text>
                                     </View>
                                 </View>
 
-                                {flight.requests > 0 && (
-                                    <View className="rounded-full bg-secondary px-3 py-2">
-                                        <Text className="text-sm font-bold text-white">{flight.requests} Yêu cầu</Text>
-                                    </View>
-                                )}
-                            </View>
-
-                            {/* Route */}
-                            <View className="my-4 flex-row items-center justify-between">
-                                <View className="items-center">
-                                    <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
-                                        {flight.from}
-                                    </Text>
-                                    <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                                        {flight.fromCity}
-                                    </Text>
-                                </View>
-
-                                <View className="flex-1 flex-row items-center px-4">
-                                    <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
-                                    <MaterialIcons name="flight" size={24} color="#9CA3AF" />
-                                    <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
-                                </View>
-
-                                <View className="items-center">
-                                    <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
-                                        {flight.to}
-                                    </Text>
-                                    <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                                        {flight.toCity}
-                                    </Text>
+                                {/* Badges */}
+                                <View className="flex-row gap-2">
+                                    {flight.verified && (
+                                        <View className="flex-row items-center gap-1.5 rounded-lg bg-green-100 px-2.5 py-1 dark:bg-green-900/50">
+                                            <MaterialIcons name="verified" size={16} color="#16A34A" />
+                                            <Text className="text-xs font-medium text-green-800 dark:text-green-200">Đã xác thực</Text>
+                                        </View>
+                                    )}
+                                    {!flight.verified && (
+                                        <View className="flex-row items-center gap-1.5 rounded-lg bg-yellow-100 px-2.5 py-1 dark:bg-yellow-900/50">
+                                            <MaterialIcons name="hourglass-empty" size={16} color="#D97706" />
+                                            <Text className="text-xs font-medium text-yellow-800 dark:text-yellow-200">Chờ xác thực</Text>
+                                        </View>
+                                    )}
+                                    {getStatusBadge(flight.status, flight.verified)}
                                 </View>
                             </View>
-
-                            {/* Badges */}
-                            <View className="flex-row gap-2">
-                                {flight.verified && (
-                                    <View className="flex-row items-center gap-1.5 rounded-lg bg-green-100 px-2.5 py-1 dark:bg-green-900/50">
-                                        <MaterialIcons name="verified" size={16} color="#16A34A" />
-                                        <Text className="text-xs font-medium text-green-800 dark:text-green-200">Đã xác thực</Text>
-                                    </View>
-                                )}
-                                {!flight.verified && (
-                                    <View className="flex-row items-center gap-1.5 rounded-lg bg-yellow-100 px-2.5 py-1 dark:bg-yellow-900/50">
-                                        <MaterialIcons name="hourglass-empty" size={16} color="#D97706" />
-                                        <Text className="text-xs font-medium text-yellow-800 dark:text-yellow-200">Chờ xác thực</Text>
-                                    </View>
-                                )}
-                                {getStatusBadge(flight.status, flight.verified)}
-                            </View>
-                        </View>
+                        </TouchableOpacity>
                     ))}
                 </View>
             </ScrollView>
