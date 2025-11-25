@@ -14,6 +14,53 @@ use Illuminate\Support\Facades\Auth;
 
 class FlightController extends Controller
 {
+    /**
+     * Lấy danh sách chuyến bay đã đăng của user hiện tại
+     */
+    public function index(Request $request)
+    {
+        $user_id = auth()->id();
+
+        $query = Flight::where('customer_id', $user_id)
+            ->select([
+                'id',
+                'uuid',
+                'from_airport',
+                'to_airport',
+                'flight_date',
+                'airline',
+                'flight_number',
+                'max_weight',
+                'booked_weight',
+                'status',
+                'verified',
+                'note',
+                'created_at'
+            ])
+            ->latest(); // mới nhất trước
+
+        // Tùy chọn: lọc theo trạng thái (pending, verified, cancelled...)
+        if ($request->has('status') && in_array($request->status, ['pending', 'verified', 'completed'])) {
+            $query->where('status', $request->status);
+        }
+
+        // Phân trang (10 chuyến/trang - bạn có thể đổi)
+        $flights = $query->paginate(10);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy danh sách chuyến bay thành công',
+            'data'    => $flights->items(),
+            'pagination' => [
+                'current_page' => $flights->currentPage(),
+                'total_pages'  => $flights->lastPage(),
+                'total_items'  => $flights->total(),
+                'per_page'     => $flights->perPage(),
+                'has_more'     => $flights->hasMorePages(),
+            ]
+        ]);
+    }
+
     public function store(Request $request)
     {
         $flight = Flight::create([

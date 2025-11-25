@@ -41,6 +41,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/flights/search', [FlightSearchController::class, 'index'])
         ->name('flights.search');
 
+    // Danh sách chuyến bay
+    Route::get('/flights', [FlightController::class, 'index']);
+
+    // Đăng chuyến bay
     Route::post('/flights/store', [FlightController::class, 'store'])
         ->name('flights.store');
 
