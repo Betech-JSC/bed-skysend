@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AirlineController;
 use App\Http\Controllers\Api\AirportController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
@@ -89,3 +90,12 @@ Route::get('/airports/search', [AirportController::class, 'search']);
 
 // Lấy chi tiết 1 sân bay theo code (IATA/ICAO)
 Route::get('/airports/{code}', [AirportController::class, 'show']);
+
+// Danh sách hãng hàng không nội địa
+Route::get('/airlines', [AirlineController::class, 'index']);
+
+// Tìm kiếm hãng hàng không
+Route::get('/airlines/search', [AirlineController::class, 'search']);
+
+// Chi tiết hãng hàng không theo mã IATA/ICAO
+Route::get('/airlines/{code}', [AirlineController::class, 'show']);
