@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AirportSeeder::class,
             AirlineSeeder::class,
+            PaymentMethodSeeder::class,
         ]);
     }
 }

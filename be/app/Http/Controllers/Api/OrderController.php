@@ -4,10 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
+    public function __construct(
+        private WalletService $walletService
+    ) {
+    }
     /**
      * Danh sách đơn hàng của user hiện tại
      * - Sender thấy đơn mình đặt
@@ -181,6 +188,7 @@ class OrderController extends Controller
 
                 // Hoàn tiền escrow (nếu đã nạp)
                 if (in_array($order->escrow_status, ['held', 'paid'])) {
+                    $this->walletService->refundEscrowToSender($order);
                     $order->refundEscrow();
                 }
             }
@@ -188,6 +196,7 @@ class OrderController extends Controller
             // Nếu hoàn tất → giải ngân tiền thưởng cho Customer
             if ($newStatus === 'completed') {
                 if ($order->escrow_status === 'held') {
+                    $this->walletService->releaseEscrowToCustomer($order);
                     $order->releaseEscrow();
                 }
             }

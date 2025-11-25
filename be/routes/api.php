@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\FlightController;
 use App\Http\Controllers\Api\FlightSearchController;
+use App\Http\Controllers\Api\PaymentMethodController;
+use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionsController;
@@ -37,6 +39,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('user/profile', [UserController::class, 'update']);
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
+
+    // Ví điện tử
+    Route::get('wallets/me', [WalletController::class, 'me']);
+    Route::get('wallets/transactions', [WalletController::class, 'transactions']);
+    Route::post('wallets/deposit', [WalletController::class, 'deposit']);
+    Route::post('wallets/deposits/{uuid}/confirm', [WalletController::class, 'confirmDeposit']);
 
     // Tìm kiếm Flight phù hợp (Filter Search cho Sender)
     Route::get('/flights/search', [FlightSearchController::class, 'index'])
@@ -99,3 +107,7 @@ Route::get('/airlines/search', [AirlineController::class, 'search']);
 
 // Chi tiết hãng hàng không theo mã IATA/ICAO
 Route::get('/airlines/{code}', [AirlineController::class, 'show']);
+
+// Phương thức thanh toán
+Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+Route::get('/payment-methods/{code}', [PaymentMethodController::class, 'show']);

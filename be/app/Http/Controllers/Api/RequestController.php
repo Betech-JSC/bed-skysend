@@ -3,13 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Flight;
-use App\Models\Request as ModelsRequest;
 use App\Http\Requests\StorePrivateRequestRequest;
+use App\Models\Flight;
 use App\Models\Order;
+use App\Models\Request as ModelsRequest;
+use App\Services\WalletService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class RequestController extends Controller
 {
+    public function __construct(
+        private WalletService $walletService
+    ) {
+    }
     public function index()
     {
         $requests = ModelsRequest::with(['flight'])
@@ -102,55 +109,68 @@ class RequestController extends Controller
                 'message' => 'Yêu cầu đã hết hạn.'
             ], 400);
         }
-        // 3. Tạo Order + cập nhật trạng thái trong transaction (an toàn tuyệt đối)
-        return \DB::transaction(function () use ($request) {
-            // Tạo đơn hàng
-            $order = Order::create([
-                'uuid'                   => \Str::uuid(),
-                'request_id'             => $request->id,
-                'sender_id'              => $request->sender_id,
-                'customer_id'            => $request->flight->customer_id,
-                'flight_id'              => $request->flight_id,
-                'reward'                 => $request->reward,
-                'service_fee'            => 0, // bạn tính sau hoặc để config
-                'insurance_fee'          => 0,
-                'total_amount'           => $request->reward, // tạm thời = reward
-                'escrow_amount'          => $request->reward, // tiền sẽ giữ hộ
-                'tracking_code'          => \Str::upper(\Str::random(8)), // VD: ABC123XY
-                'status'                 => 'confirmed', // trạng thái đầu tiên
-                'confirmed_at'           => now(),
-                'customer_note'          => $request->note,
-                'meeting_point_departure' => null, // sẽ update sau khi chat
-                'insured'                => false,
-                'metadata'               => [
-                    'time_slot' => $request->time_slot,
-                    'item_value' => $request->item_value,
-                ],
-            ]);
-
-            // Cập nhật request
-            $request->update([
-                'status'        => 'accepted',
-            ]);
-
-            // Tự động từ chối các request pending khác cùng chuyến bay
-            ModelsRequest::where('flight_id', $request->flight_id)
-                ->where('id', '!=', $request->id)
-                ->where('status', 'pending')
-                ->update([
-                    'status'        => 'auto_declined',
+        try {
+            // 3. Tạo Order + cập nhật trạng thái trong transaction (an toàn tuyệt đối)
+            return DB::transaction(function () use ($request) {
+                // Tạo đơn hàng
+                $order = Order::create([
+                    'uuid'                   => \Str::uuid(),
+                    'request_id'             => $request->id,
+                    'sender_id'              => $request->sender_id,
+                    'customer_id'            => $request->flight->customer_id,
+                    'flight_id'              => $request->flight_id,
+                    'reward'                 => $request->reward,
+                    'service_fee'            => 0, // bạn tính sau hoặc để config
+                    'insurance_fee'          => 0,
+                    'total_amount'           => $request->reward, // tạm thời = reward
+                    'escrow_amount'          => $request->reward, // tiền sẽ giữ hộ
+                    'escrow_status'          => 'held',
+                    'tracking_code'          => \Str::upper(\Str::random(8)), // VD: ABC123XY
+                    'status'                 => 'confirmed', // trạng thái đầu tiên
+                    'confirmed_at'           => now(),
+                    'customer_note'          => $request->note,
+                    'meeting_point_departure' => null, // sẽ update sau khi chat
+                    'insured'                => false,
+                    'metadata'               => [
+                        'time_slot'  => $request->time_slot,
+                        'item_value' => $request->item_value,
+                    ],
                 ]);
 
-            // Trả về thông tin đẹp cho Customer
+                $order->load(['sender', 'customer', 'flight']);
+
+                $this->walletService->holdEscrow($order);
+
+                // Cập nhật request
+                $request->update([
+                    'status'        => 'accepted',
+                ]);
+
+                // Tự động từ chối các request pending khác cùng chuyến bay
+                ModelsRequest::where('flight_id', $request->flight_id)
+                    ->where('id', '!=', $request->id)
+                    ->where('status', 'pending')
+                    ->update([
+                        'status'        => 'auto_declined',
+                    ]);
+
+                // Trả về thông tin đẹp cho Customer
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã chấp nhận yêu cầu, giữ hộ tiền và tạo đơn hàng thành công!',
+                    'data' => [
+                        'order'    => $order,
+                        'request'  => $request,
+                    ]
+                ], 200);
+            });
+        } catch (ValidationException $e) {
             return response()->json([
-                'success' => true,
-                'message' => 'Đã chấp nhận yêu cầu và tạo đơn hàng thành công!',
-                'data' => [
-                    'order'    => $order->load('sender', 'flight'),
-                    'request'  => $request,
-                ]
-            ], 200);
-        });
+                'success' => false,
+                'message' => $e->getMessage() ?: 'Không thể giữ hộ tiền do ví không đủ.',
+                'errors'  => $e->errors(),
+            ], 422);
+        }
     }
 
     // danh sách requests đang chờ
