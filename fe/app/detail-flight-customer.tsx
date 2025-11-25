@@ -286,9 +286,9 @@ export default function FlightDetailScreen() {
                 style: 'destructive',
                 onPress: async () => {
                   try {
-                    await api.delete(`flights/${flightDetail.id}`);
+                    await api.delete(`flights/${flightDetail.id}/destroy`);
                     Alert.alert('Thành công', 'Chuyến bay đã được hủy');
-                    router.back();
+                    router.push('/home_customer');
                   } catch (err: any) {
                     Alert.alert('Lỗi', err.response?.data?.message || 'Không thể hủy');
                   }
