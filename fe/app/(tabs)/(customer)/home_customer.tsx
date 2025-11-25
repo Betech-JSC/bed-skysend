@@ -20,7 +20,7 @@ import api from '@/api/api';
 
 export default function HomeScreen() {
   const router = useRouter();
-  
+
   // Lấy user từ Redux store
   const user = useSelector((state: any) => state.user);
 
@@ -72,7 +72,7 @@ export default function HomeScreen() {
   const handlePostFlight = async () => {
     // Kiểm tra user đã login chưa
     console.log('User from Redux:', user); // Debug
-    
+
     if (!user || !user.token) {
       Alert.alert(
         'Chưa đăng nhập',
@@ -141,7 +141,7 @@ export default function HomeScreen() {
 
       if (response.status === 200 || response.status === 201) {
         Alert.alert('Thành công!', 'Chuyến bay đã được tạo.');
-        
+
         // Reset form
         setDepartureAirport({ value: '', label: '' });
         setArrivalAirport({ value: '', label: '' });
@@ -150,13 +150,13 @@ export default function HomeScreen() {
         setFlightCode('');
         setAllowedWeight('');
         setBoardingPass('');
-        
+
         router.push('flight_posted_success');
       }
     } catch (err: any) {
       console.error('Error posting flight:', err);
       console.error('Error response:', err.response?.data); // Debug
-      
+
       // Xử lý lỗi 401 Unauthenticated
       if (err.response?.status === 401) {
         Alert.alert(
@@ -187,7 +187,7 @@ export default function HomeScreen() {
       <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light px-4 pb-2 pt-4 dark:bg-background-dark">
         <View className="w-12" />
         <Text className="text-text-dark-gray text-lg font-bold dark:text-white">Trang chủ</Text>
-        <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm dark:bg-gray-800">
+        <TouchableOpacity onPress={() => router.push('notifications')} className="h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm dark:bg-gray-800">
           <MaterialIcons
             name="notifications"
             size={24}
@@ -291,9 +291,8 @@ export default function HomeScreen() {
           <TouchableOpacity
             onPress={handlePostFlight}
             disabled={isSubmitting}
-            className={`mt-6 h-14 items-center justify-center rounded-lg ${
-              isSubmitting ? 'bg-gray-400' : 'bg-primary'
-            }`}>
+            className={`mt-6 h-14 items-center justify-center rounded-lg ${isSubmitting ? 'bg-gray-400' : 'bg-primary'
+              }`}>
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
