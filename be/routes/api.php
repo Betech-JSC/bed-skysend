@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('wallets/transactions', [WalletController::class, 'transactions']);
     Route::post('wallets/deposit', [WalletController::class, 'deposit']);
     Route::post('wallets/deposits/{uuid}/confirm', [WalletController::class, 'confirmDeposit']);
+    Route::post('wallets/deposits/{uuid}/approve', [WalletController::class, 'approveDeposit']);
 
     // Tìm kiếm Flight phù hợp (Filter Search cho Sender)
     Route::get('/flights/search', [FlightSearchController::class, 'index'])
