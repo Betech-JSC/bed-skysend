@@ -53,6 +53,11 @@ class Flight extends Model
         return $this->belongsTo(User::class, 'customer_id')->withDefault();
     }
 
+    public function requests(): HasMany
+    {
+        return $this->hasMany(Request::class);
+    }
+
     /** Người xác thực vé (admin hoặc AI) */
     public function verifier(): BelongsTo
     {
@@ -69,12 +74,6 @@ class Flight extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
-    }
-
-    /** Private request gửi riêng cho hành khách này */
-    public function privateRequests(): HasMany
-    {
-        return $this->hasMany(PrivateRequest::class);
     }
 
     // ==================================================================

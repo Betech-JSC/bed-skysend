@@ -22,21 +22,7 @@ class FlightController extends Controller
         $user_id = auth()->id();
 
         $query = Flight::where('customer_id', $user_id)
-            ->select([
-                'id',
-                'uuid',
-                'from_airport',
-                'to_airport',
-                'flight_date',
-                'airline',
-                'flight_number',
-                'max_weight',
-                'booked_weight',
-                'status',
-                'verified',
-                'note',
-                'created_at'
-            ])
+            ->with('requests')
             ->latest(); // mới nhất trước
 
         // Tùy chọn: lọc theo trạng thái (pending, verified, cancelled...)
