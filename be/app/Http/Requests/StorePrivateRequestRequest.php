@@ -22,6 +22,7 @@ class StorePrivateRequestRequest extends FormRequest
             'item_description'    => 'required|string|max:1000',
             'time_slot'           => 'required|in:morning,afternoon,evening,any',
             'note'                => 'nullable|string|max:500',
+            'priority_level'      => 'nullable|in:normal,priority,urgent',
         ];
     }
 
@@ -47,6 +48,7 @@ class StorePrivateRequestRequest extends FormRequest
             'time_slot.in'                => 'Khung giờ không hợp lệ.',
 
             'note.max'                    => 'Ghi chú không được quá 500 ký tự.',
+            'priority_level.in'           => 'Mức ưu tiên không hợp lệ.',
         ];
     }
 

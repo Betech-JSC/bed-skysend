@@ -23,6 +23,7 @@ class Request extends Model
         'item_value',
         'reward',
         'status',
+        'priority_level',
         'accepted_by',
         'accepted_at',
         'confirmed_by',
@@ -45,6 +46,7 @@ class Request extends Model
         'can_accept',
         'can_confirm',
         'attachment_count',
+        'priority_label',
     ];
 
     // ==================================================================
@@ -132,6 +134,15 @@ class Request extends Model
         return $this->attachments()->count();
     }
 
+    public function getPriorityLabelAttribute(): string
+    {
+        return match ($this->priority_level) {
+            'urgent'   => 'Gấp',
+            'priority' => 'Ưu tiên',
+            default    => 'Thường',
+        };
+    }
+
     /** Thumbnail đầu tiên (dùng làm ảnh đại diện) */
     public function getThumbnailUrlAttribute(): ?string
     {
@@ -147,6 +158,11 @@ class Request extends Model
     {
         return $query->where('status', 'pending')
             ->where('expires_at', '>', now());
+    }
+
+    public function scopePriorityOnly($query)
+    {
+        return $query->whereIn('priority_level', ['priority', 'urgent']);
     }
 
     /** Chỉ lấy request đã được accept nhưng chưa confirm */

@@ -84,6 +84,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Danh sách requets đang chờ
     Route::get('/requests/listPendingRequests', [RequestController::class, 'listPendingRequests']);
+
+    // Customer: danh sách yêu cầu ưu tiên/gấp
+    Route::get('/customer/requests/priority', [RequestController::class, 'priorityForCustomer']);
+
+    // Customer: danh sách yêu cầu phù hợp
+    Route::get('/customer/requests/matching', [RequestController::class, 'matchingForCustomer']);
 });
 
 Route::controller(AuthController::class)->group(function () {

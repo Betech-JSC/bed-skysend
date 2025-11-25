@@ -8,6 +8,7 @@ use App\Models\Flight;
 use App\Models\Order;
 use App\Models\Request as ModelsRequest;
 use App\Services\WalletService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -52,6 +53,13 @@ class RequestController extends Controller
             ], 400);
         }
 
+        $priorityLevel = $validated['priority_level'] ?? 'normal';
+        $expiresInHours = match ($priorityLevel) {
+            'urgent'   => 12,
+            'priority' => 24,
+            default    => 48,
+        };
+
         $privateReq = ModelsRequest::create([
             'uuid'             => \Str::uuid(),
             'sender_id'        => auth()->id(),
@@ -61,8 +69,9 @@ class RequestController extends Controller
             'item_description' => $validated['item_description'],
             'time_slot'        => $validated['time_slot'],
             'note'             => $validated['note'],
+            'priority_level'   => $priorityLevel,
             'status'           => 'pending',
-            'expires_at'       => now()->addHours(24),
+            'expires_at'       => now()->addHours($expiresInHours),
         ]);
 
         return response()->json([
@@ -187,6 +196,111 @@ class RequestController extends Controller
             'success' => true,
             'data' => $requests
         ]);
+    }
+
+    public function priorityForCustomer(Request $request)
+    {
+        $customerId = $request->user()->id;
+        $perPage = (int) min($request->query('per_page', 10), 50);
+
+        $requests = ModelsRequest::with([
+            'sender:id,name,avatar,phone',
+            'flight',
+        ])
+            ->whereHas('flight', fn($q) => $q->where('customer_id', $customerId))
+            ->priorityOnly()
+            ->active()
+            ->orderByRaw("FIELD(priority_level, 'urgent','priority','normal')")
+            ->orderBy('expires_at')
+            ->paginate($perPage);
+
+        $requests->getCollection()->transform(fn($req) => $this->transformCustomerRequest($req, $customerId));
+
+        return response()->json([
+            'success' => true,
+            'data'    => $requests,
+        ]);
+    }
+
+    public function matchingForCustomer(Request $request)
+    {
+        $customerId = $request->user()->id;
+        $perPage = (int) min($request->query('per_page', 15), 50);
+
+        $builder = ModelsRequest::with([
+            'sender:id,name,avatar,phone',
+            'flight',
+        ])
+            ->whereHas('flight', fn($q) => $q->where('customer_id', $customerId))
+            ->active();
+
+        if ($request->filled('priority_level') && in_array($request->priority_level, ['normal', 'priority', 'urgent'])) {
+            $builder->where('priority_level', $request->priority_level);
+        }
+
+        if ($request->filled('time_slot')) {
+            $builder->where('time_slot', $request->time_slot);
+        }
+
+        if ($request->filled('min_reward')) {
+            $builder->where('reward', '>=', (int) $request->min_reward);
+        }
+
+        if ($request->filled('max_reward')) {
+            $builder->where('reward', '<=', (int) $request->max_reward);
+        }
+
+        $requests = $builder
+            ->orderByDesc('reward')
+            ->orderBy('expires_at')
+            ->paginate($perPage);
+
+        $requests->getCollection()->transform(fn($req) => $this->transformCustomerRequest($req, $customerId));
+
+        return response()->json([
+            'success' => true,
+            'data'    => $requests,
+        ]);
+    }
+
+    private function transformCustomerRequest(ModelsRequest $request, ?int $customerId = null): array
+    {
+        $flight = $request->flight;
+        $sender = $request->sender;
+
+        return [
+            'id'              => $request->id,
+            'uuid'            => $request->uuid,
+            'status'          => $request->status,
+            'priority_level'  => $request->priority_level,
+            'priority_label'  => $request->priority_label,
+            'reward'          => (float) $request->reward,
+            'expires_at'      => $request->expires_at?->toIso8601String(),
+            'time_slot'       => $request->time_slot,
+            'can_accept'      => $request->can_accept && $flight?->customer_id === $customerId,
+            'is_expired'      => $request->is_expired,
+            'item'            => [
+                'type'        => $request->item_type,
+                'value'       => $request->item_value,
+                'description' => $request->item_description,
+            ],
+            'sender'          => [
+                'id'     => $sender?->id,
+                'name'   => $sender?->name,
+                'avatar' => $sender?->avatar,
+                'phone'  => $sender?->phone,
+            ],
+            'flight'          => $flight ? [
+                'id'               => $flight->id,
+                'uuid'             => $flight->uuid,
+                'from_airport'     => $flight->from_airport,
+                'to_airport'       => $flight->to_airport,
+                'flight_date'      => $flight->flight_date?->toDateString(),
+                'airline'          => $flight->airline,
+                'flight_number'    => $flight->flight_number,
+                'available_weight' => $flight->available_weight,
+            ] : null,
+        ];
     }
 
     // CHi tiết
