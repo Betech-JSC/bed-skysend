@@ -48,6 +48,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('flights/{id}/show', [FlightController::class, 'show']);
     Route::put('flights/{id}/update', [FlightController::class, 'update']);
 
+    // Hủy chuyến bay
+    Route::delete('/flights/{id}/destroy', [FlightController::class, 'destroy'])
+        ->name('flights.destroy');
+
     // Gửi yêu cầu riêng cho 1 hành khách (Private Request)
     Route::post('private-requests/store', [RequestController::class, 'store']);
 

@@ -77,4 +77,40 @@ class FlightController extends Controller
             ]);
         });
     }
+
+    public function destroy($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $flight = Flight::where('customer_id', auth()->id())
+                ->where('id', $id)
+                ->firstOrFail();
+
+            // Không cho hủy nếu đã có người đặt hàng
+            if ($flight->booked_weight > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể hủy vì đã có khách đặt hàng!',
+                ], 403);
+            }
+
+            // Nếu đã hủy rồi thì không cho hủy lại
+            if ($flight->status === 'cancelled') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chuyến bay đã được hủy trước đó!',
+                ], 400);
+            }
+
+            // HỦY CHUYẾN BAY - chỉ đổi status là đủ!
+            $flight->update([
+                'status' => 'cancelled'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hủy chuyến bay thành công!',
+                'data'    => $flight
+            ]);
+        });
+    }
 }
