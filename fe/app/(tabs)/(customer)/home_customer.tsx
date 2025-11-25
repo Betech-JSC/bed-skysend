@@ -142,7 +142,8 @@ export default function HomeScreen() {
       if (response.status === 200 || response.status === 201) {
         Alert.alert('Thành công!', 'Chuyến bay đã được tạo.');
 
-        // Reset form
+        const flightId = response.data.data?.id || response.data.id;
+        
         setDepartureAirport({ value: '', label: '' });
         setArrivalAirport({ value: '', label: '' });
         setFlightDateTime('');
@@ -150,8 +151,11 @@ export default function HomeScreen() {
         setFlightCode('');
         setAllowedWeight('');
         setBoardingPass('');
-
-        router.push('flight_posted_success');
+        
+        router.push({
+          pathname: '/flight_posted_success',
+          params: { flightId: flightId }
+        });
       }
     } catch (err: any) {
       console.error('Error posting flight:', err);
