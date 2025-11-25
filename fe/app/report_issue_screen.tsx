@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
+// import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function ReportIssueScreen({ navigation }: any) {
@@ -35,14 +35,14 @@ export default function ReportIssueScreen({ navigation }: any) {
             return;
         }
 
-        const result = await DocumentPicker.getDocumentAsync({
-            multiple: true,
-            type: ['image/*', 'video/*', 'application/pdf'],
-        });
+        // const result = await DocumentPicker.getDocumentAsync({
+        //     multiple: true,
+        //     type: ['image/*', 'video/*', 'application/pdf'],
+        // });
 
-        if (!result.canceled && result.assets) {
-            setFiles([...files, ...result.assets]);
-        }
+        // if (!result.canceled && result.assets) {
+        //     setFiles([...files, ...result.assets]);
+        // }
     };
 
     const removeFile = (index: number) => {
