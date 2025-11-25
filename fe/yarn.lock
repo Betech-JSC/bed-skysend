@@ -3175,6 +3175,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-picker/picker@npm:^2.11.4":
+  version: 2.11.4
+  resolution: "@react-native-picker/picker@npm:2.11.4"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/3c9947c1a3022ffa35008cc479b718585b106ff70a5fb0f24c4117bf2eaaf5f60795cba20271af50a01d3a878d5dc06661ea1c1315664898524e291e7412a18f
+  languageName: node
+  linkType: hard
+
 "@react-native/assets-registry@npm:0.81.5":
   version: 0.81.5
   resolution: "@react-native/assets-registry@npm:0.81.5"
@@ -6591,6 +6601,15 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: 10c0/3e2e23e304327959cfe6641623a690967e9e0c1715dc6ad1d12a47fad7b61f45f6c2273993354d85d396504f8a5cf16fe7d338aa166cd74daecf78409833f5a2
+  languageName: node
+  linkType: hard
+
+"expo-document-picker@npm:~14.0.7":
+  version: 14.0.7
+  resolution: "expo-document-picker@npm:14.0.7"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/19f3f2f7dd17e60ca7f1347dab9eccb99a050dfc1db400c01c249de532bfa48ac55bf155162e2fdf7740da7c6df73177a60280aa2705b1892e08e479a2ea3cd9
   languageName: node
   linkType: hard
 
@@ -11392,6 +11411,7 @@ __metadata:
     "@expo/vector-icons": "npm:^15.0.3"
     "@react-native-async-storage/async-storage": "npm:^2.2.0"
     "@react-native-community/datetimepicker": "npm:8.4.4"
+    "@react-native-picker/picker": "npm:^2.11.4"
     "@react-navigation/native": "npm:^7.1.8"
     "@react-navigation/stack": "npm:^7.6.2"
     "@reduxjs/toolkit": "npm:^2.9.2"
@@ -11409,6 +11429,7 @@ __metadata:
     expo-auth-session: "npm:~7.0.8"
     expo-constants: "npm:~18.0.10"
     expo-dev-client: "npm:~6.0.17"
+    expo-document-picker: "npm:~14.0.7"
     expo-facebook: "npm:12.2.0"
     expo-file-system: "npm:~19.0.17"
     expo-google-app-auth: "npm:~8.3.0"
