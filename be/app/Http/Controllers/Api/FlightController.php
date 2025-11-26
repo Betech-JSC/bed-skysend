@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreFlightRequest;
 use App\Http\Requests\UpdateFlightRequest;
 use Illuminate\Http\Request;
 
@@ -47,6 +46,7 @@ class FlightController extends Controller
         ]);
     }
 
+    // Đăng chuyến bay
     public function store(Request $request)
     {
         $flight = Flight::create([
@@ -56,6 +56,7 @@ class FlightController extends Controller
             'to_airport'     => strtoupper($request->to_airport),
             'flight_date'    => $request->flight_date,
             'airline'        => $request->airline,
+            'status'         => 'pending',
             'flight_number'  => strtoupper($request->flight_number),
             'max_weight'     => $request->max_weight,
             'item_type'     => $request->item_type,
@@ -83,7 +84,7 @@ class FlightController extends Controller
         ]);
     }
 
-
+    // cập nhật chuyến bay
     public function update(UpdateFlightRequest $request, $id)
     {
         return DB::transaction(function () use ($request, $id) {
@@ -98,8 +99,9 @@ class FlightController extends Controller
                 'airline'        => $request->filled('airline') ? $request->airline : $flight->airline,
                 'flight_number'  => strtoupper($request->filled('flight_number') ? $request->flight_number : $flight->flight_number),
                 'max_weight'     => $request->filled('max_weight') ? $request->max_weight : $flight->max_weight,
-                'item_value'     => $request->item_value,
-                'item_type'     => $request->item_type,
+                'item_value'     => $request->filled('item_value') ? $request->item_value : $flight->item_value,
+                'status'         => $request->filled('status') ? $request->status : $flight->status,
+                'item_type'      => $request->filled('item_type') ? $request->item_type : $flight->item_type,
                 'note'           => $request->filled('note') ? $request->note : $flight->note,
             ]);
 
@@ -111,6 +113,7 @@ class FlightController extends Controller
         });
     }
 
+    // Hủy chuyến bay
     public function destroy($id)
     {
         return DB::transaction(function () use ($id) {
@@ -143,6 +146,45 @@ class FlightController extends Controller
                 'success' => true,
                 'message' => 'Hủy chuyến bay thành công!',
                 'data'    => $flight
+            ]);
+        });
+    }
+
+    /**
+     * Admin xác thực chuyến bay (chuyển từ pending → verified)
+     *
+     * @param  int  $id  ID của chuyến bay
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function verify($id)
+    {
+
+        return DB::transaction(function () use ($id) {
+            $flight = Flight::with('customer')->findOrFail($id);
+
+            // Chỉ cho phép verify khi đang ở trạng thái pending
+            if ($flight->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chuyến bay không thể xác thực. Trạng thái hiện tại: ' . $flight->status,
+                ], 400);
+            }
+
+            // Cập nhật trạng thái + verified = true
+            $flight->update([
+                'status'    => 'verified',
+                'verified'  => true,
+                'verified_at' => now(),
+                'verified_by' => auth()->id(), // lưu lại admin nào verify (tùy chọn)
+            ]);
+
+            // (Tùy chọn) Gửi thông báo cho người đăng chuyến bay
+            // event(new FlightVerified($flight));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Xác thực chuyến bay thành công!',
+                'data'    => $flight->refresh(),
             ]);
         });
     }

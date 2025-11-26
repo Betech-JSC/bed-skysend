@@ -66,6 +66,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/flights/{id}/destroy', [FlightController::class, 'destroy'])
         ->name('flights.destroy');
 
+    // Xác thực chuyến bay
+    Route::post('/flights/{id}/verify', [FlightController::class, 'verify']);
+
     // Gửi yêu cầu riêng cho 1 hành khách (Private Request)
     Route::post('private-requests/store', [RequestController::class, 'store']);
 
