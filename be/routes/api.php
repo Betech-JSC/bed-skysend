@@ -70,6 +70,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/flights/{id}/verify', [FlightController::class, 'verify']);
 
     // Gửi yêu cầu riêng cho 1 hành khách (Private Request)
+    Route::post('private-requests/sent', [RequestController::class, 'sent']);
+
+    // Tạo request cho chuyến bay
     Route::post('private-requests/store', [RequestController::class, 'store']);
 
     // Hủy request

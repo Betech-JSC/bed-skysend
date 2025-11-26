@@ -16,8 +16,7 @@ class RequestController extends Controller
 {
     public function __construct(
         private WalletService $walletService
-    ) {
-    }
+    ) {}
     public function index()
     {
         $requests = ModelsRequest::with(['flight'])
@@ -78,6 +77,15 @@ class RequestController extends Controller
             'success' => true,
             'message' => 'Đã gửi yêu cầu thành công! Hành khách sẽ phản hồi trong 24h.',
             'data'    => $privateReq
+        ], 201);
+    }
+
+    public function sent(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã gửi yêu cầu thành công! Hành khách sẽ phản hồi trong 24h.',
+            'data'    => $request
         ], 201);
     }
 

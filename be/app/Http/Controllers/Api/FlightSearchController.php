@@ -18,8 +18,8 @@ class FlightSearchController extends Controller
             'item_value'   => 'nullable',
         ]);
 
-        $query = Flight::with(['customer']);
-        // ->where('verified', true);
+        $query = Flight::with(['customer'])
+            ->where('verified', true);
         // ->where('flight_date', '>=', now()->subDay())
         // ->whereRaw('max_weight - booked_weight >= 0.5');
 
