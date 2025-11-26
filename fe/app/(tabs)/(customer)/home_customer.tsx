@@ -1,5 +1,5 @@
-// app/(tabs)/home.tsx  (hoặc file HomeScreen của bạn)
-import React, { useState } from "react";
+// app/(tabs)/home.tsx
+import React, { useState, useEffect } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -32,8 +32,12 @@ export default function HomeScreen() {
     const [itemType, setItemType] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Dữ liệu Yêu cầu Ưu tiên (scroll ngang)
-    const priorityRequests = [
+    // State cho Priority Requests từ API
+    const [priorityRequestsAPI, setPriorityRequestsAPI] = useState([]);
+    const [loadingPriority, setLoadingPriority] = useState(false);
+
+    // Dữ liệu Yêu cầu Ưu tiên Demo (scroll ngang)
+    const priorityRequestsDemo = [
         {
             name: "Lê Minh Anh",
             item: "Tài liệu gấp",
@@ -62,7 +66,37 @@ export default function HomeScreen() {
         { name: "Trần Minh", item: "Hợp đồng", route: "SGN → DAD", reward: "120.000đ", urgent: false },
     ];
 
-    // Hàm xử lý đăng chuyến bay – ĐÃ FIX TRUYỀN ID
+    // Fetch Priority Requests từ API
+    const fetchPriorityRequests = async () => {
+        try {
+            setLoadingPriority(true);
+            const response = await api.get('customer/requests/priority');
+            let data = response.data;
+
+            // Xử lý response structure
+            if (data?.data) data = data.data;
+            if (data?.requests) data = data.requests;
+
+            if (Array.isArray(data)) {
+                setPriorityRequestsAPI(data);
+            }
+        } catch (err: any) {
+            console.error('Lỗi tải priority requests:', err);
+            // Không hiển thị alert, chỉ log error để không làm gián đoạn UX
+        } finally {
+            setLoadingPriority(false);
+        }
+    };
+
+    // Load priority requests khi component mount
+    useEffect(() => {
+        fetchPriorityRequests();
+    }, []);
+
+    // Kết hợp data demo + API
+    const allPriorityRequests = [...priorityRequestsDemo, ...priorityRequestsAPI];
+
+    // Hàm xử lý đăng chuyến bay
     const handlePostFlight = async () => {
         if (!departureAirport.value) return Alert.alert('Thông báo', 'Vui lòng chọn sân bay đi');
         if (!arrivalAirport.value) return Alert.alert('Thông báo', 'Vui lòng chọn sân bay đến');
@@ -230,28 +264,50 @@ export default function HomeScreen() {
                 </View>
 
                 {/* Yêu cầu Ưu tiên */}
-                <Text className="text-xl font-bold text-text-dark-gray dark:text-white mb-4">
-                    Yêu cầu Ưu tiên
-                </Text>
+                <View className="flex-row items-center justify-between mb-4">
+                    <Text className="text-xl font-bold text-text-dark-gray dark:text-white">
+                        Yêu cầu Ưu tiên
+                    </Text>
+                    {loadingPriority && (
+                        <ActivityIndicator size="small" color="#2563EB" />
+                    )}
+                </View>
                 <FlatList
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    data={priorityRequests}
-                    keyExtractor={(_, i) => i.toString()}
+                    data={allPriorityRequests}
+                    keyExtractor={(item, index) => item.id?.toString() || `demo-${index}`}
                     renderItem={({ item }) => (
                         <View className="w-72 mr-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
                             <View className="flex-row items-center gap-3">
-                                <Image source={{ uri: item.avatar }} className="w-12 h-12 rounded-full" />
-                                <View>
-                                    <Text className="font-bold text-text-dark-gray dark:text-white">{item.name}</Text>
-                                    <Text className="text-sm text-gray-500">{item.item}</Text>
+                                <Image 
+                                    source={{ uri: item.avatar || item.sender?.avatar || 'https://via.placeholder.com/48' }} 
+                                    className="w-12 h-12 rounded-full" 
+                                />
+                                <View className="flex-1">
+                                    <Text className="font-bold text-text-dark-gray dark:text-white">
+                                        {item.name || item.sender?.name || 'Người dùng'}
+                                    </Text>
+                                    <Text className="text-sm text-gray-500" numberOfLines={1}>
+                                        {item.item || item.item_type || 'Tài liệu'}
+                                    </Text>
                                 </View>
                             </View>
                             <Text className="mt-4 font-semibold text-lg text-text-dark-gray dark:text-white">
-                                {item.route}
+                                {item.route || `${item.from_airport || 'SGN'} → ${item.to_airport || 'HAN'}`}
                             </Text>
-                            <Text className="text-base font-bold text-primary mt-1">+ {item.reward}</Text>
-                            <TouchableOpacity className="mt-4 bg-secondary rounded-lg py-3 items-center">
+                            <Text className="text-base font-bold text-primary mt-1">
+                                + {item.reward || item.price || '0đ'}
+                            </Text>
+                            <TouchableOpacity 
+                                onPress={() => {
+                                    if (item.id) {
+                                        // Điều hướng đến chi tiết request từ API
+                                        router.push(`/request-detail/${item.id}`);
+                                    }
+                                }}
+                                className="mt-4 bg-secondary rounded-lg py-3 items-center"
+                            >
                                 <Text className="text-white font-bold text-sm">Nhận ngay</Text>
                             </TouchableOpacity>
                         </View>
@@ -268,7 +324,7 @@ export default function HomeScreen() {
                         <View key={i} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
                             <View className="flex-row items-start justify-between">
                                 <View className="flex-row items-center gap-3">
-                                    <Image source={{ uri: priorityRequests[0].avatar }} className="w-10 h-10 rounded-full" />
+                                    <Image source={{ uri: priorityRequestsDemo[0].avatar }} className="w-10 h-10 rounded-full" />
                                     <View>
                                         <Text className="font-bold text-text-dark-gray dark:text-white">{req.name}</Text>
                                         <Text className="text-sm text-gray-500">{req.item}</Text>
