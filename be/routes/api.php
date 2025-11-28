@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionsController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\AttachmentController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -124,3 +125,9 @@ Route::get('/airlines/{code}', [AirlineController::class, 'show']);
 // Phương thức thanh toán
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
 Route::get('/payment-methods/{code}', [PaymentMethodController::class, 'show']);
+
+
+// routes/api.php
+Route::post('/upload', [AttachmentController::class, 'upload'])
+    ->name('upload.file')
+    ->middleware('auth:sanctum'); // hoặc 'auth:api'
