@@ -99,7 +99,7 @@ class RequestController extends Controller
         return $this->updateStatus($id, 'declined');
     }
 
-    private function updateStatus(string $id, string $status)
+    private function updateStatus(string $id)
     {
         $request = ModelsRequest::with('flight')->where('id', $id)->firstOrFail();
 
