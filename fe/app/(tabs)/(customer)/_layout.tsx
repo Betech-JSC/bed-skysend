@@ -54,22 +54,11 @@ export default function CustomerLayout() {
 
             <Tabs.Screen name="chat" options={{ title: "Chat", tabBarIcon: ({ color }) => <MaterialIcons name="chat" size={28} color={color} /> }} />
 
-            {/* Tab 4 */}
+            {/* Tab 4 - Wallet đã bị ẩn */}
             <Tabs.Screen
                 name="wallet"
                 options={{
-                    tabBarLabel: ({ focused }) => (
-                        <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
-                            Ví tiền
-                        </Text>
-                    ),
-                    tabBarIcon: ({ focused }) => (
-                        <MaterialIcons
-                            name="account-balance-wallet"
-                            size={28}
-                            color={focused ? '#2563EB' : '#6B7280'}
-                        />
-                    ),
+                    href: null, // Ẩn tab khỏi tab bar
                 }}
             />
 

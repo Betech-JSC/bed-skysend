@@ -14,6 +14,8 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 import CitySelectModal from '../../components/CitySelectModal';
 import DatePickerInput from '../../components/DatePickerInput';
 import ItemTypeSelect from '../../components/ItemTypeSelect';
@@ -21,6 +23,7 @@ import api from '@/api/api';
 
 export default function HomeScreen() {
     const router = useRouter();
+    const user = useSelector((state: RootState) => state.user);
 
     // State cho form đăng chuyến bay
     const [departureAirport, setDepartureAirport] = useState({ value: '', label: '' });
@@ -35,6 +38,10 @@ export default function HomeScreen() {
     // State cho Priority Requests từ API
     const [priorityRequestsAPI, setPriorityRequestsAPI] = useState([]);
     const [loadingPriority, setLoadingPriority] = useState(false);
+
+    // State cho Matching Requests từ API
+    const [matchingRequestsAPI, setMatchingRequestsAPI] = useState([]);
+    const [loadingMatching, setLoadingMatching] = useState(false);
 
     // Dữ liệu Yêu cầu Ưu tiên Demo (scroll ngang)
     const priorityRequestsDemo = [
@@ -61,11 +68,6 @@ export default function HomeScreen() {
         },
     ];
 
-    const regularRequests = [
-        { name: "An Nguyễn", item: "Tài liệu", route: "SGN → HAN", reward: "150.000đ", urgent: true },
-        { name: "Trần Minh", item: "Hợp đồng", route: "SGN → DAD", reward: "120.000đ", urgent: false },
-    ];
-
     // Fetch Priority Requests từ API
     const fetchPriorityRequests = async () => {
         try {
@@ -88,13 +90,36 @@ export default function HomeScreen() {
         }
     };
 
-    // Load priority requests khi component mount
+    // Fetch Matching Requests từ API
+    const fetchMatchingRequests = async () => {
+        try {
+            setLoadingMatching(true);
+            const response = await api.get('customer/requests/matching');
+            let data = response.data;
+
+            // Xử lý response structure
+            if (data?.data) data = data.data;
+            if (data?.requests) data = data.requests;
+
+            if (Array.isArray(data)) {
+                setMatchingRequestsAPI(data);
+            }
+        } catch (err: any) {
+            console.error('Lỗi tải matching requests:', err);
+            // Không hiển thị alert, chỉ log error để không làm gián đoạn UX
+        } finally {
+            setLoadingMatching(false);
+        }
+    };
+
+    // Load data khi component mount
     useEffect(() => {
         fetchPriorityRequests();
+        fetchMatchingRequests();
     }, []);
 
     // Kết hợp data demo + API
-    const allPriorityRequests = [...priorityRequestsDemo, ...priorityRequestsAPI];
+    const allPriorityRequests = [...priorityRequestsAPI];
 
     // Hàm xử lý đăng chuyến bay
     const handlePostFlight = async () => {
@@ -176,7 +201,7 @@ export default function HomeScreen() {
 
             <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
                 <Text className="text-[32px] font-bold text-text-dark-gray dark:text-white pt-4">
-                    Xin chào, David!
+                    Xin chào, {user?.name || 'Bạn'}!
                 </Text>
                 <Text className="text-base text-text-dark-gray/80 dark:text-white/80 pb-6">
                     Chia sẻ chuyến bay, kiếm thêm thu nhập.
@@ -264,90 +289,121 @@ export default function HomeScreen() {
                 </View>
 
                 {/* Yêu cầu Ưu tiên */}
-                <View className="flex-row items-center justify-between mb-4">
-                    <Text className="text-xl font-bold text-text-dark-gray dark:text-white">
-                        Yêu cầu Ưu tiên
-                    </Text>
-                    {loadingPriority && (
-                        <ActivityIndicator size="small" color="#2563EB" />
-                    )}
-                </View>
-                <FlatList
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    data={allPriorityRequests}
-                    keyExtractor={(item, index) => item.id?.toString() || `demo-${index}`}
-                    renderItem={({ item }) => (
-                        <View className="w-72 mr-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-                            <View className="flex-row items-center gap-3">
-                                <Image 
-                                    source={{ uri: item.avatar || item.sender?.avatar || 'https://via.placeholder.com/48' }} 
-                                    className="w-12 h-12 rounded-full" 
-                                />
-                                <View className="flex-1">
-                                    <Text className="font-bold text-text-dark-gray dark:text-white">
-                                        {item.name || item.sender?.name || 'Người dùng'}
-                                    </Text>
-                                    <Text className="text-sm text-gray-500" numberOfLines={1}>
-                                        {item.item || item.item_type || 'Tài liệu'}
-                                    </Text>
-                                </View>
-                            </View>
-                            <Text className="mt-4 font-semibold text-lg text-text-dark-gray dark:text-white">
-                                {item.route || `${item.from_airport || 'SGN'} → ${item.to_airport || 'HAN'}`}
+                {allPriorityRequests.length > 0 && (
+                    <>
+                        <View className="flex-row items-center justify-between mb-4">
+                            <Text className="text-xl font-bold text-text-dark-gray dark:text-white">
+                                Yêu cầu Ưu tiên
                             </Text>
-                            <Text className="text-base font-bold text-primary mt-1">
-                                + {item.reward || item.price || '0đ'}
-                            </Text>
-                            <TouchableOpacity 
-                                onPress={() => {
-                                    if (item.id) {
-                                        // Điều hướng đến chi tiết request từ API
-                                        router.push(`/request-detail/${item.id}`);
-                                    }
-                                }}
-                                className="mt-4 bg-secondary rounded-lg py-3 items-center"
-                            >
-                                <Text className="text-white font-bold text-sm">Nhận ngay</Text>
-                            </TouchableOpacity>
+                            {loadingPriority && (
+                                <ActivityIndicator size="small" color="#2563EB" />
+                            )}
                         </View>
-                    )}
-                    contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 16 }}
-                />
+                        <FlatList
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            data={allPriorityRequests}
+                            keyExtractor={(item, index) => item.id?.toString() || `demo-${index}`}
+                            renderItem={({ item }) => (
+                                <View className="w-72 mr-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+                                    <View className="flex-row items-center gap-3">
+                                        <Image
+                                            source={{ uri: item.avatar || item.sender?.avatar || 'https://via.placeholder.com/48' }}
+                                            className="w-12 h-12 rounded-full"
+                                        />
+                                        <View className="flex-1">
+                                            <Text className="font-bold text-text-dark-gray dark:text-white">
+                                                {item.name || item.sender?.name || 'Người dùng'}
+                                            </Text>
+                                            <Text className="text-sm text-gray-500" numberOfLines={1}>
+                                                {item.item || item.item_type || 'Tài liệu'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <Text className="mt-4 font-semibold text-lg text-text-dark-gray dark:text-white">
+                                        {item.route || `${item.from_airport || 'SGN'} → ${item.to_airport || 'HAN'}`}
+                                    </Text>
+                                    <Text className="text-base font-bold text-primary mt-1">
+                                        + {item.reward || item.price || '0đ'}
+                                    </Text>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (item.id) {
+                                                // Điều hướng đến chi tiết request từ API
+                                                router.push(`/request-detail/${item.id}`);
+                                            }
+                                        }}
+                                        className="mt-4 bg-secondary rounded-lg py-3 items-center"
+                                    >
+                                        <Text className="text-white font-bold text-sm">Nhận ngay</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                            contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 16 }}
+                        />
+                    </>
+                )}
 
                 {/* Yêu cầu phù hợp */}
-                <Text className="text-xl font-bold text-text-dark-gray dark:text-white mt-8 mb-4">
-                    Các yêu cầu gửi phù hợp
-                </Text>
-                <View className="gap-4 pb-32">
-                    {regularRequests.map((req, i) => (
-                        <View key={i} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-                            <View className="flex-row items-start justify-between">
-                                <View className="flex-row items-center gap-3">
-                                    <Image source={{ uri: priorityRequestsDemo[0].avatar }} className="w-10 h-10 rounded-full" />
-                                    <View>
-                                        <Text className="font-bold text-text-dark-gray dark:text-white">{req.name}</Text>
-                                        <Text className="text-sm text-gray-500">{req.item}</Text>
-                                    </View>
-                                </View>
-                                {req.urgent && (
-                                    <View className="bg-red-500/10 px-3 py-1 rounded-full">
-                                        <Text className="text-xs font-bold text-red-600">Khẩn cấp</Text>
-                                    </View>
-                                )}
-                            </View>
-                            <View className="flex-row items-center justify-between mt-4">
-                                <View>
-                                    <Text className="font-semibold text-text-dark-gray dark:text-white">{req.route}</Text>
-                                    <Text className="text-sm font-bold text-primary">+ {req.reward}</Text>
-                                </View>
-                                <TouchableOpacity className="bg-primary/10 px-6 py-2.5 rounded-lg">
-                                    <Text className="text-primary font-bold text-sm">Nhận mang hộ</Text>
-                                </TouchableOpacity>
-                            </View>
+                {matchingRequestsAPI.length > 0 && (
+                    <>
+                        <View className="flex-row items-center justify-between mt-8 mb-4">
+                            <Text className="text-xl font-bold text-text-dark-gray dark:text-white">
+                                Các yêu cầu gửi phù hợp
+                            </Text>
+                            {loadingMatching && (
+                                <ActivityIndicator size="small" color="#2563EB" />
+                            )}
                         </View>
-                    ))}
-                </View>
+                        <View className="gap-4 pb-32">
+                            {matchingRequestsAPI.map((req: any, i: number) => (
+                                <View key={req.id || i} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+                                    <View className="flex-row items-start justify-between">
+                                        <View className="flex-row items-center gap-3">
+                                            <Image
+                                                source={{ uri: req.sender?.avatar || req.avatar || priorityRequestsDemo[0]?.avatar || 'https://via.placeholder.com/40' }}
+                                                className="w-10 h-10 rounded-full"
+                                            />
+                                            <View>
+                                                <Text className="font-bold text-text-dark-gray dark:text-white">
+                                                    {req.sender?.name || req.name || 'Người dùng'}
+                                                </Text>
+                                                <Text className="text-sm text-gray-500">
+                                                    {req.item_type || req.item || 'Tài liệu'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        {req.is_urgent && (
+                                            <View className="bg-red-500/10 px-3 py-1 rounded-full">
+                                                <Text className="text-xs font-bold text-red-600">Khẩn cấp</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                    <View className="flex-row items-center justify-between mt-4">
+                                        <View>
+                                            <Text className="font-semibold text-text-dark-gray dark:text-white">
+                                                {req.from_airport || 'SGN'} → {req.to_airport || 'HAN'}
+                                            </Text>
+                                            <Text className="text-sm font-bold text-primary">
+                                                + {req.price || req.reward || '0đ'}
+                                            </Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                if (req.id) {
+                                                    router.push(`/request-detail/${req.id}`);
+                                                }
+                                            }}
+                                            className="bg-primary/10 px-6 py-2.5 rounded-lg"
+                                        >
+                                            <Text className="text-primary font-bold text-sm">Nhận mang hộ</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    </>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
