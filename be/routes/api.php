@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Notifications
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::put('notifications/{notification}', [NotificationController::class, 'markAsRead']);
+    Route::post('notifications/broadcast', [NotificationController::class, 'broadcast']); // Gửi thông báo hệ thống
 
     Route::get('user/profile', [UserController::class, 'show']);
     Route::put('user/profile', [UserController::class, 'update']);
@@ -84,6 +85,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Chi tiết requests
     Route::get('private-requests/{id}/show', [RequestController::class, 'show']);
+
+    // Lấy danh sách requests của một flight (cho customer)
+    Route::get('flights/{flightId}/requests', [RequestController::class, 'getRequestsByFlight']);
 
     // Xác nhận request 
     Route::post('/requests/{id}/accept', [RequestController::class, 'accept']);

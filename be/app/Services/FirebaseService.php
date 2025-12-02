@@ -244,4 +244,40 @@ class FirebaseService
 
         return $chatRef->getKey();
     }
+
+    /**
+     * Tạo chat room trên Firebase cho order giữa sender và customer
+     * 
+     * @param int $orderId ID của order trong Laravel
+     * @param int $senderId ID của sender (user)
+     * @param int $customerId ID của customer (user)
+     * @return string|null Chat ID được tạo bởi Firebase
+     */
+    public function createChatRoomForOrder(int $orderId, int $senderId, int $customerId): ?string
+    {
+        try {
+            // Tạo chat node mới trên Firebase
+            $chatRef = $this->database->getReference("chats")->push([
+                'order_id' => $orderId,
+                'users' => [
+                    $senderId,
+                    $customerId
+                ],
+                'messages' => [],
+                'created_at' => now()->timestamp,
+                'updated_at' => now()->timestamp,
+            ]);
+
+            $chatId = $chatRef->getKey();
+
+            if ($chatId) {
+                Log::info("Created chat room for order {$orderId} with chat_id: {$chatId}");
+            }
+
+            return $chatId;
+        } catch (\Exception $e) {
+            Log::error('Firebase createChatRoomForOrder error: ' . $e->getMessage());
+            return null;
+        }
+    }
 }

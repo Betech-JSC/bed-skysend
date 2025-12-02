@@ -2,6 +2,45 @@
 import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity, View, Text } from 'react-native';
+import { useUnreadChatCount } from '@/hooks/useUnreadChatCount';
+
+function ChatIconWithBadge({ color }: { color: string }) {
+    const unreadCount = useUnreadChatCount();
+
+    return (
+        <View style={{ position: "relative" }}>
+            <MaterialIcons name="chat" size={28} color={color} />
+            {unreadCount > 0 && (
+                <View
+                    style={{
+                        position: "absolute",
+                        top: -6,
+                        right: -6,
+                        backgroundColor: "#EF4444",
+                        borderRadius: 10,
+                        minWidth: 20,
+                        height: 20,
+                        paddingHorizontal: 6,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderWidth: 2,
+                        borderColor: "#FFFFFF",
+                    }}
+                >
+                    <Text
+                        style={{
+                            color: "#FFFFFF",
+                            fontSize: 11,
+                            fontWeight: "bold",
+                        }}
+                    >
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                    </Text>
+                </View>
+            )}
+        </View>
+    );
+}
 
 export default function CustomerLayout() {
     return (
@@ -52,7 +91,28 @@ export default function CustomerLayout() {
                 }}
             />
 
-            <Tabs.Screen name="chat" options={{ title: "Chat", tabBarIcon: ({ color }) => <MaterialIcons name="chat" size={28} color={color} /> }} />
+            {/* Tab 3 - Orders */}
+            <Tabs.Screen
+                name="list_orders_customer"
+                options={{
+                    tabBarLabel: ({ focused }) => (
+                        <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
+                            Đơn hàng
+                        </Text>
+                    ),
+                    tabBarIcon: ({ focused }) => (
+                        <MaterialIcons name="inventory" size={28} color={focused ? '#2563EB' : '#6B7280'} />
+                    ),
+                }}
+            />
+
+            <Tabs.Screen
+                name="chat"
+                options={{
+                    title: "Chat",
+                    tabBarIcon: ({ color }) => <ChatIconWithBadge color={color} />
+                }}
+            />
 
             {/* Tab 4 - Wallet đã bị ẩn */}
             <Tabs.Screen

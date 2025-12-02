@@ -43,21 +43,48 @@ class ListenChatFirebase extends Command
 
                         // Gửi notification tới user nhận
                         $toUserId = $message['to'] ?? null;
-                        $fromUserId = $message['from'] ?? null;
+                        $fromUserId = $message['sender_id'] ?? $message['from'] ?? null;
                         $text = $message['text'] ?? '';
+                        $imageUrl = $message['image_url'] ?? null;
+                        $fileUrl = $message['file_url'] ?? null;
+                        $fileName = $message['file_name'] ?? null;
 
                         if ($toUserId) {
                             // Lấy FCM token từ DB user
                             $user = \App\Models\User::find($toUserId);
 
                             if ($user && $user->fcm_token) {
+                                // Tạo nội dung thông báo
+                                $notificationTitle = "Tin nhắn mới";
+                                $notificationBody = $text;
+                                
+                                if ($imageUrl) {
+                                    $notificationBody = "📷 Đã gửi ảnh";
+                                } elseif ($fileUrl) {
+                                    $notificationBody = "📎 Đã gửi file: " . ($fileName ?? 'file');
+                                } elseif (empty($text)) {
+                                    $notificationBody = "Tin nhắn mới";
+                                }
+
+                                // Lấy tên người gửi
+                                $sender = \App\Models\User::find($fromUserId);
+                                if ($sender) {
+                                    $notificationTitle = "Tin nhắn từ {$sender->name}";
+                                }
+
                                 ExpoPushService::sendNotification(
                                     $user->fcm_token,
-                                    "Tin nhắn mới",
-                                    $text,
-                                    ['chat_id' => $chatId, 'from_user' => $fromUserId]
+                                    $notificationTitle,
+                                    $notificationBody,
+                                    [
+                                        'chat_id' => $chatId,
+                                        'from_user' => $fromUserId,
+                                        'type' => 'chat_message',
+                                        'image_url' => $imageUrl,
+                                        'file_url' => $fileUrl,
+                                    ]
                                 );
-                                $this->info("Sent notification to user {$toUserId}: {$text}");
+                                $this->info("Sent notification to user {$toUserId}: {$notificationBody}");
                             }
                         }
                     }

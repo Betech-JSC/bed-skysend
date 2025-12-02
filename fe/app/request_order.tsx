@@ -1,4 +1,4 @@
-// app/(customer)/create_order_confirm.tsx
+// app/request_order.tsx
 import React, { useState } from 'react';
 import {
     View,
@@ -8,29 +8,113 @@ import {
     TextInput,
     Alert,
     Image,
+    ActivityIndicator,
+    SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import api from '@/api/api';
+import ItemTypeSelect from './components/ItemTypeSelect';
 
-export default function CreateOrderConfirmScreen() {
+export default function RequestOrderScreen() {
     const router = useRouter();
-    const [description, setDescription] = useState('');
+    const params = useLocalSearchParams();
+
+    // Form state
+    const [reward, setReward] = useState('');
+    const [itemValue, setItemValue] = useState('');
+    const [itemDescription, setItemDescription] = useState('');
+    const [timeSlot, setTimeSlot] = useState('');
+    const [note, setNote] = useState('');
+    const [itemType, setItemType] = useState('');
+
+    // UI state
     const [terms1, setTerms1] = useState(false);
     const [terms2, setTerms2] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
-    const handleSubmit = () => {
-        router.push('/requetes_order_detail')
+    // Get flight info from params
+    const flightId = params.flight_id as string || '';
+    const flightInfo = params.flight_data ? JSON.parse(params.flight_data as string) : null;
+
+    const handleSubmit = async () => {
+        // Validation
+        if (!reward || Number(reward) < 50000) {
+            Alert.alert('Lỗi', 'Vui lòng nhập phần thưởng tối thiểu 50,000đ');
+            return;
+        }
+        if (!itemValue || Number(itemValue) < 100000) {
+            Alert.alert('Lỗi', 'Vui lòng nhập giá trị tài liệu tối thiểu 100,000đ');
+            return;
+        }
+        if (!itemDescription || itemDescription.trim().length < 10) {
+            Alert.alert('Lỗi', 'Vui lòng nhập mô tả tài liệu (tối thiểu 10 ký tự)');
+            return;
+        }
+        if (!timeSlot) {
+            Alert.alert('Lỗi', 'Vui lòng chọn khung giờ ưu tiên');
+            return;
+        }
+        if (!terms1 || !terms2) {
+            Alert.alert('Lỗi', 'Vui lòng xác nhận các điều khoản');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+
+            const requestData = {
+                flight_id: Number(flightId),
+                reward: Number(reward),
+                item_value: Number(itemValue),
+                item_description: itemDescription.trim(),
+                time_slot: timeSlot,
+                note: note.trim() || undefined,
+            };
+
+            const response = await api.post('private-requests/sent', requestData);
+
+            if (response.data?.success) {
+                Alert.alert(
+                    'Thành công',
+                    response.data.message || 'Đã gửi yêu cầu thành công! Hành khách sẽ phản hồi trong 24h.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => router.back(),
+                        },
+                    ]
+                );
+            } else {
+                Alert.alert('Lỗi', response.data?.message || 'Không thể gửi yêu cầu');
+            }
+        } catch (err: any) {
+            console.error('Error sending request:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi gửi yêu cầu';
+            Alert.alert('Lỗi', errorMessage);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
+    const flight = flightInfo || {};
+    const customer = flight.customer || {};
+    const route = flight.from_airport && flight.to_airport
+        ? `${flight.from_airport} → ${flight.to_airport}`
+        : 'N/A';
+    const flightDate = flight.flight_date
+        ? new Date(flight.flight_date).toLocaleDateString('vi-VN')
+        : 'N/A';
+
     return (
-        <View className="flex-1 bg-background-light dark:bg-background-dark">
+        <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
             {/* Top App Bar */}
-            <View className="sticky top-0 z-50 flex-row items-center bg-background-light dark:bg-background-dark px-4 py-3">
+            <View className="sticky top-0 z-50 flex-row items-center bg-background-light dark:bg-background-dark px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <TouchableOpacity onPress={() => router.back()}>
                     <MaterialIcons name="arrow-back" size={28} color="#1F2937" className="dark:text-white" />
                 </TouchableOpacity>
                 <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white pr-10">
-                    Xác nhận yêu cầu
+                    Gửi yêu cầu
                 </Text>
             </View>
 
@@ -38,7 +122,23 @@ export default function CreateOrderConfirmScreen() {
                 <View className="p-4 gap-y-4 pb-48">
                     {/* Thông tin tóm tắt */}
                     <View className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm">
-                        <View className="grid grid-cols-2 gap-5">
+                        <View className="gap-4">
+                            {/* Customer Info */}
+                            <View className="flex-row items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                                <Image
+                                    source={{ uri: customer.avatar || 'https://via.placeholder.com/48' }}
+                                    className="w-12 h-12 rounded-full"
+                                />
+                                <View className="flex-1">
+                                    <Text className="font-bold text-text-primary dark:text-white">
+                                        {customer.name || 'Hành khách'}
+                                    </Text>
+                                    <Text className="text-sm text-text-secondary dark:text-gray-400">
+                                        {flight.flight_number || ''}
+                                    </Text>
+                                </View>
+                            </View>
+
                             {/* Tuyến đường */}
                             <View className="flex-row items-center gap-4">
                                 <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -47,7 +147,7 @@ export default function CreateOrderConfirmScreen() {
                                 <View>
                                     <Text className="text-sm text-text-secondary dark:text-gray-400">Tuyến đường</Text>
                                     <Text className="font-semibold text-text-primary dark:text-white">
-                                        Hà Nội (HAN) → TP. HCM (SGN)
+                                        {route}
                                     </Text>
                                 </View>
                             </View>
@@ -58,70 +158,130 @@ export default function CreateOrderConfirmScreen() {
                                     <MaterialIcons name="calendar-month" size={24} color="#2563EB" />
                                 </View>
                                 <View>
-                                    <Text className="text-sm text-text-secondary dark:text-gray-400">Ngày gửi</Text>
-                                    <Text className="font-semibold text-text-primary dark:text-white">25/12/2023</Text>
-                                </View>
-                            </View>
-
-                            {/* Loại tài liệu */}
-                            <View className="flex-row items-center gap-4">
-                                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                    <MaterialIcons name="description" size={24} color="#2563EB" />
-                                </View>
-                                <View>
-                                    <Text className="text-sm text-text-secondary dark:text-gray-400">Loại tài liệu</Text>
-                                    <Text className="font-semibold text-text-primary dark:text-white">
-                                        Hợp đồng kinh doanh
-                                    </Text>
-                                </View>
-                            </View>
-
-                            {/* Giá trị */}
-                            <View className="flex-row items-center gap-4">
-                                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                    <MaterialIcons name="payments" size={24} color="#2563EB" />
-                                </View>
-                                <View>
-                                    <Text className="text-sm text-text-secondary dark:text-gray-400">Giá trị khai báo</Text>
-                                    <Text className="font-semibold text-text-primary dark:text-white">
-                                        10.000.000 VNĐ
-                                    </Text>
+                                    <Text className="text-sm text-text-secondary dark:text-gray-400">Ngày bay</Text>
+                                    <Text className="font-semibold text-text-primary dark:text-white">{flightDate}</Text>
                                 </View>
                             </View>
                         </View>
                     </View>
 
-                    {/* Upload ảnh + mô tả */}
+                    {/* Form nhập thông tin */}
                     <View className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm gap-y-5">
-                        {/* Upload khu vực */}
-                        <TouchableOpacity className="items-center rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 px-6 py-10">
-                            <View className="h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                                <MaterialIcons name="photo-camera" size={32} color="#6B7280" />
-                            </View>
-                            <Text className="mt-4 text-base font-bold text-text-primary dark:text-white">
-                                Thêm hình ảnh tài liệu
-                            </Text>
-                            <Text className="mt-2 text-center text-sm text-text-secondary dark:text-gray-400 px-8">
-                                Nếu tài liệu nhạy cảm, bạn có thể chỉ upload trang bìa hoặc mô tả chung.
-                            </Text>
-                            <View className="mt-4 rounded-lg bg-gray-100 dark:bg-gray-700 px-6 py-3">
-                                <Text className="text-sm font-bold text-text-primary dark:text-white">Upload</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Mô tả */}
+                        {/* Phần thưởng */}
                         <View>
                             <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                                Mô tả tài liệu
+                                Phần thưởng cho hành khách (VND) <Text className="text-red-500">*</Text>
+                            </Text>
+                            <View className="relative">
+                                <MaterialIcons
+                                    name="payments"
+                                    size={20}
+                                    color="#6b7280"
+                                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                                />
+                                <TextInput
+                                    value={reward}
+                                    onChangeText={setReward}
+                                    placeholder="Ví dụ: 500,000"
+                                    keyboardType="numeric"
+                                    className="h-14 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-10 pr-4 text-sm text-text-primary dark:text-white"
+                                />
+                            </View>
+                            <Text className="mt-1 text-xs text-text-secondary dark:text-gray-400">
+                                Tối thiểu: 50,000đ
+                            </Text>
+                        </View>
+
+                        {/* Giá trị tài liệu */}
+                        <View>
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Giá trị ước tính tài liệu (VND) <Text className="text-red-500">*</Text>
+                            </Text>
+                            <View className="relative">
+                                <MaterialIcons
+                                    name="attach-money"
+                                    size={20}
+                                    color="#6b7280"
+                                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                                />
+                                <TextInput
+                                    value={itemValue}
+                                    onChangeText={setItemValue}
+                                    placeholder="Ví dụ: 10,000,000"
+                                    keyboardType="numeric"
+                                    className="h-14 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-10 pr-4 text-sm text-text-primary dark:text-white"
+                                />
+                            </View>
+                            <Text className="mt-1 text-xs text-text-secondary dark:text-gray-400">
+                                Tối thiểu: 100,000đ
+                            </Text>
+                        </View>
+
+                        {/* Loại tài liệu */}
+                        <View>
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Loại tài liệu
+                            </Text>
+                            <ItemTypeSelect
+                                placeholder="Chọn loại tài liệu"
+                                value={itemType}
+                                onValueChange={(value, label) => setItemType(value)}
+                            />
+                        </View>
+
+                        {/* Mô tả tài liệu */}
+                        <View>
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Mô tả tài liệu <Text className="text-red-500">*</Text>
                             </Text>
                             <TextInput
-                                value={description}
-                                onChangeText={setDescription}
-                                placeholder="Mô tả ngắn gọn về tài liệu..."
+                                value={itemDescription}
+                                onChangeText={setItemDescription}
+                                placeholder="Mô tả chi tiết về tài liệu cần gửi (tối thiểu 10 ký tự)..."
                                 placeholderTextColor="#9CA3AF"
                                 multiline
                                 numberOfLines={4}
                                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-text-primary dark:text-white min-h-24"
+                            />
+                        </View>
+
+                        {/* Khung giờ ưu tiên */}
+                        <View>
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Khung giờ ưu tiên <Text className="text-red-500">*</Text>
+                            </Text>
+                            <View className="relative">
+                                <MaterialIcons
+                                    name="schedule"
+                                    size={20}
+                                    color="#6b7280"
+                                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                                />
+                                <TextInput
+                                    value={timeSlot}
+                                    onChangeText={setTimeSlot}
+                                    placeholder="morning, afternoon, evening, any"
+                                    className="h-14 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-10 pr-4 text-sm text-text-primary dark:text-white"
+                                />
+                            </View>
+                            <Text className="mt-1 text-xs text-text-secondary dark:text-gray-400">
+                                Các giá trị: morning, afternoon, evening, any
+                            </Text>
+                        </View>
+
+                        {/* Ghi chú */}
+                        <View>
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Ghi chú (tùy chọn)
+                            </Text>
+                            <TextInput
+                                value={note}
+                                onChangeText={setNote}
+                                placeholder="Thêm ghi chú hoặc yêu cầu đặc biệt..."
+                                placeholderTextColor="#9CA3AF"
+                                multiline
+                                numberOfLines={3}
+                                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-text-primary dark:text-white min-h-20"
                             />
                         </View>
                     </View>
@@ -162,29 +322,34 @@ export default function CreateOrderConfirmScreen() {
             </ScrollView>
 
             {/* Sticky Footer */}
-            <View className="fixed bottom-0 left-0 right-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-2xl">
+            <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-2xl">
                 <View className="p-2 gap-y-3">
-                    <View className="gap-y-1.5 text-sm">
-                        <View className="flex justify-between">
-                            <Text className="text-text-secondary dark:text-gray-400">Phí dịch vụ SkySend:</Text>
-                            <Text className="font-semibold text-text-primary dark:text-white">50.000đ</Text>
+                    {reward && (
+                        <View className="gap-y-1.5 text-sm">
+                            <View className="flex-row justify-between">
+                                <Text className="text-text-secondary dark:text-gray-400">Phần thưởng:</Text>
+                                <Text className="font-semibold text-text-primary dark:text-white">
+                                    {Number(reward).toLocaleString('vi-VN')}đ
+                                </Text>
+                            </View>
                         </View>
-                        <View className="flex justify-between">
-                            <Text className="text-text-secondary dark:text-gray-400">Dự kiến trả cho hành khách:</Text>
-                            <Text className="font-semibold text-text-primary dark:text-white">300.000đ</Text>
-                        </View>
-                    </View>
+                    )}
 
                     <TouchableOpacity
                         onPress={handleSubmit}
-                        className={`w-full rounded-lg py-4 bg-primary shadow-lg`}
+                        disabled={submitting}
+                        className={`w-full rounded-lg py-4 ${submitting ? 'bg-gray-400' : 'bg-primary'} shadow-lg`}
                     >
-                        <Text className="text-center text-base font-bold text-white">
-                            Gửi yêu cầu đến hành khách
-                        </Text>
+                        {submitting ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text className="text-center text-base font-bold text-white">
+                                Gửi yêu cầu đến hành khách
+                            </Text>
+                        )}
                     </TouchableOpacity>
                 </View>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }

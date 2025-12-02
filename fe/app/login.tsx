@@ -72,10 +72,20 @@ export default function Login() {
           console.warn("Không lấy được push token:", error);
         }
 
-        // Lưu token lên Firebase nếu có
+        // Lưu token lên Firebase và database nếu có
         if (expoPushToken && user.id) {
           const db = getDatabase(app);
           await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
+          
+          // Lưu token vào Laravel database
+          try {
+            await api.post('/users/save-token', {
+              user_id: user.id,
+              token: expoPushToken,
+            });
+          } catch (error) {
+            console.warn('Không thể lưu push token vào database:', error);
+          }
         }
 
         // Lưu user vào Redux

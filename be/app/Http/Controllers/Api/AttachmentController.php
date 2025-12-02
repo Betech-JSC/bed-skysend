@@ -14,7 +14,7 @@ class AttachmentController extends Controller
     {
         $request->validate([
             'files'   => 'required|array',
-            'files.*' => 'required|file|mimes:jpeg,png,jpg,gif,webp,mp4,mov,avi,webm,mpg,mpeg|max:51200',
+            'files.*' => 'required|file|mimes:jpeg,png,jpg,gif,webp,mp4,mov,avi,webm,mpg,mpeg,pdf,doc,docx,xls,xlsx,txt,zip,rar|max:51200',
         ]);
 
         $uploaded = [];
@@ -24,8 +24,18 @@ class AttachmentController extends Controller
             $mime = $file->getMimeType();
             $isImage = str_starts_with($mime, 'image/');
             $isVideo = str_starts_with($mime, 'video/');
+            $isDocument = in_array($mime, [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'text/plain',
+                'application/zip',
+                'application/x-rar-compressed',
+            ]);
 
-            if (!$isImage && !$isVideo) {
+            if (!$isImage && !$isVideo && !$isDocument) {
                 continue;
             }
 
@@ -43,7 +53,7 @@ class AttachmentController extends Controller
 
             // Save to DB
             $attachment = Attachment::create([
-                'type'        => $isImage ? 'image' : 'video',
+                'type'        => $isImage ? 'image' : ($isVideo ? 'video' : 'document'),
                 'file_name'   => $file->getClientOriginalName(),
                 'file_path'   => $path,
                 'file_url'    => $url,

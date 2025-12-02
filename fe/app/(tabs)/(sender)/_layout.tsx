@@ -1,6 +1,46 @@
 // app/(sender)/_layout.tsx
 import { Tabs } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import { View, Text } from "react-native";
+import { useUnreadChatCount } from "@/hooks/useUnreadChatCount";
+
+function ChatIconWithBadge({ color }: { color: string }) {
+    const unreadCount = useUnreadChatCount();
+
+    return (
+        <View style={{ position: "relative" }}>
+            <MaterialIcons name="chat" size={28} color={color} />
+            {unreadCount > 0 && (
+                <View
+                    style={{
+                        position: "absolute",
+                        top: -6,
+                        right: -6,
+                        backgroundColor: "#EF4444",
+                        borderRadius: 10,
+                        minWidth: 20,
+                        height: 20,
+                        paddingHorizontal: 6,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderWidth: 2,
+                        borderColor: "#FFFFFF",
+                    }}
+                >
+                    <Text
+                        style={{
+                            color: "#FFFFFF",
+                            fontSize: 11,
+                            fontWeight: "bold",
+                        }}
+                    >
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                    </Text>
+                </View>
+            )}
+        </View>
+    );
+}
 
 export default function SenderLayout() {
     return (
@@ -16,7 +56,7 @@ export default function SenderLayout() {
             <Tabs.Screen name="list_orders" options={{ title: "Đơn hàng", tabBarIcon: ({ color }) => <MaterialIcons name="work" size={28} color={color} /> }} />
             <Tabs.Screen name="wallet" options={{ title: "Ví tiền", tabBarIcon: ({ color }) => <MaterialIcons name="account-balance-wallet" size={28} color={color} /> }} />
             <Tabs.Screen name="profile" options={{ title: "Tài khoản", tabBarIcon: ({ color }) => <MaterialIcons name="person" size={28} color={color} /> }} />
-            <Tabs.Screen name="chat" options={{ title: "Chat", tabBarIcon: ({ color }) => <MaterialIcons name="chat" size={28} color={color} /> }} />
+            <Tabs.Screen name="chat" options={{ title: "Chat", tabBarIcon: ({ color }) => <ChatIconWithBadge color={color} /> }} />
         </Tabs>
     );
 }

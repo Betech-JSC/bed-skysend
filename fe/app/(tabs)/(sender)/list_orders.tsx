@@ -333,17 +333,39 @@ function ListOrder() {
                                             </View>
                                         </View>
 
-                                        {/* Action Button */}
-                                        <View className="px-4 pb-4 pt-0">
-                                            <TouchableOpacity
-                                                onPress={() => router.push({
-                                                    pathname: '/orders_details',
-                                                    params: { orderId: order.id || order.uuid }
-                                                })}
-                                                className="bg-primary h-11 rounded-lg items-center justify-center"
-                                            >
-                                                <Text className="text-white font-bold text-sm">Xem chi tiết</Text>
-                                            </TouchableOpacity>
+                                        {/* Action Buttons */}
+                                        <View className="px-4 pb-4 pt-0 gap-2">
+                                            <View className="flex-row gap-2">
+                                                <TouchableOpacity
+                                                    onPress={() => router.push({
+                                                        pathname: '/orders_details',
+                                                        params: { orderId: order.id || order.uuid }
+                                                    })}
+                                                    className="bg-primary flex-1 h-11 rounded-lg items-center justify-center"
+                                                >
+                                                    <Text className="text-white font-bold text-sm">Xem chi tiết</Text>
+                                                </TouchableOpacity>
+
+                                                {customer.name && (
+                                                    <TouchableOpacity
+                                                        onPress={() => {
+                                                            // Use chat_id if available, otherwise use order id/uuid
+                                                            const chatId = order.chat_id || order.id || order.uuid;
+                                                            router.push({
+                                                                pathname: '/chat/[chatId]',
+                                                                params: {
+                                                                    chatId: String(chatId),
+                                                                    partnerName: customer.name || 'Hành khách',
+                                                                    partnerAvatar: customer.avatar || 'https://via.placeholder.com/40',
+                                                                }
+                                                            } as any);
+                                                        }}
+                                                        className="bg-blue-600 h-11 rounded-lg items-center justify-center px-4"
+                                                    >
+                                                        <MaterialIcons name="chat" size={20} color="white" />
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
                                         </View>
                                     </View>
                                 );

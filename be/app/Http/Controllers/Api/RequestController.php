@@ -7,7 +7,10 @@ use App\Http\Requests\StorePrivateRequestRequest;
 use App\Models\Flight;
 use App\Models\Order;
 use App\Models\Request as ModelsRequest;
+use App\Models\User;
 use App\Services\WalletService;
+use App\Services\FirebaseService;
+use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -15,7 +18,8 @@ use Illuminate\Validation\ValidationException;
 class RequestController extends Controller
 {
     public function __construct(
-        private WalletService $walletService
+        private WalletService $walletService,
+        private FirebaseService $firebaseService
     ) {}
     public function index()
     {
@@ -82,10 +86,96 @@ class RequestController extends Controller
 
     public function sent(Request $request)
     {
+        // Validate input
+        $validated = $request->validate([
+            'flight_id'           => 'required|exists:flights,id',
+            'reward'              => 'required|numeric|min:50000|max:10000000',
+            'item_value'          => 'required|numeric|min:100000',
+            'item_description'    => 'required|string|max:1000',
+            'time_slot'           => 'required|in:morning,afternoon,evening,any',
+            'note'                => 'nullable|string|max:500',
+        ]);
+
+        // Get flight with customer info
+        $flight = Flight::with('customer')->findOrFail($validated['flight_id']);
+
+        // Check if flight is verified
+        if (!$flight->verified || $flight->status !== 'verified') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chuyến bay chưa được xác thực. Vui lòng chọn chuyến bay đã được xác thực.'
+            ], 400);
+        }
+
+        // Check available weight
+        $availableWeight = $flight->max_weight - $flight->booked_weight;
+        if ($availableWeight < 0.5) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hành khách đã hết chỗ mang thêm (dưới 0.5kg)'
+            ], 400);
+        }
+
+        // Check if sender already sent a pending request for this flight
+        $exists = ModelsRequest::where('sender_id', auth()->id())
+            ->where('flight_id', $flight->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã gửi yêu cầu cho chuyến bay này rồi!'
+            ], 400);
+        }
+
+        // Check if sender is trying to send request to their own flight
+        if ($flight->customer_id === auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không thể gửi yêu cầu cho chuyến bay của chính mình.'
+            ], 400);
+        }
+
+        // Set priority level (default to normal)
+        $priorityLevel = 'normal';
+        $expiresInHours = 48; // Default 48 hours
+
+        // Create the request
+        $privateReq = ModelsRequest::create([
+            'uuid'             => \Str::uuid(),
+            'sender_id'        => auth()->id(),
+            'flight_id'        => $flight->id,
+            'reward'           => $validated['reward'],
+            'item_value'       => $validated['item_value'],
+            'item_description' => $validated['item_description'],
+            'time_slot'        => $validated['time_slot'],
+            'note'             => $validated['note'] ?? null,
+            'priority_level'   => $priorityLevel,
+            'status'           => 'pending',
+            'expires_at'       => now()->addHours($expiresInHours),
+        ]);
+
+        // Gửi notification tới customer
+        $customer = $flight->customer;
+        if ($customer && $customer->fcm_token) {
+            $sender = auth()->user();
+            ExpoPushService::sendNotification(
+                $customer->fcm_token,
+                'Yêu cầu mới',
+                "Bạn có yêu cầu mới từ {$sender->name} với phần thưởng " . number_format($validated['reward']) . ' VNĐ',
+                [
+                    'type' => 'new_request',
+                    'request_id' => $privateReq->id,
+                    'flight_id' => $flight->id,
+                ]
+            );
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Đã gửi yêu cầu thành công! Hành khách sẽ phản hồi trong 24h.',
-            'data'    => $request
+            'data'    => $privateReq
         ], 201);
     }
 
@@ -129,6 +219,13 @@ class RequestController extends Controller
         try {
             // 3. Tạo Order + cập nhật trạng thái trong transaction (an toàn tuyệt đối)
             return DB::transaction(function () use ($request) {
+                // Tạo chat room trên Firebase trước
+                $chatId = $this->firebaseService->createChatRoomForOrder(
+                    $request->id, // Tạm thời dùng request_id, sẽ update sau khi có order_id
+                    $request->sender_id,
+                    $request->flight->customer_id
+                );
+
                 // Tạo đơn hàng
                 $order = Order::create([
                     'uuid'                   => \Str::uuid(),
@@ -136,6 +233,7 @@ class RequestController extends Controller
                     'sender_id'              => $request->sender_id,
                     'customer_id'            => $request->flight->customer_id,
                     'flight_id'              => $request->flight_id,
+                    'chat_id'                => $chatId, // Lưu chat_id vào order
                     'reward'                 => $request->reward,
                     'service_fee'            => 0, // bạn tính sau hoặc để config
                     'insurance_fee'          => 0,
@@ -154,9 +252,17 @@ class RequestController extends Controller
                     ],
                 ]);
 
+                // Cập nhật chat room trên Firebase với order_id thực tế
+                if ($chatId) {
+                    $this->firebaseService->update("chats/{$chatId}", [
+                        'order_id' => $order->id,
+                        'updated_at' => now()->timestamp,
+                    ]);
+                }
+
                 $order->load(['sender', 'customer', 'flight']);
 
-                $this->walletService->holdEscrow($order);
+                // $this->walletService->holdEscrow($order);
 
                 // Cập nhật request
                 $request->update([
@@ -236,7 +342,7 @@ class RequestController extends Controller
         $perPage = (int) min($request->query('per_page', 15), 50);
 
         $builder = ModelsRequest::with([
-            'sender:id,name,avatar,phone',
+            'sender',
             'flight',
         ])
             ->whereHas('flight', fn($q) => $q->where('customer_id', $customerId))
@@ -264,6 +370,42 @@ class RequestController extends Controller
             ->paginate($perPage);
 
         $requests->getCollection()->transform(fn($req) => $this->transformCustomerRequest($req, $customerId));
+
+        return response()->json([
+            'success' => true,
+            'data'    => $requests,
+        ]);
+    }
+
+    /**
+     * Lấy danh sách requests của một flight (cho customer xem)
+     */
+    public function getRequestsByFlight(Request $request, string $flightId)
+    {
+        $user = auth()->user();
+
+        $flight = Flight::findOrFail($flightId);
+
+        // Chỉ customer của flight mới được xem requests
+        if ($flight->customer_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xem requests của chuyến bay này.'
+            ], 403);
+        }
+
+        $requests = ModelsRequest::with([
+            'sender',
+            'flight',
+        ])
+            ->where('flight_id', $flightId)
+            ->where('status', 'pending')
+            ->orderByRaw("FIELD(priority_level, 'urgent','priority','normal')")
+            ->orderByDesc('reward')
+            ->orderBy('expires_at')
+            ->get();
+
+        $requests->transform(fn($req) => $this->transformCustomerRequest($req, $user->id));
 
         return response()->json([
             'success' => true,

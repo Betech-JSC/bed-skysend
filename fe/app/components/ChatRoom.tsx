@@ -3,17 +3,23 @@ import {
     View,
     FlatList,
     TextInput,
-    Button,
     Text,
     KeyboardAvoidingView,
     Platform,
     StyleSheet,
+    TouchableOpacity,
+    Image,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
-import { getDatabase, ref, onValue, push, serverTimestamp, get } from 'firebase/database';
+import { getDatabase, ref, onValue, push, serverTimestamp, get, set, onDisconnect } from 'firebase/database';
 import { app } from '@/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { NotificationService } from '@/NotificationService';
+import * as ImagePicker from 'expo-image-picker';
+import api from '@/api/api';
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface Message {
     id: string;
@@ -21,6 +27,10 @@ interface Message {
     text: string;
     timestamp: number;
     to?: number;
+    image_url?: string;
+    file_url?: string;
+    file_name?: string;
+    file_type?: string;
 }
 
 interface ChatRoomProps {
@@ -33,8 +43,37 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
     const [text, setText] = useState('');
     const [otherUserId, setOtherUserId] = useState<number | string | null>(null);
     const [otherUserPushToken, setOtherUserPushToken] = useState<string | null>(null);
+    const [otherUserName, setOtherUserName] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isTyping, setIsTyping] = useState(false);
+    const [otherUserTyping, setOtherUserTyping] = useState(false);
+    const typingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
     const db = getDatabase(app);
+
+    // Update online status khi vào chat room
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const onlineRef = ref(db, `users/${user.id}/online`);
+        const lastSeenRef = ref(db, `users/${user.id}/last_seen`);
+
+        // Set online = true
+        set(onlineRef, true);
+        set(lastSeenRef, Date.now() / 1000);
+
+        // Update last_seen mỗi 30 giây
+        const interval = setInterval(() => {
+            set(lastSeenRef, Date.now() / 1000);
+        }, 30000);
+
+        // Cleanup khi unmount
+        return () => {
+            set(onlineRef, false);
+            clearInterval(interval);
+        };
+    }, [user?.id, db]);
 
     // Lấy user khác và token push
     useEffect(() => {
@@ -42,22 +81,35 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         get(chatRef).then(async snapshot => {
             const chat = snapshot.val();
 
-                if (chat?.users) {
-                    // chat.users can be an array or an object (Firebase). Normalize to array of ids.
-                    const usersList: any[] = Array.isArray(chat.users) ? chat.users : Object.keys(chat.users || {});
-                    const other = usersList.find((id: any) => String(id) !== String(user.id));
-                    setOtherUserId(other ?? null);
+            if (chat?.users) {
+                // chat.users can be an array or an object (Firebase). Normalize to array of ids.
+                const usersList: any[] = Array.isArray(chat.users) ? chat.users : Object.keys(chat.users || {});
+                const other = usersList.find((id: any) => String(id) !== String(user.id));
+                setOtherUserId(other ?? null);
 
-                    // Lấy token push từ user node
-                    if (other != null) {
-                        const userRef = ref(db, `users/${other}`);
-                        const userSnap = await get(userRef);
-                        const otherUserData = userSnap.val() || {};
-                        setOtherUserPushToken(otherUserData.expo_push_token ?? null);
-                    }
+                // Lấy token push và thông tin user từ Firebase
+                if (other != null) {
+                    const userRef = ref(db, `users/${other}`);
+                    const userSnap = await get(userRef);
+                    const otherUserData = userSnap.val() || {};
+                    setOtherUserPushToken(otherUserData.expo_push_token ?? null);
+                    setOtherUserName(otherUserData.name ?? null);
                 }
+            }
         });
     }, [chatId]);
+
+    // Listen typing status của đối phương
+    useEffect(() => {
+        if (!otherUserId || !chatId) return;
+
+        const typingRef = ref(db, `chats/${chatId}/typing/${otherUserId}`);
+        const unsubscribe = onValue(typingRef, (snapshot) => {
+            setOtherUserTyping(snapshot.val() === true);
+        });
+
+        return () => unsubscribe();
+    }, [chatId, otherUserId, db]);
 
     // Realtime listener
     useEffect(() => {
@@ -67,9 +119,13 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
             const arr: Message[] = Object.entries(data).map(([key, val]: [string, any]) => ({
                 id: key,
                 sender_id: val.sender_id,
-                text: val.text,
+                text: val.text || '',
                 timestamp: val.timestamp,
                 to: val.to,
+                image_url: val.image_url,
+                file_url: val.file_url,
+                file_name: val.file_name,
+                file_type: val.file_type,
             }));
             arr.sort((a, b) => a.timestamp - b.timestamp);
             setMessages(arr);
@@ -78,28 +134,262 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         return () => unsubscribe();
     }, [chatId]);
 
+    // Request permissions
+    const requestPermissions = async () => {
+        if (Platform.OS !== 'web') {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Quyền bị từ chối', 'Cần cấp quyền để chọn ảnh');
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // Pick image from library or camera
+    const pickImage = async (useCamera: boolean = false) => {
+        const hasPermission = await requestPermissions();
+        if (!hasPermission) return;
+
+        let result;
+
+        if (useCamera) {
+            const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
+            if (cameraPerm.status !== 'granted') {
+                Alert.alert('Quyền bị từ chối', 'Cần cấp quyền để chụp ảnh');
+                return;
+            }
+
+            result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.8,
+                allowsEditing: false,
+            });
+        } else {
+            result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.8,
+                allowsEditing: false,
+            });
+        }
+
+        if (result.canceled || !result.assets || result.assets.length === 0) {
+            return;
+        }
+
+        const asset = result.assets[0];
+        setSelectedImage(asset.uri);
+        await uploadImage(asset.uri);
+    };
+
+    // Pick document/file (using ImagePicker for now, can be extended with expo-document-picker)
+    const pickDocument = async () => {
+        Alert.alert(
+            'Thông báo',
+            'Chức năng chọn file sẽ được cập nhật sớm. Hiện tại bạn có thể chọn ảnh từ thư viện.',
+            [
+                { text: 'OK', onPress: () => pickImage(false) },
+                { text: 'Hủy', style: 'cancel' },
+            ]
+        );
+    };
+
+    // Upload image to server
+    const uploadImage = async (imageUri: string) => {
+        try {
+            setUploading(true);
+
+            const formData = new FormData();
+            const fileName = imageUri.split('/').pop() || `img_${Date.now()}.jpg`;
+            const match = /\.(\w+)$/.exec(fileName);
+            const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+            formData.append('files[0]', {
+                uri: imageUri,
+                type: type,
+                name: fileName,
+            } as any);
+
+            const response = await api.post('upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data && response.data.length > 0 && response.data[0].file_url) {
+                const imageUrl = response.data[0].file_url;
+                await sendMessage('', imageUrl);
+                setSelectedImage(null);
+            } else {
+                throw new Error('Upload failed');
+            }
+        } catch (err: any) {
+            console.error('Error uploading image:', err);
+            Alert.alert('Lỗi', err.response?.data?.message || 'Không thể tải ảnh lên');
+            setSelectedImage(null);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    // Upload file to server
+    const uploadFile = async (fileUri: string, fileName: string, mimeType: string) => {
+        try {
+            setUploading(true);
+
+            const formData = new FormData();
+            formData.append('files[0]', {
+                uri: fileUri,
+                type: mimeType,
+                name: fileName,
+            } as any);
+
+            const response = await api.post('upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data && response.data.length > 0 && response.data[0].file_url) {
+                const fileUrl = response.data[0].file_url;
+                await sendMessage('', undefined, fileUrl, fileName, mimeType);
+            } else {
+                throw new Error('Upload failed');
+            }
+        } catch (err: any) {
+            console.error('Error uploading file:', err);
+            Alert.alert('Lỗi', err.response?.data?.message || 'Không thể tải file lên');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     // Gửi tin nhắn + push notification
-    const sendMessage = async () => {
-        if (!text.trim() || !otherUserId) return;
+    const sendMessage = async (messageText?: string, imageUrl?: string, fileUrl?: string, fileName?: string, fileType?: string) => {
+        const finalText = messageText || text;
+        if ((!finalText.trim() && !imageUrl && !fileUrl) || !otherUserId) return;
 
         const messagesRef = ref(db, `chats/${chatId}/messages`);
-        await push(messagesRef, {
-            text,
+        const messageData: any = {
+            text: finalText || '',
             sender_id: user.id,
             to: otherUserId,
             timestamp: serverTimestamp(),
-        });
+        };
 
-        // Gửi push notification
+        if (imageUrl) {
+            messageData.image_url = imageUrl;
+        }
+
+        if (fileUrl) {
+            messageData.file_url = fileUrl;
+            messageData.file_name = fileName;
+            messageData.file_type = fileType;
+        }
+
+        await push(messagesRef, messageData);
+
+        // Gửi push notification từ frontend
         if (otherUserPushToken) {
-            NotificationService.sendPushNotification(
-                otherUserPushToken,
-                "Tin nhắn mới",
-                text
-            );
+            // Tạo nội dung thông báo
+            let notificationTitle = "Tin nhắn mới";
+            let notificationBody = finalText;
+
+            if (imageUrl) {
+                notificationBody = "📷 Đã gửi ảnh";
+            } else if (fileUrl) {
+                notificationBody = `📎 Đã gửi file: ${fileName || 'file'}`;
+            } else if (!finalText.trim()) {
+                notificationBody = "Tin nhắn mới";
+            }
+
+            // Hiển thị tên người gửi trong title
+            if (user?.name) {
+                notificationTitle = `Tin nhắn từ ${user.name}`;
+            }
+
+            // Gửi notification qua Expo Push API
+            try {
+                await fetch("https://exp.host/--/api/v2/push/send", {
+                    method: "POST",
+                    headers: {
+                        Accept: "application/json",
+                        "Accept-encoding": "gzip, deflate",
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        to: otherUserPushToken,
+                        sound: "default",
+                        title: notificationTitle,
+                        body: notificationBody,
+                        data: {
+                            type: "chat_message",
+                            chat_id: chatId,
+                            sender_id: user.id,
+                            sender_name: user.name,
+                            image_url: imageUrl,
+                            file_url: fileUrl,
+                        },
+                    }),
+                });
+            } catch (error) {
+                console.error("Error sending push notification:", error);
+            }
         }
 
         setText('');
+        setSelectedImage(null);
+
+        // Clear typing status khi gửi tin nhắn
+        if (isTyping && otherUserId) {
+            setIsTyping(false);
+            const typingRef = ref(db, `chats/${chatId}/typing/${user.id}`);
+            set(typingRef, false);
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        }
+    };
+
+    // Show image picker options
+    const showImagePickerOptions = () => {
+        Alert.alert(
+            'Chọn ảnh',
+            'Bạn muốn chọn ảnh từ đâu?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                { text: 'Thư viện', onPress: () => pickImage(false) },
+                { text: 'Camera', onPress: () => pickImage(true) },
+            ]
+        );
+    };
+
+    // Show attach options
+    const showAttachOptions = () => {
+        Alert.alert(
+            'Đính kèm',
+            'Bạn muốn đính kèm gì?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                { text: 'Ảnh', onPress: showImagePickerOptions },
+                { text: 'File', onPress: pickDocument },
+            ]
+        );
+    };
+
+    // Render typing indicator
+    const renderTypingIndicator = () => {
+        if (!otherUserTyping) return null;
+
+        return (
+            <View style={[styles.messageContainer, styles.otherMessage]}>
+                <View style={styles.typingIndicator}>
+                    <View style={styles.typingDot} />
+                    <View style={[styles.typingDot, { marginLeft: 4 }]} />
+                    <View style={[styles.typingDot, { marginLeft: 4 }]} />
+                </View>
+            </View>
+        );
     };
 
     // Render message
@@ -107,7 +397,32 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         const isMe = item.sender_id === user.id;
         return (
             <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.otherMessage]}>
-                <Text style={styles.messageText}>{item.text}</Text>
+                {item.image_url && (
+                    <Image
+                        source={{ uri: item.image_url }}
+                        style={styles.messageImage}
+                        resizeMode="cover"
+                    />
+                )}
+                {item.file_url && (
+                    <TouchableOpacity
+                        style={styles.fileContainer}
+                        onPress={() => {
+                            // Open file URL (you might want to use Linking.openURL)
+                            Alert.alert('File', `File: ${item.file_name || 'file'}\nURL: ${item.file_url}`);
+                        }}
+                    >
+                        <MaterialIcons name="insert-drive-file" size={24} color={isMe ? '#fff' : '#000'} />
+                        <Text style={[styles.fileName, { color: isMe ? '#fff' : '#000' }]}>
+                            {item.file_name || 'File'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
+                {item.text ? (
+                    <Text style={[styles.messageText, { color: isMe ? '#fff' : '#000' }]}>
+                        {item.text}
+                    </Text>
+                ) : null}
             </View>
         );
     };
@@ -122,15 +437,48 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
                 keyExtractor={item => item.id}
                 renderItem={renderItem}
                 contentContainerStyle={{ padding: 10 }}
+                ListFooterComponent={renderTypingIndicator}
             />
+            {uploading && (
+                <View style={styles.uploadingContainer}>
+                    <ActivityIndicator size="small" color="#2563EB" />
+                    <Text style={styles.uploadingText}>Đang tải lên...</Text>
+                </View>
+            )}
+            {selectedImage && (
+                <View style={styles.previewContainer}>
+                    <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+                    <TouchableOpacity
+                        style={styles.removePreview}
+                        onPress={() => setSelectedImage(null)}
+                    >
+                        <MaterialIcons name="close" size={20} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            )}
             <View style={styles.inputContainer}>
+                <TouchableOpacity
+                    style={styles.attachButton}
+                    onPress={showAttachOptions}
+                    disabled={uploading}
+                >
+                    <MaterialIcons name="attach-file" size={24} color="#2563EB" />
+                </TouchableOpacity>
                 <TextInput
                     style={styles.input}
                     value={text}
                     onChangeText={setText}
                     placeholder="Nhập tin nhắn..."
+                    multiline
+                    editable={!uploading}
                 />
-                <Button title="Send" onPress={sendMessage} />
+                <TouchableOpacity
+                    style={[styles.sendButton, (!text.trim() && !selectedImage) && styles.sendButtonDisabled]}
+                    onPress={() => sendMessage()}
+                    disabled={!text.trim() && !selectedImage || uploading}
+                >
+                    <MaterialIcons name="send" size={20} color="#fff" />
+                </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
     );
@@ -144,7 +492,7 @@ const styles = StyleSheet.create({
         maxWidth: '80%',
     },
     myMessage: {
-        backgroundColor: '#4caf50',
+        backgroundColor: '#2563EB',
         alignSelf: 'flex-end',
     },
     otherMessage: {
@@ -152,17 +500,41 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
     },
     messageText: {
-        color: '#000',
+        fontSize: 14,
+    },
+    messageImage: {
+        width: 200,
+        height: 200,
+        borderRadius: 8,
+        marginBottom: 4,
+    },
+    fileContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 8,
+        marginBottom: 4,
+    },
+    fileName: {
+        marginLeft: 8,
+        fontSize: 14,
+        fontWeight: '500',
     },
     inputContainer: {
         flexDirection: 'row',
         paddingBottom: 40,
-        paddingTop: 30,
-        paddingLeft: 20,
-        paddingRight: 20,
+        paddingTop: 10,
+        paddingLeft: 10,
+        paddingRight: 10,
         borderTopWidth: 1,
         borderColor: '#ccc',
-        alignItems: 'center',
+        alignItems: 'flex-end',
+        backgroundColor: '#fff',
+    },
+    attachButton: {
+        padding: 8,
+        marginRight: 8,
     },
     input: {
         flex: 1,
@@ -172,5 +544,63 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         marginRight: 8,
+        maxHeight: 100,
+        fontSize: 14,
+    },
+    sendButton: {
+        backgroundColor: '#2563EB',
+        borderRadius: 20,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sendButtonDisabled: {
+        backgroundColor: '#ccc',
+    },
+    uploadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 10,
+        backgroundColor: '#f0f0f0',
+    },
+    uploadingText: {
+        marginLeft: 8,
+        color: '#666',
+        fontSize: 12,
+    },
+    previewContainer: {
+        position: 'relative',
+        margin: 10,
+        alignSelf: 'flex-start',
+    },
+    previewImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 8,
+    },
+    removePreview: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        backgroundColor: '#ef4444',
+        borderRadius: 12,
+        width: 24,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    typingIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 8,
+    },
+    typingDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#999',
+        marginHorizontal: 2,
     },
 });

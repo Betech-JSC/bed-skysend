@@ -13,6 +13,7 @@ class Order extends Model
         'sender_id',
         'customer_id',
         'flight_id',
+        'chat_id',
         'reward',
         'service_fee',
         'insurance_fee',

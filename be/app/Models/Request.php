@@ -45,7 +45,6 @@ class Request extends Model
         'is_expired',
         'can_accept',
         'can_confirm',
-        'attachment_count',
         'priority_label',
     ];
 
@@ -77,34 +76,12 @@ class Request extends Model
         return $this->hasOne(Order::class);
     }
 
-    /** Tất cả ảnh/video/file đính kèm */
-    public function attachments(): MorphMany
-    {
-        return $this->morphMany(Attachment::class, 'attachable')->orderBy('order');
-    }
 
     public function flight(): BelongsTo
     {
         return $this->belongsTo(Flight::class);
     }
 
-    /** Chỉ ảnh */
-    public function images(): MorphMany
-    {
-        return $this->attachments()->where('type', 'image');
-    }
-
-    /** Chỉ video */
-    public function videos(): MorphMany
-    {
-        return $this->attachments()->where('type', 'video');
-    }
-
-    /** Chỉ tài liệu (PDF, DOC…) */
-    public function documents(): MorphMany
-    {
-        return $this->attachments()->where('type', 'document');
-    }
 
     // ==================================================================
     // ACCESSOR
@@ -128,11 +105,6 @@ class Request extends Model
         return $this->status === 'accepted' && ! $this->is_expired && is_null($this->order);
     }
 
-    /** Số lượng file đính kèm */
-    public function getAttachmentCountAttribute(): int
-    {
-        return $this->attachments()->count();
-    }
 
     public function getPriorityLabelAttribute(): string
     {
@@ -141,12 +113,6 @@ class Request extends Model
             'priority' => 'Ưu tiên',
             default    => 'Thường',
         };
-    }
-
-    /** Thumbnail đầu tiên (dùng làm ảnh đại diện) */
-    public function getThumbnailUrlAttribute(): ?string
-    {
-        return $this->images()->first()?->url;
     }
 
     // ==================================================================

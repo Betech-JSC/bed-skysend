@@ -28,6 +28,7 @@ interface FlightDetail {
   max_weight: number;
   boarding_pass?: string;
   status: string;
+  verified?: boolean;
   departure_time?: string;
   arrival_time?: string;
   from_city?: string;
@@ -41,6 +42,8 @@ export default function FlightDetailScreen() {
   const [flightDetail, setFlightDetail] = useState<FlightDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
   const flightId = React.useMemo(() => (Array.isArray(id) ? id[0] : id), [id]);
 
@@ -57,6 +60,11 @@ export default function FlightDetailScreen() {
       if (!data || !data.id) throw new Error('Dữ liệu không hợp lệ');
 
       setFlightDetail(data as FlightDetail);
+
+      // Nếu flight đã verified, fetch requests
+      if (data.verified || data.status === 'verified') {
+        fetchRequests(fid);
+      }
     } catch (err: any) {
       console.error('Lỗi tải chi tiết:', err);
       setFlightDetail(null);
@@ -71,6 +79,73 @@ export default function FlightDetailScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRequests = async (fid: string) => {
+    try {
+      setLoadingRequests(true);
+      const response = await api.get(`flights/${fid}/requests`);
+      let requestsData = [];
+      if (response.data?.success && response.data?.data) {
+        requestsData = Array.isArray(response.data.data) ? response.data.data : [];
+      }
+      setRequests(requestsData);
+    } catch (err: any) {
+      console.error('Lỗi tải requests:', err);
+      setRequests([]);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  const handleAcceptRequest = async (requestId: number) => {
+    Alert.alert(
+      'Xác nhận',
+      'Bạn có chắc chắn muốn chấp nhận yêu cầu này?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Chấp nhận',
+          onPress: async () => {
+            try {
+              await api.post(`requests/${requestId}/accept`);
+              Alert.alert('Thành công', 'Đã chấp nhận yêu cầu');
+              if (flightId) {
+                fetchRequests(flightId);
+                fetchFlightDetail(flightId);
+              }
+            } catch (err: any) {
+              Alert.alert('Lỗi', err.response?.data?.message || 'Không thể chấp nhận yêu cầu');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeclineRequest = async (requestId: number) => {
+    Alert.alert(
+      'Xác nhận',
+      'Bạn có chắc chắn muốn từ chối yêu cầu này?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Từ chối',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.post(`requests/${requestId}/decline`);
+              Alert.alert('Thành công', 'Đã từ chối yêu cầu');
+              if (flightId) {
+                fetchRequests(flightId);
+              }
+            } catch (err: any) {
+              Alert.alert('Lỗi', err.response?.data?.message || 'Không thể từ chối yêu cầu');
+            }
+          },
+        },
+      ]
+    );
   };
 
   // QUAN TRỌNG: TỰ ĐỘNG RELOAD KHI QUAY LẠI MÀN HÌNH
@@ -234,7 +309,7 @@ export default function FlightDetailScreen() {
           </View>
 
           {/* Boarding Pass */}
-          <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
+          {/* <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
             <Text className="text-base font-bold text-text-dark-gray dark:text-white">Vé máy bay của bạn</Text>
             {flightDetail.boarding_pass ? (
               <TouchableOpacity
@@ -255,16 +330,130 @@ export default function FlightDetailScreen() {
             ) : (
               <Text className="mt-3 text-sm text-gray-500">Chưa có boarding pass</Text>
             )}
-          </View>
+          </View> */}
 
           {/* Thông tin mang tài liệu */}
-          <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
+          {/* <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
             <Text className="text-base font-bold text-text-dark-gray dark:text-white">Thông tin mang tài liệu</Text>
             <View className="mt-3 flex-row justify-between">
               <Text className="text-sm text-gray-600">Khối lượng tối đa cho phép</Text>
               <Text className="font-bold text-text-dark-gray dark:text-white">{flightDetail.max_weight} kg</Text>
             </View>
-          </View>
+          </View> */}
+
+          {/* Danh sách yêu cầu từ senders (chỉ hiển thị khi flight đã verified) */}
+          {(flightDetail.verified || flightDetail.status === 'verified') && (
+            <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-base font-bold text-text-dark-gray dark:text-white">
+                  Yêu cầu từ người gửi ({requests.length})
+                </Text>
+                {loadingRequests && <ActivityIndicator size="small" color="#2563EB" />}
+              </View>
+
+              {requests.length === 0 ? (
+                <Text className="text-sm text-gray-500 text-center py-4">
+                  Chưa có yêu cầu nào
+                </Text>
+              ) : (
+                <View className="gap-4">
+                  {requests.map((req: any) => {
+                    const sender = req.sender || {};
+                    const isUrgent = req.priority_level === 'urgent';
+                    const isPriority = req.priority_level === 'priority';
+
+                    return (
+                      <View
+                        key={req.id || req.uuid}
+                        className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+                      >
+                        {/* Header: Sender info + Status */}
+                        <View className="flex-row items-center justify-between mb-3">
+                          <View className="flex-row items-center gap-3 flex-1">
+                            <Image
+                              source={{ uri: sender.avatar || 'https://via.placeholder.com/40' }}
+                              className="w-10 h-10 rounded-full"
+                            />
+                            <View className="flex-1">
+                              <Text className="font-bold text-text-dark-gray dark:text-white">
+                                {sender.name || 'Người gửi'}
+                              </Text>
+                              <Text className="text-xs text-gray-500">
+                                {sender.phone || ''}
+                              </Text>
+                            </View>
+                          </View>
+                          {(isUrgent || isPriority) && (
+                            <View className={`px-2 py-1 rounded-full ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-100 dark:bg-orange-900/30'}`}>
+                              <Text className={`text-xs font-bold ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                                {isUrgent ? 'Khẩn cấp' : 'Ưu tiên'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Request details */}
+                        <View className="gap-2 mb-3">
+                          <View className="flex-row justify-between">
+                            <Text className="text-sm text-gray-600">Phần thưởng:</Text>
+                            <Text className="font-bold text-text-dark-gray dark:text-white">
+                              {Number(req.reward).toLocaleString('vi-VN')}đ
+                            </Text>
+                          </View>
+                          <View className="flex-row justify-between">
+                            <Text className="text-sm text-gray-600">Giá trị tài liệu:</Text>
+                            <Text className="font-semibold text-text-dark-gray dark:text-white">
+                              {Number(req.item?.value || 0).toLocaleString('vi-VN')}đ
+                            </Text>
+                          </View>
+                          <View className="flex-row justify-between">
+                            <Text className="text-sm text-gray-600">Khung giờ:</Text>
+                            <Text className="text-sm text-text-dark-gray dark:text-white">
+                              {req.time_slot === 'morning' ? 'Buổi sáng' :
+                                req.time_slot === 'afternoon' ? 'Buổi chiều' :
+                                  req.time_slot === 'evening' ? 'Buổi tối' : 'Bất kỳ'}
+                            </Text>
+                          </View>
+                          {req.item?.description && (
+                            <View className="mt-2">
+                              <Text className="text-xs text-gray-500 mb-1">Mô tả:</Text>
+                              <Text className="text-sm text-text-dark-gray dark:text-white">
+                                {req.item.description}
+                              </Text>
+                            </View>
+                          )}
+                          {req.note && (
+                            <View className="mt-2">
+                              <Text className="text-xs text-gray-500 mb-1">Ghi chú:</Text>
+                              <Text className="text-sm text-text-dark-gray dark:text-white">
+                                {req.note}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Action buttons */}
+                        <View className="flex-row gap-2 mt-3">
+                          <TouchableOpacity
+                            onPress={() => handleDeclineRequest(req.id)}
+                            className="flex-1 h-10 items-center justify-center rounded-lg border-2 border-red-600"
+                          >
+                            <Text className="text-sm font-bold text-red-600">Từ chối</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleAcceptRequest(req.id)}
+                            className="flex-1 h-10 items-center justify-center rounded-lg bg-primary"
+                          >
+                            <Text className="text-sm font-bold text-white">Chấp nhận</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
 

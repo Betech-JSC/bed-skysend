@@ -366,12 +366,20 @@ export default function PassengerSearchResultsScreen() {
                                     {/* Nút gửi yêu cầu */}
                                     <TouchableOpacity
                                         onPress={() => {
-                                            // Navigate to request order với flight_id
+                                            // Navigate to request order với flight_id và flight_data
                                             router.push({
                                                 pathname: '/request_order',
                                                 params: {
                                                     flight_id: flight.id || flight.uuid,
                                                     customer_id: customer.id,
+                                                    flight_data: JSON.stringify({
+                                                        id: flight.id || flight.uuid,
+                                                        from_airport: flight.from_airport,
+                                                        to_airport: flight.to_airport,
+                                                        flight_number: flight.flight_number,
+                                                        flight_date: flight.flight_date,
+                                                        customer: customer,
+                                                    }),
                                                 }
                                             });
                                         }}
