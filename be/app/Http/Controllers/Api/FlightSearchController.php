@@ -34,13 +34,13 @@ class FlightSearchController extends Controller
         }
 
         // 3. Ngày bay (±1 ngày để tăng kết quả)
-        if ($request->filled('date')) {
-            $date = \Carbon\Carbon::parse($request->date);
-            $query->whereBetween('flight_date', [
-                $date->clone()->subDay(),
-                $date->clone()->addDay()
-            ]);
-        }
+        // if ($request->filled('date')) {
+        //     $date = \Carbon\Carbon::parse($request->date);
+        //     $query->whereBetween('flight_date', [
+        //         $date->clone()->subDay(),
+        //         $date->clone()->addDay()
+        //     ]);
+        // }
 
         // Filter theo loại hàng (enum chính xác)
         if ($request->filled('item_type')) {

@@ -19,6 +19,8 @@ import { RootState } from "@/store";
 import CitySelectModal from '../../components/CitySelectModal';
 import DatePickerInput from '../../components/DatePickerInput';
 import ItemTypeSelect from '../../components/ItemTypeSelect';
+import FlightNumberSelect from '../../components/FlightNumberSelect';
+import UserProfileInfo from '../../components/UserProfileInfo';
 import api from '@/api/api';
 
 export default function HomeScreen() {
@@ -239,7 +241,7 @@ export default function HomeScreen() {
                         </View>
                     </View>
 
-                    <View className="mb-4">
+                    <View className="mb-4 w-full">
                         <DatePickerInput
                             label="Ngày & giờ bay"
                             placeholder="Chọn ngày và giờ"
@@ -249,9 +251,25 @@ export default function HomeScreen() {
                         />
                     </View>
 
-                    <View className="grid grid-cols-2 gap-4 mb-4">
-                        <Input label="Hãng bay" placeholder="VD: Vietnam Airlines" value={airline} onChangeText={setAirline} />
-                        <Input label="Mã chuyến bay" placeholder="VD: VN123" value={flightCode} onChangeText={setFlightCode} />
+                    <View className="mb-4">
+                        <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                            Mã chuyến bay
+                        </Text>
+                        <FlightNumberSelect
+                            placeholder="Chọn hãng bay và nhập số chuyến"
+                            value={flightCode}
+                            onValueChange={(value) => {
+                                setFlightCode(value);
+                                // Extract airline name from flight number if needed
+                                const airlineCode = value.match(/^([A-Z]{2,3})/)?.[1];
+                                if (airlineCode) {
+                                    // You can fetch airline name by code if needed
+                                }
+                            }}
+                            onAirlineChange={(airlineCode, airlineName) => {
+                                setAirline(airlineName);
+                            }}
+                        />
                     </View>
 
                     <View className="mb-4">
@@ -306,20 +324,12 @@ export default function HomeScreen() {
                             keyExtractor={(item, index) => item.id?.toString() || `demo-${index}`}
                             renderItem={({ item }) => (
                                 <View className="w-72 mr-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-                                    <View className="flex-row items-center gap-3">
-                                        <Image
-                                            source={{ uri: item.avatar || item.sender?.avatar || 'https://via.placeholder.com/48' }}
-                                            className="w-12 h-12 rounded-full"
-                                        />
-                                        <View className="flex-1">
-                                            <Text className="font-bold text-text-dark-gray dark:text-white">
-                                                {item.name || item.sender?.name || 'Người dùng'}
-                                            </Text>
-                                            <Text className="text-sm text-gray-500" numberOfLines={1}>
-                                                {item.item || item.item_type || 'Tài liệu'}
-                                            </Text>
-                                        </View>
-                                    </View>
+                                    <UserProfileInfo
+                                        avatar={item.avatar || item.sender?.avatar}
+                                        name={item.name || item.sender?.name}
+                                        subtitle={item.item || item.item_type}
+                                        size="medium"
+                                    />
                                     <Text className="mt-4 font-semibold text-lg text-text-dark-gray dark:text-white">
                                         {item.route || `${item.from_airport || 'SGN'} → ${item.to_airport || 'HAN'}`}
                                     </Text>
@@ -358,27 +368,13 @@ export default function HomeScreen() {
                         <View className="gap-4 pb-32">
                             {matchingRequestsAPI.map((req: any, i: number) => (
                                 <View key={req.id || i} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-                                    <View className="flex-row items-start justify-between">
-                                        <View className="flex-row items-center gap-3">
-                                            <Image
-                                                source={{ uri: req.sender?.avatar || req.avatar || priorityRequestsDemo[0]?.avatar || 'https://via.placeholder.com/40' }}
-                                                className="w-10 h-10 rounded-full"
-                                            />
-                                            <View>
-                                                <Text className="font-bold text-text-dark-gray dark:text-white">
-                                                    {req.sender?.name || req.name || 'Người dùng'}
-                                                </Text>
-                                                <Text className="text-sm text-gray-500">
-                                                    {req.item_type || req.item || 'Tài liệu'}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        {req.is_urgent && (
-                                            <View className="bg-red-500/10 px-3 py-1 rounded-full">
-                                                <Text className="text-xs font-bold text-red-600">Khẩn cấp</Text>
-                                            </View>
-                                        )}
-                                    </View>
+                                    <UserProfileInfo
+                                        avatar={req.sender?.avatar || req.avatar || priorityRequestsDemo[0]?.avatar}
+                                        name={req.sender?.name || req.name}
+                                        subtitle={req.item_type || req.item}
+                                        size="small"
+                                        showUrgent={req.is_urgent}
+                                    />
                                     <View className="flex-row items-center justify-between mt-4">
                                         <View>
                                             <Text className="font-semibold text-text-dark-gray dark:text-white">

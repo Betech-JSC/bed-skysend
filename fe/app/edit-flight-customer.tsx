@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import CitySelectModal from './components/CitySelectModal';
 import DatePickerInput from './components/DatePickerInput';
 import ItemTypeSelect from './components/ItemTypeSelect'; // ĐÃ THÊM LẠI
+import FlightNumberSelect from './components/FlightNumberSelect';
 import api from "@/api/api";
 
 export default function EditFlightScreen() {
@@ -23,6 +24,7 @@ export default function EditFlightScreen() {
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [isVerified, setIsVerified] = useState(false); // Trạng thái xác thực
 
     // Form states
     const [departureAirport, setDepartureAirport] = useState({ value: '', label: '' });
@@ -60,6 +62,10 @@ export default function EditFlightScreen() {
 
             if (!data) throw new Error('Dữ liệu không hợp lệ');
 
+            // Kiểm tra trạng thái xác thực
+            const verified = data.verified === true || data.verified === 1 || data.status === 'verified';
+            setIsVerified(verified);
+
             setDepartureAirport({ value: data.from_airport, label: data.from_airport });
             setArrivalAirport({ value: data.to_airport, label: data.to_airport });
             setFlightDateTime(data.flight_date || '');
@@ -67,6 +73,15 @@ export default function EditFlightScreen() {
             setFlightCode(data.flight_number || '');
             setAllowedWeight(data.max_weight?.toString() || '');
             setItemType(data.item_type || ''); // ĐÃ THÊM – BẮT BUỘC
+
+            // Nếu đã xác thực, hiển thị thông báo
+            if (verified) {
+                Alert.alert(
+                    'Chuyến bay đã được xác thực',
+                    'Chuyến bay này đã được xác thực và không thể chỉnh sửa. Bạn chỉ có thể xem thông tin.',
+                    [{ text: 'OK' }]
+                );
+            }
 
         } catch (err: any) {
             const msg = err.response?.data?.message || 'Không thể tải thông tin chuyến bay';
@@ -78,6 +93,12 @@ export default function EditFlightScreen() {
 
     // Cập nhật chuyến bay – ĐÃ FIX LỖI item_type
     const handleUpdateFlight = async () => {
+        // Kiểm tra nếu đã xác thực thì không cho phép chỉnh sửa
+        if (isVerified) {
+            Alert.alert('Không thể chỉnh sửa', 'Chuyến bay đã được xác thực và không thể chỉnh sửa.');
+            return;
+        }
+
         if (!departureAirport.value) return Alert.alert('Lỗi', 'Vui lòng chọn sân bay đi');
         if (!arrivalAirport.value) return Alert.alert('Lỗi', 'Vui lòng chọn sân bay đến');
         if (!flightDateTime) return Alert.alert('Lỗi', 'Vui lòng chọn ngày giờ bay');
@@ -122,6 +143,12 @@ export default function EditFlightScreen() {
     };
 
     const handleCancelFlight = () => {
+        // Kiểm tra nếu đã xác thực thì không cho phép hủy
+        if (isVerified) {
+            Alert.alert('Không thể hủy', 'Chuyến bay đã được xác thực và không thể hủy.');
+            return;
+        }
+
         Alert.alert('Hủy chuyến bay', 'Bạn có chắc chắn muốn hủy?', [
             { text: 'Không', style: 'cancel' },
             {
@@ -131,7 +158,7 @@ export default function EditFlightScreen() {
                     try {
                         await api.delete(`flights/${flightId}`);
                         Alert.alert('Thành công', 'Đã hủy chuyến bay', [
-                            { text: 'OK', onPress: () => router.replace('/(tabs)/home') }
+                            { text: 'OK', onPress: () => router.replace('/(tabs)/(customer)/home_customer') }
                         ]);
                     } catch (err: any) {
                         Alert.alert('Lỗi', err.response?.data?.message || 'Không thể hủy');
@@ -172,7 +199,18 @@ export default function EditFlightScreen() {
                             Thông tin chuyến bay
                         </Text>
 
-                        <View className="gap-5">
+                        {isVerified && (
+                            <View className="mb-4 rounded-xl bg-yellow-50 border border-yellow-200 p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
+                                <View className="flex-row items-center gap-2">
+                                    <MaterialIcons name="lock" size={20} color="#F59E0B" />
+                                    <Text className="flex-1 text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                                        Chuyến bay đã được xác thực - Không thể chỉnh sửa
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
+                        <View className="gap-5" pointerEvents={isVerified ? 'none' : 'auto'} style={{ opacity: isVerified ? 0.6 : 1 }}>
 
                             {/* Sân bay đi / đến */}
                             <View className="grid grid-cols-2 gap-4">
@@ -207,10 +245,22 @@ export default function EditFlightScreen() {
                                 />
                             </View>
 
-                            {/* Hãng bay & Mã chuyến */}
-                            <View className="grid grid-cols-2 gap-4">
-                                <InputField label="Hãng bay" placeholder="VD: Vietnam Airlines" value={airline} onChangeText={setAirline} />
-                                <InputField label="Mã chuyến bay" placeholder="VD: VN123" value={flightCode} onChangeText={setFlightCode} />
+                            {/* Mã chuyến bay */}
+                            <View>
+                                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Mã chuyến bay
+                                </Text>
+                                <FlightNumberSelect
+                                    placeholder="Chọn hãng bay và nhập số chuyến"
+                                    value={flightCode}
+                                    airline={airline}
+                                    onValueChange={(value) => {
+                                        setFlightCode(value);
+                                    }}
+                                    onAirlineChange={(airlineCode, airlineName) => {
+                                        setAirline(airlineName);
+                                    }}
+                                />
                             </View>
 
                             {/* Loại tài liệu – ĐÃ THÊM LẠI */}
@@ -236,44 +286,56 @@ export default function EditFlightScreen() {
                         </View>
                     </View>
 
-                    {/* Vé đã xác thực */}
-                    <View className="bg-green-50 rounded-2xl p-5 dark:bg-green-900/20">
-                        <View className="flex-row items-center gap-3">
-                            <MaterialIcons name="check-circle" size={28} color="#10B981" />
-                            <View>
-                                <Text className="font-semibold text-text-dark-gray dark:text-white">
-                                    Vé máy bay đã được xác thực
-                                </Text>
-                                <Text className="text-sm text-gray-600 dark:text-gray-400">
-                                    Không thể thay đổi vé sau khi xác thực
-                                </Text>
+                    {/* Vé đã xác thực - chỉ hiển thị khi đã verified */}
+                    {isVerified && (
+                        <View className="bg-green-50 rounded-2xl p-5 dark:bg-green-900/20">
+                            <View className="flex-row items-center gap-3">
+                                <MaterialIcons name="check-circle" size={28} color="#10B981" />
+                                <View>
+                                    <Text className="font-semibold text-text-dark-gray dark:text-white">
+                                        Vé máy bay đã được xác thực
+                                    </Text>
+                                    <Text className="text-sm text-gray-600 dark:text-gray-400">
+                                        Không thể thay đổi vé sau khi xác thực
+                                    </Text>
+                                </View>
                             </View>
                         </View>
-                    </View>
+                    )}
                 </View>
             </ScrollView>
 
             {/* Nút cố định */}
             <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 px-4 py-4 shadow-2xl border-t border-gray-200 dark:border-gray-700">
-                <TouchableOpacity
-                    onPress={handleUpdateFlight}
-                    disabled={submitting}
-                    className={`h-14 rounded-xl justify-center items-center mb-3 ${submitting ? 'bg-gray-400' : 'bg-primary'}`}
-                >
-                    {submitting ? (
-                        <ActivityIndicator color="white" />
-                    ) : (
-                        <Text className="text-white font-bold text-base">Lưu thay đổi</Text>
-                    )}
-                </TouchableOpacity>
+                {!isVerified ? (
+                    <>
+                        <TouchableOpacity
+                            onPress={handleUpdateFlight}
+                            disabled={submitting}
+                            className={`h-14 rounded-xl justify-center items-center mb-3 ${submitting ? 'bg-gray-400' : 'bg-primary'}`}
+                        >
+                            {submitting ? (
+                                <ActivityIndicator color="white" />
+                            ) : (
+                                <Text className="text-white font-bold text-base">Lưu thay đổi</Text>
+                            )}
+                        </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={handleCancelFlight}
-                    disabled={submitting}
-                    className="h-14 rounded-xl border-2 border-red-600 justify-center items-center"
-                >
-                    <Text className="text-red-600 font-bold text-base">Hủy chuyến bay</Text>
-                </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleCancelFlight}
+                            disabled={submitting}
+                            className="h-14 rounded-xl border-2 border-red-600 justify-center items-center"
+                        >
+                            <Text className="text-red-600 font-bold text-base">Hủy chuyến bay</Text>
+                        </TouchableOpacity>
+                    </>
+                ) : (
+                    <View className="h-14 rounded-xl bg-gray-200 dark:bg-gray-700 justify-center items-center">
+                        <Text className="text-gray-600 dark:text-gray-400 font-bold text-base">
+                            Chuyến bay đã được xác thực - Không thể chỉnh sửa
+                        </Text>
+                    </View>
+                )}
             </View>
         </SafeAreaView>
     );

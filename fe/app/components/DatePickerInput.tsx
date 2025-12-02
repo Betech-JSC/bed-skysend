@@ -63,7 +63,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
   };
 
   return (
-    <View>
+    <View className="w-full">
       {label && (
         <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
           {label}
@@ -73,7 +73,8 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
       <TouchableOpacity
         onPress={() => !disabled && setShowDatePicker(true)}
         disabled={disabled}
-        className="relative">
+        className="relative w-full"
+        activeOpacity={0.7}>
         <MaterialIcons
           name="calendar-today"
           size={20}
@@ -81,7 +82,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
           style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
         />
         <View
-          className={`h-14 rounded-lg border pl-10 pr-4 ${
+          className={`h-14 w-full rounded-lg border pl-10 pr-4 ${
             disabled
               ? 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800'
               : 'border-gray-200 bg-background-light dark:border-gray-600 dark:bg-gray-700'

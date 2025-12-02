@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -6,42 +6,204 @@ import {
     Text,
     TouchableOpacity,
     Image,
+    ActivityIndicator,
+    Modal,
+    TextInput,
+    Platform,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import api from "@/api/api";
+import UserProfileInfo from "./components/UserProfileInfo";
+import CitySelectModal from "./components/CitySelectModal";
+import DatePickerInput from "./components/DatePickerInput";
+import ItemTypeSelect from "./components/ItemTypeSelect";
 
 export default function PassengerSearchResultsScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
 
-    const passengers = [
-        {
-            name: "Nguyễn Văn A",
-            rating: 4.8,
-            flight: "VJ123: SGN → HAN",
-            luggage: "1.5 kg",
-            time: "Thứ Hai, 25/12/2024 • 08:30",
-            avatar:
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuAIPP_uTLatJh2234fbe90coz_vpeuryM4KjTwvkTKCMFE5UKkV2q45grtyGqLqlBCxje7sETwoRkcpBhDaENDcp7HOMvW7jGVn6BB5OtcknL2bTQgtv340T4mHZP8f2UcuHNWyCxP5-rsr9xL1Fhv8xu4FVvLg2mDC4l-zVFym8aOFe_1UttECAExfyI_88BP1VAGu_UGcUG1WE6pyyBWk5_Cv0ggWyE2klNaIYajcrNyRutxCShw_R_D5_tDJgFJ77WItReCkumZB",
-        },
-        {
-            name: "Trần Thị B",
-            rating: 5.0,
-            flight: "VN218: SGN → HAN",
-            luggage: "2.0 kg",
-            time: "Thứ Hai, 25/12/2024 • 09:15",
-            avatar:
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuB31lpf_8XsCi2BpqqJCc_ugXbsLhQMBfiNppXCkYnx-Iz5HWYf0WlXBR2CBKQPqKB2syfE6FxsuU1DUpi7jF1ksfldfqURvZuHR8IKh2eP_OjcTgoB9whLbkrmomFiOG5dpev2S3GAtOcvKCwgklZm41cDrbWtltntV7khXC5FM0Pix4jQlWLUMLfJPYJL7ZOh8wauhoShdat3k14Zm-C8rIuTOqSfTojIPuUL61ndL_LF_I7cpB1LCCcp1IpaTWMrJk3Adbt2uGFC",
-        },
-        {
-            name: "Lê Minh C",
-            rating: 4.5,
-            flight: "QH202: SGN → HAN",
-            luggage: "5.0 kg",
-            time: "Thứ Hai, 25/12/2024 • 10:00",
-            avatar:
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuBNW2N6z2SIUVZ4iolMW-vdNtAM_EwvUDBRY0ONawwv3rwmg1MIR_M3dUvxCypYEFKkCHQKiI742nmw8oA-u_38VAYwdwFNsedfZM4A6uNURhMI6zYRtYp_3Apz3yyZLg9ihI7RELgQ4hATAvE9Di8Vgmk9r41Mr6PdKtg-ahQiZbB6lchUI4AktLWbNt7_2RMzBjYigEzfoDxvakR85WZpcRAYKuXjamcC63r38iEO2l4l6U6IBssWw59IZilV1qMgPiyGIDXkRvBH",
-        },
-    ];
+    const [flights, setFlights] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [filterModalOpen, setFilterModalOpen] = useState(false);
+
+    // Filter states
+    const [filterDepartureCity, setFilterDepartureCity] = useState({
+        value: params.departureCode as string || '',
+        label: params.departureLabel as string || ''
+    });
+    const [filterArrivalCity, setFilterArrivalCity] = useState({
+        value: params.arrivalCode as string || '',
+        label: params.arrivalLabel as string || ''
+    });
+    const [filterDate, setFilterDate] = useState(params.date as string || '');
+    const [filterTimeSlot, setFilterTimeSlot] = useState(params.timeSlot as string || '');
+    const [filterItemType, setFilterItemType] = useState(params.item_type as string || '');
+    const [filterItemValue, setFilterItemValue] = useState(params.item_value as string || '');
+
+    // Extract params (for initial display)
+    const departureCode = filterDepartureCity.value || params.departureCode as string || '';
+    const departureLabel = filterDepartureCity.label || params.departureLabel as string || '';
+    const arrivalCode = filterArrivalCity.value || params.arrivalCode as string || '';
+    const arrivalLabel = filterArrivalCity.label || params.arrivalLabel as string || '';
+    const date = filterDate || params.date as string || '';
+    const timeSlot = filterTimeSlot || params.timeSlot as string || '';
+
+    // Format date for display
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        try {
+            const date = new Date(dateStr);
+            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+            const dayName = days[date.getDay()];
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${dayName}, ${day}/${month}/${year}`;
+        } catch {
+            return dateStr;
+        }
+    };
+
+    // Format flight date time
+    const formatFlightDateTime = (dateStr: string) => {
+        if (!dateStr) return '';
+        try {
+            const date = new Date(dateStr);
+            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+            const dayName = days[date.getDay()];
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${dayName}, ${day}/${month}/${year} • ${hours}:${minutes}`;
+        } catch {
+            return dateStr;
+        }
+    };
+
+    useEffect(() => {
+        fetchSearchResults();
+    }, []);
+
+    const fetchSearchResults = async (useFilter = false) => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Determine which params to use
+            const searchParams: any = {};
+
+            if (useFilter) {
+                // Use filter values
+                if (filterDepartureCity.value) searchParams.from_airport = filterDepartureCity.value;
+                if (filterArrivalCity.value) searchParams.to_airport = filterArrivalCity.value;
+                if (filterDate) searchParams.date = filterDate;
+                if (filterTimeSlot) searchParams.time_slot = filterTimeSlot;
+                if (filterItemType) searchParams.item_type = filterItemType;
+                if (filterItemValue) searchParams.item_value = filterItemValue;
+            } else {
+                // Use initial params or filter values
+                if (filterDepartureCity.value || params.departureCode) {
+                    searchParams.from_airport = filterDepartureCity.value || params.departureCode;
+                }
+                if (filterArrivalCity.value || params.arrivalCode) {
+                    searchParams.to_airport = filterArrivalCity.value || params.arrivalCode;
+                }
+                if (filterDate || params.date) {
+                    searchParams.date = filterDate || params.date;
+                }
+                if (filterTimeSlot || params.timeSlot) {
+                    searchParams.time_slot = filterTimeSlot || params.timeSlot;
+                }
+                if (filterItemType || params.item_type) {
+                    searchParams.item_type = filterItemType || params.item_type;
+                }
+                if (filterItemValue || params.item_value) {
+                    searchParams.item_value = filterItemValue || params.item_value;
+                }
+            }
+
+            // Check if searchResults passed via params (only on initial load)
+            if (!useFilter && params.searchResults) {
+                try {
+                    const parsed = JSON.parse(params.searchResults as string);
+                    if (Array.isArray(parsed)) {
+                        setFlights(parsed);
+                        setLoading(false);
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Error parsing searchResults:', e);
+                }
+            }
+
+            const response = await api.get('flights/search', { params: searchParams });
+
+            let flightsData = [];
+            if (response.data?.success && response.data?.data) {
+                // Handle paginated response
+                if (response.data.data?.data) {
+                    flightsData = response.data.data.data;
+                } else if (Array.isArray(response.data.data)) {
+                    flightsData = response.data.data;
+                }
+            } else if (Array.isArray(response.data)) {
+                flightsData = response.data;
+            }
+
+            setFlights(flightsData);
+        } catch (err: any) {
+            console.error('Error fetching search results:', err);
+            setError(err.response?.data?.message || 'Không thể tải kết quả tìm kiếm');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleApplyFilter = async () => {
+        try {
+            console.log('Applying filter:', {
+                departure: filterDepartureCity.value,
+                arrival: filterArrivalCity.value,
+                date: filterDate,
+                timeSlot: filterTimeSlot,
+                itemType: filterItemType,
+                itemValue: filterItemValue,
+            });
+            setFilterModalOpen(false);
+            await fetchSearchResults(true);
+        } catch (error) {
+            console.error('Error applying filter:', error);
+            setFilterModalOpen(false);
+        }
+    };
+
+    const handleResetFilter = async () => {
+        // Reset về giá trị ban đầu từ params
+        const initialDeparture = params.departureCode as string || '';
+        const initialDepartureLabel = params.departureLabel as string || '';
+        const initialArrival = params.arrivalCode as string || '';
+        const initialArrivalLabel = params.arrivalLabel as string || '';
+        const initialDate = params.date as string || '';
+        const initialTimeSlot = params.timeSlot as string || '';
+        const initialItemType = params.item_type as string || '';
+        const initialItemValue = params.item_value as string || '';
+
+        setFilterDepartureCity({ value: initialDeparture, label: initialDepartureLabel });
+        setFilterArrivalCity({ value: initialArrival, label: initialArrivalLabel });
+        setFilterDate(initialDate);
+        setFilterTimeSlot(initialTimeSlot);
+        setFilterItemType(initialItemType);
+        setFilterItemValue(initialItemValue);
+
+        // Fetch lại với giá trị ban đầu
+        setTimeout(async () => {
+            await fetchSearchResults(false);
+        }, 100);
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
@@ -69,24 +231,43 @@ export default function PassengerSearchResultsScreen() {
                 className="px-4 py-3"
             >
                 <View className="flex-row gap-2">
-                    {[
-                        { icon: "flight-takeoff", text: "SGN → HAN" },
-                        { icon: "calendar-month", text: "25/12/2024" },
-                        { icon: "luggage", text: "1-2kg" },
-                    ].map((item, i) => (
-                        <View
-                            key={i}
-                            className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2"
-                        >
-                            <MaterialIcons name={item.icon as any} size={18} color="#2563EB" />
+                    {filterDepartureCity.value && filterArrivalCity.value && (
+                        <View className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2">
+                            <MaterialIcons name="flight-takeoff" size={18} color="#2563EB" />
                             <Text className="text-sm font-medium text-text-dark-gray dark:text-gray-200">
-                                {item.text}
+                                {filterDepartureCity.value} → {filterArrivalCity.value}
                             </Text>
                         </View>
-                    ))}
+                    )}
+                    {filterDate && (
+                        <View className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2">
+                            <MaterialIcons name="calendar-month" size={18} color="#2563EB" />
+                            <Text className="text-sm font-medium text-text-dark-gray dark:text-gray-200">
+                                {formatDate(filterDate)}
+                            </Text>
+                        </View>
+                    )}
+                    {filterTimeSlot && (
+                        <View className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2">
+                            <MaterialIcons name="schedule" size={18} color="#2563EB" />
+                            <Text className="text-sm font-medium text-text-dark-gray dark:text-gray-200">
+                                {filterTimeSlot}
+                            </Text>
+                        </View>
+                    )}
+                    {filterItemType && (
+                        <View className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2">
+                            <MaterialIcons name="category" size={18} color="#2563EB" />
+                            <Text className="text-sm font-medium text-text-dark-gray dark:text-gray-200">
+                                {filterItemType}
+                            </Text>
+                        </View>
+                    )}
 
                     {/* Nút filter */}
-                    <TouchableOpacity className="ml-auto w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/30 justify-center items-center shadow-sm">
+                    <TouchableOpacity
+                        onPress={() => setFilterModalOpen(true)}
+                        className="ml-auto w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/30 justify-center items-center shadow-sm">
                         <MaterialIcons name="filter-list" size={22} color="#2563EB" />
                     </TouchableOpacity>
                 </View>
@@ -94,84 +275,253 @@ export default function PassengerSearchResultsScreen() {
 
             {/* Danh sách hành khách */}
             <ScrollView className="px-4 mt-4">
-                <View className="gap-4 pb-6">
-                    {passengers.map((passenger, index) => (
-                        <View
-                            key={index}
-                            className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm"
-                        >
-                            {/* Header: Avatar + tên + rating */}
-                            <View className="flex-row items-center gap-3">
-                                <Image
-                                    source={{ uri: passenger.avatar }}
-                                    className="w-12 h-12 rounded-full"
-                                    resizeMode="cover"
-                                />
-                                <View className="flex-1">
-                                    <Text className="text-base font-bold text-text-dark-gray dark:text-white">
-                                        {passenger.name}
-                                    </Text>
-                                    <View className="flex-row items-center gap-2 mt-1">
-                                        {/* Rating */}
-                                        <View className="flex-row items-center gap-0.5">
-                                            <MaterialIcons name="star" size={16} color="#F97316" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                            <Text className="text-sm font-semibold text-secondary">
-                                                {passenger.rating}
-                                            </Text>
-                                        </View>
+                {loading ? (
+                    <View className="py-20 items-center">
+                        <ActivityIndicator size="large" color="#2563EB" />
+                        <Text className="mt-4 text-gray-500 dark:text-gray-400">
+                            Đang tải kết quả...
+                        </Text>
+                    </View>
+                ) : error ? (
+                    <View className="py-20 items-center">
+                        <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+                        <Text className="mt-4 text-gray-600 dark:text-gray-400 text-center">
+                            {error}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => fetchSearchResults()}
+                            className="mt-4 bg-primary px-6 py-3 rounded-lg">
+                            <Text className="text-white font-bold">Thử lại</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : flights.length === 0 ? (
+                    <View className="py-20 items-center">
+                        <MaterialIcons name="flight" size={48} color="#9CA3AF" />
+                        <Text className="mt-4 text-gray-600 dark:text-gray-400 text-center">
+                            Không tìm thấy hành khách phù hợp
+                        </Text>
+                    </View>
+                ) : (
+                    <View className="gap-4 pb-6">
+                        {flights.map((flight: any, index: number) => {
+                            const customer = flight.customer || {};
+                            const availableWeight = flight.available_weight || 0;
+                            const flightNumber = flight.flight_number || '';
+                            const route = flight.from_airport && flight.to_airport
+                                ? `${flight.from_airport} → ${flight.to_airport}`
+                                : '';
 
-                                        {/* Verified badge */}
-                                        <View className="flex-row items-center gap-1 bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-full">
-                                            <MaterialIcons name="verified" size={14} color="#2563EB" />
-                                            <Text className="text-xs font-medium text-primary dark:text-blue-300">
-                                                Vé đã xác thực
+                            return (
+                                <View
+                                    key={flight.id || flight.uuid || index}
+                                    className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm"
+                                >
+                                    {/* Header: Avatar + tên + rating */}
+                                    <View className="flex-row items-center gap-3">
+                                        <UserProfileInfo
+                                            avatar={customer.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCt1uclnQVmRt4FpXFSBOmqwkd7L1z-v6wELp4awVZPFJvpgEMQxPwfI81Umsb1Ioxb-8x74MbwZwQBQx5BULoT206OeocHce63_UGWhTcJvyO1fbozdfC0OrBdgAOzmPd8-HoiOSZ9qsA0VuBkeqq9V3kRCrtRsvlkWLeQ8trYnuKqRCBjLQ3saRSJfc-1LxeUOPZ8gt5cjbqA_SU9KMzQhTRlXgzWWR9n_tHcDczWFQNsBgsN-Gk7_2fNPqRYhcISQtax1Wcc8gaC'}
+                                            name={customer.name || 'Người dùng'}
+                                            size="large"
+                                            showVerified={true}
+                                        />
+                                        <View className="flex-row items-center gap-0.5 ml-2">
+                                            <MaterialIcons name="star" size={16} color="#F97316" />
+                                            <Text className="text-sm font-semibold text-secondary">
+                                                5.0
                                             </Text>
                                         </View>
                                     </View>
+
+                                    <View className="h-px bg-gray-200 dark:bg-slate-700 my-4" />
+
+                                    {/* Thông tin chi tiết */}
+                                    <View className="grid grid-cols-2 gap-4 mb-3">
+                                        <View>
+                                            <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                                Chuyến bay
+                                            </Text>
+                                            <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
+                                                {flightNumber ? `${flightNumber}: ${route}` : route}
+                                            </Text>
+                                        </View>
+                                        <View>
+                                            <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                                Hành lý trống
+                                            </Text>
+                                            <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
+                                                {availableWeight}kg
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <View className="mb-4">
+                                        <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                            Thời gian
+                                        </Text>
+                                        <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
+                                            {formatFlightDateTime(flight.flight_date || date)}
+                                        </Text>
+                                    </View>
+
+                                    {/* Nút gửi yêu cầu */}
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            // Navigate to request order với flight_id
+                                            router.push({
+                                                pathname: '/request_order',
+                                                params: {
+                                                    flight_id: flight.id || flight.uuid,
+                                                    customer_id: customer.id,
+                                                }
+                                            });
+                                        }}
+                                        className="h-11 rounded-full bg-primary justify-center items-center">
+                                        <Text className="text-white text-sm font-bold">
+                                            Gửi yêu cầu
+                                        </Text>
+                                    </TouchableOpacity>
                                 </View>
-                            </View>
-
-                            <View className="h-px bg-gray-200 dark:bg-slate-700 my-4" />
-
-                            {/* Thông tin chi tiết */}
-                            <View className="grid grid-cols-2 gap-4 mb-3">
-                                <View>
-                                    <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                        Chuyến bay
-                                    </Text>
-                                    <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
-                                        {passenger.flight}
-                                    </Text>
-                                </View>
-                                <View>
-                                    <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                        Hành lý trống
-                                    </Text>
-                                    <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
-                                        {passenger.luggage}
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <View className="mb-4">
-                                <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Thời gian
-                                </Text>
-                                <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
-                                    {passenger.time}
-                                </Text>
-                            </View>
-
-                            {/* Nút gửi yêu cầu */}
-                            <TouchableOpacity className="h-11 rounded-full bg-primary justify-center items-center">
-                                <Text className="text-white text-sm font-bold">
-                                    Gửi yêu cầu
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    ))}
-                </View>
+                            );
+                        })}
+                    </View>
+                )}
             </ScrollView>
+
+            {/* Filter Modal - Full Screen */}
+            <Modal
+                visible={filterModalOpen}
+                animationType="slide"
+                transparent={false}
+                onRequestClose={() => setFilterModalOpen(false)}
+            >
+                <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                    {/* Header */}
+                    <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <Text className="text-lg font-bold text-text-dark-gray dark:text-white">
+                            Bộ lọc tìm kiếm
+                        </Text>
+                        <TouchableOpacity onPress={() => setFilterModalOpen(false)}>
+                            <MaterialIcons name="close" size={24} color="#6B7280" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView className="flex-1 px-4 py-4 bg-background-light dark:bg-background-dark" showsVerticalScrollIndicator={false}>
+                        <View className="gap-4 pb-6">
+                            {/* Sân bay đi / đến */}
+                            <View className="grid grid-cols-2 gap-4">
+                                <View>
+                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                        Sân bay đi
+                                    </Text>
+                                    <CitySelectModal
+                                        placeholder="VD: SGN"
+                                        iconName="flight-takeoff"
+                                        value={filterDepartureCity.value}
+                                        onValueChange={(value, label) => setFilterDepartureCity({ value, label })}
+                                    />
+                                </View>
+                                <View>
+                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                        Sân bay đến
+                                    </Text>
+                                    <CitySelectModal
+                                        placeholder="VD: HAN"
+                                        iconName="flight-land"
+                                        value={filterArrivalCity.value}
+                                        onValueChange={(value, label) => setFilterArrivalCity({ value, label })}
+                                    />
+                                </View>
+                            </View>
+
+                            {/* Ngày gửi */}
+                            <View>
+                                <DatePickerInput
+                                    label="Ngày gửi"
+                                    placeholder="Chọn ngày"
+                                    value={filterDate}
+                                    onValueChange={setFilterDate}
+                                    minimumDate={new Date()}
+                                />
+                            </View>
+
+                            {/* Khung giờ */}
+                            <View>
+                                <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                    Khung giờ ưu tiên
+                                </Text>
+                                <View className="relative">
+                                    <MaterialIcons
+                                        name="schedule"
+                                        size={20}
+                                        color="#6b7280"
+                                        style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                                    />
+                                    <TextInput
+                                        placeholder="Buổi sáng (6h-12h)"
+                                        value={filterTimeSlot}
+                                        onChangeText={setFilterTimeSlot}
+                                        className="h-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-10 pr-4 text-text-dark-gray dark:text-white"
+                                    />
+                                </View>
+                            </View>
+
+                            {/* Loại tài liệu */}
+                            <View>
+                                <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                    Loại tài liệu
+                                </Text>
+                                <ItemTypeSelect
+                                    placeholder="Chọn loại tài liệu"
+                                    value={filterItemType}
+                                    onValueChange={setFilterItemType}
+                                />
+                            </View>
+
+                            {/* Giá trị ước tính */}
+                            <View>
+                                <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                    Giá trị ước tính tài liệu (VND)
+                                </Text>
+                                <View className="relative">
+                                    <MaterialIcons
+                                        name="payments"
+                                        size={20}
+                                        color="#6b7280"
+                                        style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                                    />
+                                    <TextInput
+                                        placeholder="Ví dụ: 5,000,000"
+                                        keyboardType="numeric"
+                                        value={filterItemValue}
+                                        onChangeText={setFilterItemValue}
+                                        className="h-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-10 pr-4 text-text-dark-gray dark:text-white"
+                                    />
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+
+                    {/* Footer buttons */}
+                    <View className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 flex-row gap-3 bg-white dark:bg-gray-800">
+                        <TouchableOpacity
+                            onPress={handleResetFilter}
+                            className="flex-1 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 justify-center items-center"
+                        >
+                            <Text className="text-gray-700 dark:text-gray-300 font-bold">
+                                Đặt lại
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleApplyFilter}
+                            className="flex-1 h-12 rounded-lg bg-primary justify-center items-center"
+                        >
+                            <Text className="text-white font-bold">
+                                Áp dụng
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </SafeAreaView>
+            </Modal>
         </SafeAreaView>
     );
 }

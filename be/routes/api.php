@@ -97,6 +97,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Customer: danh sách yêu cầu phù hợp
     Route::get('/customer/requests/matching', [RequestController::class, 'matchingForCustomer']);
+
+    // Sender: danh sách khách hàng có sẵn để gửi request
+    Route::get('/sender/available-customers', [FlightController::class, 'availableCustomers']);
 });
 
 Route::controller(AuthController::class)->group(function () {

@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 import api from '@/api/api';
 import ItemOrder from 'app/components/ItemOrder';
 import { router } from 'expo-router';
@@ -20,14 +21,6 @@ import CitySelectModal from '../../components/CitySelectModal';
 import ItemTypeSelect from '../../components/ItemTypeSelect';
 import DatePickerInput from '../../components/DatePickerInput';
 
-interface RootState {
-  user: {
-    role?: string;
-    token?: string;
-    [key: string]: any;
-  };
-}
-
 const Home = () => {
   const user = useSelector((state: RootState) => state.user);
   const role = user?.role;
@@ -36,6 +29,10 @@ const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
+
+  // State cho available customers
+  const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
   // State để lưu dữ liệu từ CitySelectModal
   const [departureCity, setDepartureCity] = useState({ value: '', label: '' });
@@ -47,24 +44,62 @@ const Home = () => {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      if (!role) return;
-
       try {
-        const response = await api.get('orders', { params: { role } });
+        const response = await api.get('orders/getList');
 
-        if (response.data.status === 'success') {
-          setOrders(response.data.data.orders.data);
+        // Xử lý response structure
+        let ordersData = [];
+        if (response.data?.success && response.data?.data) {
+          // Response có structure: { success: true, data: { data: [...], current_page: ... } }
+          if (response.data.data?.data) {
+            ordersData = response.data.data.data;
+          } else if (Array.isArray(response.data.data)) {
+            ordersData = response.data.data;
+          }
+        } else if (response.data?.status === 'success' && response.data?.data) {
+          // Fallback cho structure cũ
+          if (response.data.data?.orders?.data) {
+            ordersData = response.data.data.orders.data;
+          } else if (Array.isArray(response.data.data)) {
+            ordersData = response.data.data;
+          }
         }
+
+        setOrders(ordersData);
       } catch (err) {
         console.error('Error fetching orders:', err);
         setError('Error fetching orders');
+        // Không set orders = [] để tránh làm mất data nếu có lỗi
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrders();
-  }, [role]);
+    fetchAvailableCustomers();
+  }, []);
+
+  // Fetch available customers
+  const fetchAvailableCustomers = async () => {
+    try {
+      setLoadingCustomers(true);
+      const response = await api.get('sender/available-customers');
+
+      let customersData = [];
+      if (response.data?.success && response.data?.data) {
+        if (Array.isArray(response.data.data)) {
+          customersData = response.data.data;
+        }
+      }
+
+      setAvailableCustomers(customersData);
+    } catch (err) {
+      console.error('Error fetching available customers:', err);
+      // Không hiển thị alert để không làm gián đoạn UX
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
 
   useOrderMatchList(
     orders.map((o) => o.id),
@@ -104,7 +139,7 @@ const Home = () => {
     console.log('Dữ liệu gửi lên API:', searchParams);
 
     setSearchLoading(true);
-    
+
     try {
       // Gọi API sử dụng instance api đã config sẵn
       const response = await api.get('flights/search', {
@@ -114,7 +149,7 @@ const Home = () => {
       console.log('API Response:', response.data);
 
       // Kiểm tra response thành công
-      if (response.data.status === 'success') {
+      if (response.data.success) {
         router.push({
           pathname: '/PassengerSearchResultsScreen',
           params: {
@@ -132,13 +167,13 @@ const Home = () => {
       }
     } catch (err: any) {
       console.error('Search error:', err);
-      
+
       // Xử lý lỗi chi tiết
-      const errorMessage = 
-        err.response?.data?.message || 
-        err.message || 
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
         'Có lỗi xảy ra khi tìm kiếm';
-      
+
       Alert.alert('Lỗi', errorMessage);
     } finally {
       setSearchLoading(false);
@@ -158,7 +193,9 @@ const Home = () => {
       {/* Header cố định */}
       <View className="sticky top-0 z-10 border-b border-gray-200 bg-background-light px-4 pb-2 pt-4 dark:border-gray-700 dark:bg-background-dark">
         <View className="h-12 flex-row items-center justify-between">
-          <Text className="text-text-primary text-3xl font-bold dark:text-white">Xin chào, An</Text>
+          <Text className="text-text-primary text-3xl font-bold dark:text-white">
+            Xin chào, {user?.name || 'Bạn'}!
+          </Text>
           <TouchableOpacity onPress={() => router.push('/notifications')}>
             <MaterialIcons name="notifications" size={28} color="#2563EB" />
           </TouchableOpacity>
@@ -268,9 +305,8 @@ const Home = () => {
           <TouchableOpacity
             onPress={handleSearch}
             disabled={searchLoading}
-            className={`mt-4 h-14 items-center justify-center rounded-lg ${
-              searchLoading ? 'bg-gray-400' : 'bg-primary'
-            }`}>
+            className={`mt-4 h-14 items-center justify-center rounded-lg ${searchLoading ? 'bg-gray-400' : 'bg-primary'
+              }`}>
             {searchLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -278,128 +314,90 @@ const Home = () => {
             )}
           </TouchableOpacity>
 
-          {/* Debug: Hiển thị giá trị đã chọn */}
-          {(departureCity.value || arrivalCity.value || date || timeSlot) && (
-            <View className="mt-4 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-              <Text className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Dữ liệu sẽ gửi lên API:
-              </Text>
-              <Text className="text-xs text-gray-600 dark:text-gray-400">
-                from_airport: {departureCity.value || 'Chưa chọn'}
-              </Text>
-              <Text className="text-xs text-gray-600 dark:text-gray-400">
-                to_airport: {arrivalCity.value || 'Chưa chọn'}
-              </Text>
-              <Text className="text-xs text-gray-600 dark:text-gray-400">
-                date: {date || 'Chưa nhập'}
-              </Text>
-              <Text className="text-xs text-gray-600 dark:text-gray-400">
-                time_slot: {timeSlot || 'Chưa nhập'}
-              </Text>
-              <Text className="text-xs text-gray-600 dark:text-gray-400">
-                item_type: {itemType || 'Chưa nhập'}
-              </Text>
-              <Text className="text-xs text-gray-600 dark:text-gray-400">
-                item_value: {itemValue || 'Chưa nhập'}
-              </Text>
-              <Text className="mt-2 text-xs italic text-gray-500 dark:text-gray-500">
-                API endpoint: GET /api/flights/search
-              </Text>
-            </View>
-          )}
         </View>
-
-        {/* Đơn hàng nổi bật */}
-        {/* <View className="mt-8">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-text-primary text-lg font-bold dark:text-white">
-              Đơn hàng Nổi bật dành cho bạn
-            </Text>
-            <Text className="text-sm font-semibold text-primary">Xem tất cả</Text>
-          </View>
-
-          <View className="gap-3">
-            {[
-              { title: 'Tài liệu HN - SGN', time: 'Giao trước 18:00 hôm nay', price: '250.000đ' },
-              { title: 'Hợp đồng DAD - SGN', time: 'Giao trong ngày mai', price: '300.000đ' },
-            ].map((item, i) => (
-              <View
-                key={i}
-                className="flex-row items-center rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
-                <View className="mr-4 h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                  <MaterialIcons
-                    name={i === 0 ? 'description' : 'folder-special'}
-                    size={28}
-                    color="#2563EB"
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-text-primary font-bold dark:text-white">{item.title}</Text>
-                  <Text className="text-text-secondary text-sm dark:text-gray-400">
-                    {item.time}
-                  </Text>
-                </View>
-                <View className="items-end">
-                  <Text className="font-bold text-secondary">{item.price}</Text>
-                  <Text className="text-text-secondary text-xs dark:text-gray-400">Đang tìm</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View> */}
 
         {/* Hành khách sẵn có */}
-        <View className="mt-8">
-          <Text className="text-text-primary mb-4 text-lg font-bold dark:text-white">
-            Hành khách sẵn có cho bạn
-          </Text>
+        {availableCustomers.length > 0 && (
+          <View className="mt-8">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-text-primary text-lg font-bold dark:text-white">
+                Hành khách sẵn có cho bạn
+              </Text>
+              {loadingCustomers && (
+                <ActivityIndicator size="small" color="#2563EB" />
+              )}
+            </View>
 
-          {/* Hành khách 1 */}
-          <View className="mb-4 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
-            <View className="flex-row items-center">
-              <Image
-                source={{
-                  uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCt1uclnQVmRt4FpXFSBOmqwkd7L1z-v6wELp4awVZPFJvpgEMQxPwfI81Umsb1Ioxb-8x74MbwZwQBQx5BULoT206OeocHce63_UGWhTcJvyO1fbozdfC0OrBdgAOzmPd8-HoiOSZ9qsA0VuBkeqq9V3kRCrtRsvlkWLeQ8trYnuKqRCBjLQ3saRSJfc-1LxeUOPZ8gt5cjbqA_SU9KMzQhTRlXgzWWR9n_tHcDczWFQNsBgsN-Gk7_2fNPqRYhcISQtax1Wcc8gaC',
-                }}
-                className="mr-4 h-14 w-14 rounded-full"
-              />
-              <View className="flex-1">
-                <Text className="text-text-primary font-bold dark:text-white">Bình An</Text>
-                <View className="mt-1 flex-row items-center">
-                  <MaterialIcons name="star" size={16} color="#facc15" />
-                  <Text className="text-text-secondary ml-1 text-sm dark:text-gray-400">
-                    5.0 · 98% thành công
-                  </Text>
+            {availableCustomers.map((item: any) => {
+              const customer = item.customer || {};
+              const flight = item.flight || {};
+
+              return (
+                <View key={item.id || item.uuid} className="mb-4 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1 mr-3">
+                      <View className="flex-row items-center">
+                        <Image
+                          source={{
+                            uri: customer.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCt1uclnQVmRt4FpXFSBOmqwkd7L1z-v6wELp4awVZPFJvpgEMQxPwfI81Umsb1Ioxb-8x74MbwZwQBQx5BULoT206OeocHce63_UGWhTcJvyO1fbozdfC0OrBdgAOzmPd8-HoiOSZ9qsA0VuBkeqq9V3kRCrtRsvlkWLeQ8trYnuKqRCBjLQ3saRSJfc-1LxeUOPZ8gt5cjbqA_SU9KMzQhTRlXgzWWR9n_tHcDczWFQNsBgsN-Gk7_2fNPqRYhcISQtax1Wcc8gaC'
+                          }}
+                          className="h-14 w-14 rounded-full mr-3"
+                        />
+                        <View className="flex-1">
+                          <Text className="text-text-primary font-bold dark:text-white">
+                            {customer.name || 'Người dùng'}
+                          </Text>
+                          <View className="mt-1 flex-row items-center">
+                            <MaterialIcons name="star" size={16} color="#facc15" />
+                            <Text className="text-text-secondary ml-1 text-sm dark:text-gray-400">
+                              {customer.rating || 5.0} · {customer.success_rate || 98}% thành công
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        // Navigate to request order với flight_id
+                        router.push({
+                          pathname: '/request_order',
+                          params: {
+                            flight_id: flight.id || flight.uuid,
+                            customer_id: customer.id,
+                          }
+                        });
+                      }}
+                      className="rounded-lg bg-primary/10 px-4 py-2 dark:bg-primary/20">
+                      <Text className="text-sm font-bold text-primary dark:text-blue-400">
+                        Gửi yêu cầu
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View className="my-4 h-px bg-gray-200 dark:bg-gray-700" />
+
+                  <View className="gap-y-3">
+                    <View className="flex-row items-center">
+                      <MaterialIcons name="flight" size={20} color="#6B7280" />
+                      <Text className="text-text-secondary ml-2 text-sm dark:text-gray-300">
+                        {flight.route || `${flight.from_airport || ''} → ${flight.to_airport || ''}`} {flight.flight_date_formatted || flight.flight_date || ''}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center">
+                      <MaterialIcons name="work" size={20} color="#6B7280" />
+                      <Text className="text-text-secondary ml-2 text-sm dark:text-gray-300">
+                        Hành lý còn trống:{' '}
+                        <Text className="font-bold text-green-600 dark:text-green-400">
+                          {flight.available_weight || 0}kg
+                        </Text>
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-              <TouchableOpacity
-                onPress={() => router.push('request_order')}
-                className="rounded-lg bg-primary/10 px-4 py-2 dark:bg-primary/20">
-                <Text className="text-sm font-bold text-primary dark:text-blue-400">
-                  Gửi yêu cầu
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View className="my-4 h-px bg-gray-200 dark:bg-gray-700" />
-
-            <View className="gap-y-3">
-              <View className="flex-row items-center">
-                <MaterialIcons name="flight" size={20} color="#6B7280" />
-                <Text className="text-text-secondary ml-2 text-sm dark:text-gray-300">
-                  SGN → HAN 18:00 - 20:00
-                </Text>
-              </View>
-              <View className="flex-row items-center">
-                <MaterialIcons name="work" size={20} color="#6B7280" />
-                <Text className="text-text-secondary ml-2 text-sm dark:text-gray-300">
-                  Hành lý còn trống:{' '}
-                  <Text className="font-bold text-green-600 dark:text-green-400">2kg</Text>
-                </Text>
-              </View>
-            </View>
+              );
+            })}
           </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

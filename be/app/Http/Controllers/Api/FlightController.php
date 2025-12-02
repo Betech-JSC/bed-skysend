@@ -188,4 +188,95 @@ class FlightController extends Controller
             ]);
         });
     }
+
+    /**
+     * Lấy danh sách khách hàng (customers) có sẵn cho sender gửi request
+     * Chỉ lấy các flights đã verified và còn trống hành lý
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function availableCustomers(Request $request)
+    {
+        $senderId = auth()->id();
+        $perPage = (int) min($request->query('per_page', 15), 50);
+
+        $query = Flight::with(['customer'])
+            ->where('verified', true)
+            ->where('status', 'verified')
+            ->where('customer_id', '!=', $senderId) // Không lấy flights của chính sender
+            ->whereRaw('(max_weight - booked_weight) > 0') // Còn trống hành lý
+            ->whereDate('flight_date', '>=', now()->toDateString()) // Chỉ lấy flights tương lai
+            ->latest('flight_date');
+
+        // Filter theo sân bay đi
+        if ($request->filled('from_airport')) {
+            $query->where('from_airport', strtoupper($request->from_airport));
+        }
+
+        // Filter theo sân bay đến
+        if ($request->filled('to_airport')) {
+            $query->where('to_airport', strtoupper($request->to_airport));
+        }
+
+        // Filter theo ngày bay
+        if ($request->filled('flight_date')) {
+            $query->whereDate('flight_date', $request->flight_date);
+        }
+
+        // Filter theo hãng bay
+        if ($request->filled('airline')) {
+            $query->where('airline', 'like', '%' . $request->airline . '%');
+        }
+
+        $flights = $query->paginate($perPage);
+
+        // Transform data để trả về thông tin customer + flight
+        $flights->getCollection()->transform(function ($flight) {
+            $availableWeight = round($flight->max_weight - $flight->booked_weight, 2);
+            $customer = $flight->customer;
+
+            return [
+                'id' => $flight->id,
+                'uuid' => $flight->uuid,
+                'customer' => [
+                    'id' => $customer->id ?? null,
+                    'name' => $customer->name ?? 'Người dùng',
+                    'avatar' => $customer->avatar ?? null,
+                    'phone' => $customer->phone ?? null,
+                    'email' => $customer->email ?? null,
+                    'rating' => 5.0, // TODO: Tính rating thực tế từ orders completed
+                    'success_rate' => 98, // TODO: Tính success rate thực tế
+                ],
+                'flight' => [
+                    'id' => $flight->id,
+                    'uuid' => $flight->uuid,
+                    'from_airport' => $flight->from_airport,
+                    'to_airport' => $flight->to_airport,
+                    'route' => $flight->from_airport . ' → ' . $flight->to_airport,
+                    'flight_date' => $flight->flight_date->format('Y-m-d'),
+                    'flight_date_formatted' => $flight->flight_date->format('d/m/Y'),
+                    'airline' => $flight->airline,
+                    'flight_number' => $flight->flight_number,
+                    'available_weight' => $availableWeight,
+                    'max_weight' => $flight->max_weight,
+                    'booked_weight' => $flight->booked_weight,
+                    'item_type' => $flight->item_type ?? null,
+                ],
+                'can_send_request' => $availableWeight > 0,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $flights->items(),
+            'pagination' => [
+                'current_page' => $flights->currentPage(),
+                'total_pages' => $flights->lastPage(),
+                'total_items' => $flights->total(),
+                'per_page' => $flights->perPage(),
+                'has_more' => $flights->hasMorePages(),
+            ],
+        ]);
+    }
 }
