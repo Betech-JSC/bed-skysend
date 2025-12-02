@@ -23,6 +23,9 @@ interface ChatItem {
     otherUserId: string | number;
     otherUserName: string;
     otherUserAvatar: string;
+    otherUserPhone?: string;
+    otherUserEmail?: string;
+    otherUserRole?: string;
     lastMessage: string;
     lastMessageTime: number;
     unreadCount: number;
@@ -85,7 +88,7 @@ export default function ChatListScreen() {
             // Lọc orders có chat_id
             const ordersWithChat = ordersData.filter((order: any) => order.chat_id);
 
-            // Fetch thông tin chat từ Firebase
+            // Fetch thông tin chat từ Firebase và kết hợp với order data
             const chatPromises = ordersWithChat.map(async (order: any) => {
                 const chatId = order.chat_id;
                 if (!chatId) return null;
@@ -106,10 +109,14 @@ export default function ChatListScreen() {
 
                     if (!otherUserId) return null;
 
-                    // Lấy thông tin user đối phương
+                    // Lấy thông tin user đối phương từ Firebase
                     const userRef = ref(db, `users/${otherUserId}`);
                     const userSnap = await get(userRef);
                     const otherUserData = userSnap.val() || {};
+
+                    // Lấy thông tin từ order data (partner info từ backend)
+                    // Order có thể có sender hoặc customer là partner
+                    const partner = order.partner || order.sender || order.customer;
 
                     // Lấy tin nhắn cuối cùng (lấy tất cả rồi sort ở client để tránh cần index)
                     const messagesRef = ref(db, `chats/${chatId}/messages`);
@@ -159,11 +166,21 @@ export default function ChatListScreen() {
                     const typingSnap = await get(typingRef);
                     const isTyping = typingSnap.val() === true;
 
+                    // Ưu tiên thông tin từ order data (backend), fallback về Firebase
+                    const otherUserName = partner?.name || otherUserData.name || "Người dùng";
+                    const otherUserAvatar = partner?.avatar || otherUserData.avatar || "https://via.placeholder.com/56";
+                    const otherUserPhone = partner?.phone || otherUserData.phone || undefined;
+                    const otherUserEmail = partner?.email || otherUserData.email || undefined;
+                    const otherUserRole = partner?.role || otherUserData.role || undefined;
+
                     return {
                         chatId,
                         otherUserId,
-                        otherUserName: otherUserData.name || "Người dùng",
-                        otherUserAvatar: otherUserData.avatar || "https://via.placeholder.com/56",
+                        otherUserName,
+                        otherUserAvatar,
+                        otherUserPhone,
+                        otherUserEmail,
+                        otherUserRole,
                         lastMessage,
                         lastMessageTime,
                         unreadCount,
@@ -326,9 +343,9 @@ export default function ChatListScreen() {
         return date.toLocaleDateString("vi-VN");
     };
 
+    // Chỉ tìm kiếm theo tên người dùng
     const filteredChats = chats.filter((chat) =>
-        chat.otherUserName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+        chat.otherUserName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -354,7 +371,7 @@ export default function ChatListScreen() {
                             style={{ marginLeft: 16 }}
                         />
                         <TextInput
-                            placeholder="Tìm kiếm theo tên hoặc tin nhắn..."
+                            placeholder="Tìm kiếm theo tên người dùng..."
                             placeholderTextColor="#616e89"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -419,7 +436,7 @@ export default function ChatListScreen() {
 
                                 {/* Nội dung tin nhắn */}
                                 <View className="flex-1 overflow-hidden">
-                                    <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center justify-between mb-1">
                                         <Text
                                             className={`text-base font-bold text-[#111318] dark:text-white ${chat.unreadCount > 0 ? "font-extrabold" : ""
                                                 }`}
@@ -428,10 +445,27 @@ export default function ChatListScreen() {
                                             {chat.otherUserName}
                                         </Text>
                                     </View>
+                                    {/* Hiển thị thông tin bổ sung: phone hoặc role */}
+                                    {(chat.otherUserPhone || chat.otherUserRole) && (
+                                        <Text
+                                            className="text-xs text-[#616e89] dark:text-gray-400 mb-0.5"
+                                            numberOfLines={1}
+                                        >
+                                            {chat.otherUserPhone && `📱 ${chat.otherUserPhone}`}
+                                            {chat.otherUserPhone && chat.otherUserRole && " • "}
+                                            {chat.otherUserRole && (
+                                                <Text className="capitalize">
+                                                    {chat.otherUserRole === 'sender' ? 'Người gửi' :
+                                                        chat.otherUserRole === 'customer' ? 'Hành khách' :
+                                                            chat.otherUserRole}
+                                                </Text>
+                                            )}
+                                        </Text>
+                                    )}
                                     <Text
                                         className={`text-sm mt-0.5 ${chat.unreadCount > 0
-                                                ? "text-primary font-semibold"
-                                                : "text-[#616e89] dark:text-gray-400"
+                                            ? "text-primary font-semibold"
+                                            : "text-[#616e89] dark:text-gray-400"
                                             }`}
                                         numberOfLines={1}
                                     >

@@ -70,10 +70,21 @@ class UserController extends Controller
 
         // Cập nhật user
         $user->update($validatedData);
+        
+        // Refresh user để lấy dữ liệu mới nhất
+        $user->refresh();
 
         return response()->json([
+            'success' => true,
             'message' => 'Cập nhật thông tin thành công',
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'avatar' => $user->avatar,
+            ],
             'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
         ]);
     }

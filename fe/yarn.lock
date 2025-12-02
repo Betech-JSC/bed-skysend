@@ -6604,15 +6604,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-document-picker@npm:~14.0.7":
-  version: 14.0.7
-  resolution: "expo-document-picker@npm:14.0.7"
-  peerDependencies:
-    expo: "*"
-  checksum: 10c0/19f3f2f7dd17e60ca7f1347dab9eccb99a050dfc1db400c01c249de532bfa48ac55bf155162e2fdf7740da7c6df73177a60280aa2705b1892e08e479a2ea3cd9
-  languageName: node
-  linkType: hard
-
 "expo-facebook@npm:12.2.0":
   version: 12.2.0
   resolution: "expo-facebook@npm:12.2.0"
@@ -11429,7 +11420,6 @@ __metadata:
     expo-auth-session: "npm:~7.0.8"
     expo-constants: "npm:~18.0.10"
     expo-dev-client: "npm:~6.0.17"
-    expo-document-picker: "npm:~14.0.7"
     expo-facebook: "npm:12.2.0"
     expo-file-system: "npm:~19.0.17"
     expo-google-app-auth: "npm:~8.3.0"

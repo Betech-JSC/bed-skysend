@@ -8,6 +8,7 @@ import {
     ScrollView,
     Image,
     ActivityIndicator,
+    Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import api from "@/api/api";
@@ -84,23 +85,41 @@ export default function ProfileUpdate() {
                 data.append("password_confirmation", password_confirmation);
             }
 
-            if (avatar && !avatar.startsWith("http")) {
-                const filename = avatar.split("/").pop()!;
+            // Xử lý avatar - chỉ upload nếu là ảnh mới (local URI)
+            if (avatar && !avatar.startsWith("http") && !avatar.startsWith("https")) {
+                // Lấy tên file từ URI
+                const filename = avatar.split("/").pop() || `avatar_${Date.now()}.jpg`;
+                // Xác định type từ extension
                 const match = /\.(\w+)$/.exec(filename);
-                const type = match ? `image/${match[1]}` : `image`;
+                const type = match ? `image/${match[1]}` : `image/jpeg`;
+                
+                // Tạo file object cho FormData (React Native)
+                const fileUri = Platform.OS === 'android' ? avatar : avatar.replace('file://', '');
                 data.append("avatar", {
-                    uri: avatar,
+                    uri: fileUri,
                     name: filename,
-                    type,
+                    type: type,
                 } as any);
             }
 
-            const response = await api.post("user/profile", data, {
+            const response = await api.put("user/profile", data, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
             if (response.status === 200 && response.data?.user) {
-                dispatch(setUser(response.data.user));
+                // Cập nhật user với avatar URL từ backend nếu có
+                const updatedUser = {
+                    ...response.data.user,
+                    avatar: response.data.avatar_url || response.data.user.avatar || user.avatar,
+                    token: user.token, // Giữ nguyên token
+                };
+                dispatch(setUser(updatedUser));
+                
+                // Cập nhật avatar local nếu có URL mới
+                if (response.data.avatar_url) {
+                    setAvatar(response.data.avatar_url);
+                }
+                
                 Alert.alert("Thành công", "Cập nhật thông tin thành công!");
             } else {
                 const message =
@@ -110,12 +129,28 @@ export default function ProfileUpdate() {
                 Alert.alert("Cập nhật thất bại", message);
             }
         } catch (error: any) {
-            console.error(error);
-            if (error.response?.data?.errors) {
-                const errMsg = Object.values(error.response.data.errors).join("\n");
-                Alert.alert("Lỗi", errMsg);
+            console.error("Error updating profile:", error);
+            
+            // Xử lý lỗi validation
+            if (error.response?.status === 422 && error.response?.data?.errors) {
+                const errors = error.response.data.errors;
+                const errorMessages = Object.entries(errors)
+                    .map(([field, messages]: [string, any]) => {
+                        const fieldName = field === 'password_confirmation' ? 'Xác nhận mật khẩu' :
+                                         field === 'name' ? 'Họ tên' :
+                                         field === 'email' ? 'Email' :
+                                         field === 'phone' ? 'Số điện thoại' :
+                                         field === 'avatar' ? 'Ảnh đại diện' : field;
+                        return `${fieldName}: ${Array.isArray(messages) ? messages.join(', ') : messages}`;
+                    })
+                    .join('\n');
+                Alert.alert("Lỗi xác thực", errorMessages);
+            } else if (error.response?.data?.message) {
+                Alert.alert("Lỗi", error.response.data.message);
+            } else if (error.message) {
+                Alert.alert("Lỗi", error.message);
             } else {
-                Alert.alert("Lỗi mạng", "Không thể kết nối đến server.");
+                Alert.alert("Lỗi mạng", "Không thể kết nối đến server. Vui lòng thử lại.");
             }
         } finally {
             setLoading(false);
