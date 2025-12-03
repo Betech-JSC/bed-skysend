@@ -277,24 +277,6 @@ class RequestController extends Controller
                         'status'        => 'auto_declined',
                     ]);
 
-                // Tạo notification trên Firebase cho sender khi request được accept
-                $sender = $order->sender;
-                if ($sender) {
-                    $this->firebaseService->pushNotification(
-                        $sender->id,
-                        'Yêu cầu đã được chấp nhận',
-                        "Yêu cầu của bạn đã được {$order->customer->name} chấp nhận. Đơn hàng #{$order->tracking_code} đã được tạo.",
-                        [
-                            'type' => 'request',
-                            'data' => [
-                                'request_id' => $request->id,
-                                'order_id' => $order->id,
-                                'order_uuid' => $order->uuid,
-                            ]
-                        ]
-                    );
-                }
-
                 // Trả về thông tin đẹp cho Customer
                 return response()->json([
                     'success' => true,

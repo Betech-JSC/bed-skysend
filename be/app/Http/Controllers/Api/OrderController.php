@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\WalletService;
-use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -13,10 +12,8 @@ use Illuminate\Validation\Rule;
 class OrderController extends Controller
 {
     public function __construct(
-        private WalletService $walletService,
-        private FirebaseService $firebaseService
-    ) {
-    }
+        private WalletService $walletService
+    ) {}
     /**
      * Danh sách đơn hàng của user hiện tại
      * - Sender thấy đơn mình đặt
@@ -205,36 +202,6 @@ class OrderController extends Controller
 
             // Load lại dữ liệu đẹp cho frontend
             $order->load(['sender', 'customer', 'flight']);
-
-            // Tạo notification trên Firebase cho đối phương khi order status được update
-            $statusLabels = [
-                'picked_up' => 'Đã nhận hàng',
-                'in_transit' => 'Đang trên máy bay',
-                'arrived' => 'Đã đến sân bay',
-                'delivered' => 'Đã giao hàng',
-                'completed' => 'Hoàn tất',
-                'cancelled' => 'Đã hủy',
-            ];
-
-            $isSender = $order->sender_id === $user->id;
-            $partnerId = $isSender ? $order->customer_id : $order->sender_id;
-            $partnerName = $isSender ? ($order->customer->name ?? 'Hành khách') : ($order->sender->name ?? 'Người gửi');
-
-            if ($partnerId) {
-                $this->firebaseService->pushNotification(
-                    $partnerId,
-                    'Cập nhật đơn hàng',
-                    "Đơn hàng #{$order->tracking_code} đã được cập nhật: {$statusLabels[$newStatus] ?? $newStatus} bởi {$partnerName}",
-                    [
-                        'type' => 'order',
-                        'data' => [
-                            'order_id' => $order->id,
-                            'order_uuid' => $order->uuid,
-                            'status' => $newStatus,
-                        ]
-                    ]
-                );
-            }
 
             return response()->json([
                 'success' => true,
