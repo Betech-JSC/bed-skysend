@@ -380,12 +380,11 @@ export default function OrderDetailScreen() {
                 <View className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                     <TouchableOpacity
                         onPress={() => {
-                            // Navigate to chat using chat_id from order
-                            const chatId = order.chat_id || order.id || order.uuid;
+                            // Navigate to chat
                             router.push({
                                 pathname: '/chat/[chatId]',
                                 params: {
-                                    chatId: String(chatId),
+                                    chatId: order.id || order.uuid,
                                     partnerName: partner.name,
                                     partnerAvatar: partner.avatar,
                                 }

@@ -39,8 +39,8 @@ export default function RequestOrderScreen() {
 
     const handleSubmit = async () => {
         // Validation
-        if (!reward || Number(reward) < 50000) {
-            Alert.alert('Lỗi', 'Vui lòng nhập phần thưởng tối thiểu 50,000đ');
+        if (!reward || Number(reward) < 300000) {
+            Alert.alert('Lỗi', 'Vui lòng nhập phần thưởng tối thiểu 300.000đ');
             return;
         }
         if (!itemValue || Number(itemValue) < 100000) {
@@ -51,10 +51,7 @@ export default function RequestOrderScreen() {
             Alert.alert('Lỗi', 'Vui lòng nhập mô tả tài liệu (tối thiểu 10 ký tự)');
             return;
         }
-        if (!timeSlot) {
-            Alert.alert('Lỗi', 'Vui lòng chọn khung giờ ưu tiên');
-            return;
-        }
+
         if (!terms1 || !terms2) {
             Alert.alert('Lỗi', 'Vui lòng xác nhận các điều khoản');
             return;
@@ -68,7 +65,6 @@ export default function RequestOrderScreen() {
                 reward: Number(reward),
                 item_value: Number(itemValue),
                 item_description: itemDescription.trim(),
-                time_slot: timeSlot,
                 note: note.trim() || undefined,
             };
 
@@ -182,13 +178,13 @@ export default function RequestOrderScreen() {
                                 <TextInput
                                     value={reward}
                                     onChangeText={setReward}
-                                    placeholder="Ví dụ: 500,000"
+                                    placeholder="Ví dụ: 300.000đ"
                                     keyboardType="numeric"
                                     className="h-14 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-10 pr-4 text-sm text-text-primary dark:text-white"
                                 />
                             </View>
                             <Text className="mt-1 text-xs text-text-secondary dark:text-gray-400">
-                                Tối thiểu: 50,000đ
+                                Tối thiểu: 300.000đ
                             </Text>
                         </View>
 
@@ -243,30 +239,6 @@ export default function RequestOrderScreen() {
                                 numberOfLines={4}
                                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-text-primary dark:text-white min-h-24"
                             />
-                        </View>
-
-                        {/* Khung giờ ưu tiên */}
-                        <View>
-                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                                Khung giờ ưu tiên <Text className="text-red-500">*</Text>
-                            </Text>
-                            <View className="relative">
-                                <MaterialIcons
-                                    name="schedule"
-                                    size={20}
-                                    color="#6b7280"
-                                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                                />
-                                <TextInput
-                                    value={timeSlot}
-                                    onChangeText={setTimeSlot}
-                                    placeholder="morning, afternoon, evening, any"
-                                    className="h-14 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-10 pr-4 text-sm text-text-primary dark:text-white"
-                                />
-                            </View>
-                            <Text className="mt-1 text-xs text-text-secondary dark:text-gray-400">
-                                Các giá trị: morning, afternoon, evening, any
-                            </Text>
                         </View>
 
                         {/* Ghi chú */}

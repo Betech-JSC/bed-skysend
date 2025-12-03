@@ -92,7 +92,6 @@ class RequestController extends Controller
             'reward'              => 'required|numeric|min:50000|max:10000000',
             'item_value'          => 'required|numeric|min:100000',
             'item_description'    => 'required|string|max:1000',
-            'time_slot'           => 'required|in:morning,afternoon,evening,any',
             'note'                => 'nullable|string|max:500',
         ]);
 
@@ -149,7 +148,6 @@ class RequestController extends Controller
             'reward'           => $validated['reward'],
             'item_value'       => $validated['item_value'],
             'item_description' => $validated['item_description'],
-            'time_slot'        => $validated['time_slot'],
             'note'             => $validated['note'] ?? null,
             'priority_level'   => $priorityLevel,
             'status'           => 'pending',

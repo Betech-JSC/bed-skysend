@@ -27,36 +27,7 @@ function ListOrder() {
     const [loading, setLoading] = useState(true);
     const [loadingRequests, setLoadingRequests] = useState(false);
 
-    // const orders = [
-    //     {
-    //         id: "SS123456",
-    //         from: "SGN",
-    //         to: "HAN",
-    //         passenger: "Hoàng An",
-    //         passengerAvatar:
-    //             "https://lh3.googleusercontent.com/aida-public/AB6AXuBh8HKmzWfaK4vtpBxOoC4ZKoPlavPTG6GybEFi6qr9wTcLMV-3Wi2BwZtUvEl7x6NLKmY-q8Xq33RW7PZRDumC8Ki0HJqp6E3BPM1lEB8qwB2QPwzIEHWqJVz_k8A4aT05QkN3UdoHz3cwU4VdmTyY4wx_Xv7onBkfSK2B4y2p3NCO1DDbGYnN0I6tpTAY0P0JE1Q5G3-Z0n55qQ8R_V8SGZOlCpVQuDYWTZneqZUXGily4vzhQ2LO2hbVQp1LTMoNTpJ5qhjQuIEP",
-    //         rating: 4.8,
-    //         role: "Hành khách",
-    //         price: "550.000đ",
-    //         fee: "50.000đ",
-    //         status: "Chờ xác nhận",
-    //         statusColor: "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
-    //     },
-    //     {
-    //         id: "SS654321",
-    //         from: "DAD",
-    //         to: "SGN",
-    //         passenger: "Thuỳ Linh",
-    //         passengerAvatar:
-    //             "https://lh3.googleusercontent.com/aida-public/AB6AXuDnC5mDFuQXEFEzyVVUdqIkxg_yKCWk2efDKV2Xlsi0K8D1JdEH1Dfa187-BbXA75lzWdo2RrC5vIzaZOqA_Up0wpb3Yw3y5uJnFRsTOMekxIPMF682xnctoYI63AQY6II0pQhxjKE7X6SfKRFCpq9MMRYSdGondwwdepbl0W8q7mb2hoRzc4wmLwlYBFDHc__sfZNUlNAS1LmM7bPuW6-9d6Pexi1IsewGDkyLg1E3FydvLwU3jJZAX_UcqDrXt_QvPJmt2DuBqz2H",
-    //         rating: 4.9,
-    //         role: "Người gửi",
-    //         price: "320.000đ",
-    //         fee: "20.000đ",
-    //         status: "Đã lấy hàng",
-    //         statusColor: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-    //     },
-    // ];
+
 
     // Map order status to Vietnamese
     const getStatusLabel = (status: string) => {

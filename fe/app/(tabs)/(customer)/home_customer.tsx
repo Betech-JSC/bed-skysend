@@ -130,7 +130,6 @@ export default function HomeScreen() {
         if (!flightDateTime) return Alert.alert('Thông báo', 'Vui lòng chọn ngày và giờ bay');
         if (!airline) return Alert.alert('Thông báo', 'Vui lòng nhập hãng bay');
         if (!flightCode) return Alert.alert('Thông báo', 'Vui lòng nhập mã chuyến bay');
-        if (!itemType) return Alert.alert('Thông báo', 'Vui lòng chọn loại tài liệu');
         if (!allowedWeight || isNaN(parseFloat(allowedWeight))) {
             return Alert.alert('Thông báo', 'Vui lòng nhập khối lượng hợp lệ (số)');
         }
@@ -141,7 +140,7 @@ export default function HomeScreen() {
             flight_date: flightDateTime,
             airline: airline.trim(),
             flight_number: flightCode.trim(),
-            item_type: itemType,
+            item_type: '',
             max_weight: parseFloat(allowedWeight),
         };
 
@@ -269,17 +268,6 @@ export default function HomeScreen() {
                             onAirlineChange={(airlineCode, airlineName) => {
                                 setAirline(airlineName);
                             }}
-                        />
-                    </View>
-
-                    <View className="mb-4">
-                        <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                            Loại tài liệu
-                        </Text>
-                        <ItemTypeSelect
-                            placeholder="Chọn loại tài liệu"
-                            value={itemType}
-                            onValueChange={setItemType}
                         />
                     </View>
 

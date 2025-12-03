@@ -59,7 +59,6 @@ class FlightController extends Controller
             'status'         => 'pending',
             'flight_number'  => strtoupper($request->flight_number),
             'max_weight'     => $request->max_weight,
-            'item_type'     => $request->item_type,
             'booked_weight'  => 0.00,
             'note'           => $request->note,
             'verified'       => false,

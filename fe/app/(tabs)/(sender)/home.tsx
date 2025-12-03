@@ -122,10 +122,6 @@ const Home = () => {
       Alert.alert('Thông báo', 'Vui lòng chọn ngày gửi');
       return;
     }
-    if (!timeSlot) {
-      Alert.alert('Thông báo', 'Vui lòng chọn khung giờ ưu tiên');
-      return;
-    }
 
     const searchParams = {
       from_airport: departureCity.value,
@@ -246,27 +242,6 @@ const Home = () => {
               />
             </View>
 
-            {/* Khung giờ */}
-            <View className="col-span-1">
-              <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                Khung giờ ưu tiên
-              </Text>
-              <View className="relative">
-                <MaterialIcons
-                  name="schedule"
-                  size={20}
-                  color="#6b7280"
-                  style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                />
-                <TextInput
-                  placeholder="Buổi sáng (6h-12h)"
-                  value={timeSlot}
-                  onChangeText={setTimeSlot}
-                  className="text-text-primary h-14 rounded-lg border border-gray-200 bg-background-light pl-10 pr-4 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                />
-              </View>
-            </View>
-
             {/* Loại tài liệu */}
             <View className="col-span-2">
               <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
@@ -316,96 +291,6 @@ const Home = () => {
 
         </View>
 
-        {/* Hành khách sẵn có */}
-        {availableCustomers.length > 0 && (
-          <View className="mt-8">
-            <View className="mb-4 flex-row items-center justify-between">
-              <Text className="text-text-primary text-lg font-bold dark:text-white">
-                Hành khách sẵn có cho bạn
-              </Text>
-              {loadingCustomers && (
-                <ActivityIndicator size="small" color="#2563EB" />
-              )}
-            </View>
-
-            {availableCustomers.map((item: any) => {
-              const customer = item.customer || {};
-              const flight = item.flight || {};
-
-              return (
-                <View key={item.id || item.uuid} className="mb-4 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-1 mr-3">
-                      <View className="flex-row items-center">
-                        <Image
-                          source={{
-                            uri: customer.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCt1uclnQVmRt4FpXFSBOmqwkd7L1z-v6wELp4awVZPFJvpgEMQxPwfI81Umsb1Ioxb-8x74MbwZwQBQx5BULoT206OeocHce63_UGWhTcJvyO1fbozdfC0OrBdgAOzmPd8-HoiOSZ9qsA0VuBkeqq9V3kRCrtRsvlkWLeQ8trYnuKqRCBjLQ3saRSJfc-1LxeUOPZ8gt5cjbqA_SU9KMzQhTRlXgzWWR9n_tHcDczWFQNsBgsN-Gk7_2fNPqRYhcISQtax1Wcc8gaC'
-                          }}
-                          className="h-14 w-14 rounded-full mr-3"
-                        />
-                        <View className="flex-1">
-                          <Text className="text-text-primary font-bold dark:text-white">
-                            {customer.name || 'Người dùng'}
-                          </Text>
-                          <View className="mt-1 flex-row items-center">
-                            <MaterialIcons name="star" size={16} color="#facc15" />
-                            <Text className="text-text-secondary ml-1 text-sm dark:text-gray-400">
-                              {customer.rating || 5.0} · {customer.success_rate || 98}% thành công
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        // Navigate to request order với flight_id và flight_data
-                        router.push({
-                          pathname: '/request_order',
-                          params: {
-                            flight_id: flight.id || flight.uuid,
-                            customer_id: customer.id,
-                            flight_data: JSON.stringify({
-                              id: flight.id || flight.uuid,
-                              from_airport: flight.from_airport,
-                              to_airport: flight.to_airport,
-                              flight_number: flight.flight_number,
-                              flight_date: flight.flight_date || flight.flight_date_formatted,
-                              customer: customer,
-                            }),
-                          }
-                        });
-                      }}
-                      className="rounded-lg bg-primary/10 px-4 py-2 dark:bg-primary/20">
-                      <Text className="text-sm font-bold text-primary dark:text-blue-400">
-                        Gửi yêu cầu
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View className="my-4 h-px bg-gray-200 dark:bg-gray-700" />
-
-                  <View className="gap-y-3">
-                    <View className="flex-row items-center">
-                      <MaterialIcons name="flight" size={20} color="#6B7280" />
-                      <Text className="text-text-secondary ml-2 text-sm dark:text-gray-300">
-                        {flight.route || `${flight.from_airport || ''} → ${flight.to_airport || ''}`} {flight.flight_date_formatted || flight.flight_date || ''}
-                      </Text>
-                    </View>
-                    <View className="flex-row items-center">
-                      <MaterialIcons name="work" size={20} color="#6B7280" />
-                      <Text className="text-text-secondary ml-2 text-sm dark:text-gray-300">
-                        Hành lý còn trống:{' '}
-                        <Text className="font-bold text-green-600 dark:text-green-400">
-                          {flight.available_weight || 0}kg
-                        </Text>
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
