@@ -1,5 +1,10 @@
 <?php
 
+// User authentication routes - DISABLED
+// All authentication is now handled through admin panel or API
+// If needed, these routes can be uncommented
+
+/*
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -35,3 +40,4 @@ Route::post('/email/verification-notification', [EmailVerificationNotificationCo
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+*/
