@@ -72,10 +72,10 @@ class OrderController extends Controller
 
         $order = Order::with([
             'flight',
-            'flight',
             'sender',
             'customer',
             'request',
+            'attachments',
         ])
             ->where('id', $id)
             ->firstOrFail();

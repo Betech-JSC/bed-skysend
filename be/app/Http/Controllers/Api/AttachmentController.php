@@ -53,13 +53,15 @@ class AttachmentController extends Controller
 
             // Save to DB
             $attachment = Attachment::create([
-                'type'        => $isImage ? 'image' : ($isVideo ? 'video' : 'document'),
-                'file_name'   => $file->getClientOriginalName(),
-                'file_path'   => $path,
-                'file_url'    => $url,
-                'file_size'   => $file->getSize(),
-                'mime_type'   => $mime,
-                'uploaded_by' => auth()->id(),
+                'original_name' => $file->getClientOriginalName(),
+                'type'         => $isImage ? 'image' : ($isVideo ? 'video' : 'document'),
+                'file_name'    => $fileName,
+                'file_path'    => $path,
+                'file_url'     => $url,
+                'file_size'    => $file->getSize(),
+                'mime_type'    => $mime,
+                'uploaded_by'  => auth()->id(),
+                'sort_order'   => 0,
             ]);
 
             $uploaded[] = [

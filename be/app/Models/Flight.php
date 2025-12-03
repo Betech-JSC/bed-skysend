@@ -67,7 +67,7 @@ class Flight extends Model
     /** Ảnh/video/file đính kèm (vé máy bay, hành lý thừa…) */
     public function attachments(): MorphMany
     {
-        return $this->morphMany(Attachment::class, 'attachable')->orderBy('order');
+        return $this->morphMany(Attachment::class, 'attachable')->orderBy('sort_order');
     }
 
     /** Các order đã được tạo từ chuyến bay này */
@@ -160,11 +160,22 @@ class Flight extends Model
     }
 
     /** Đánh dấu đã xác thực vé */
-    public function markAsVerified(?User $verifier = null): bool
+    public function markAsVerified(User|\App\Models\Admin|int|null $verifier = null): bool
     {
         $this->verified    = true;
         $this->verified_at = now();
-        $this->verified_by = $verifier?->id;
+        
+        // Nếu là object, lấy ID. Nếu là Admin, không lưu (vì verified_by chỉ reference users table)
+        if ($verifier instanceof User) {
+            $this->verified_by = $verifier->id;
+        } elseif ($verifier instanceof \App\Models\Admin) {
+            // Admin không có trong users table, nên không lưu ID
+            $this->verified_by = null;
+        } elseif (is_int($verifier)) {
+            $this->verified_by = $verifier;
+        } else {
+            $this->verified_by = null;
+        }
 
         return $this->save();
     }

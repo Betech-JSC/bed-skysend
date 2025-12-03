@@ -2,6 +2,22 @@
   @apply px-6 py-3 rounded bg-indigo-600 text-white text-sm leading-4 font-bold whitespace-nowrap hover:bg-orange-400 focus:bg-orange-400;
 }
 
+.btn-green {
+  @apply px-6 py-3 rounded bg-green-600 text-white text-sm leading-4 font-bold whitespace-nowrap hover:bg-green-700 focus:bg-green-700;
+}
+
+.btn-red {
+  @apply px-6 py-3 rounded bg-red-600 text-white text-sm leading-4 font-bold whitespace-nowrap hover:bg-red-700 focus:bg-red-700;
+}
+
+.btn-yellow {
+  @apply px-6 py-3 rounded bg-yellow-600 text-white text-sm leading-4 font-bold whitespace-nowrap hover:bg-yellow-700 focus:bg-yellow-700;
+}
+
+.btn-gray {
+  @apply px-6 py-3 rounded bg-gray-600 text-white text-sm leading-4 font-bold whitespace-nowrap hover:bg-gray-700 focus:bg-gray-700;
+}
+
 .btn-spinner,
 .btn-spinner:after {
   border-radius: 50%;

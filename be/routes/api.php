@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionsController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\AdminUserController;
+use App\Http\Controllers\Api\AdminFlightController;
+use App\Http\Controllers\Api\AdminOrderController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -137,3 +140,38 @@ Route::get('/payment-methods/{code}', [PaymentMethodController::class, 'show']);
 // routes/api.php
 Route::post('/upload', [AttachmentController::class, 'upload'])
     ->name('upload.file');
+
+// ===================================================================
+// ADMIN API ROUTES - Yêu cầu authentication và admin role
+// ===================================================================
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+
+    // ========== QUẢN LÝ NGƯỜI DÙNG ==========
+    Route::prefix('users')->group(function () {
+        Route::get('/', [AdminUserController::class, 'index']); // Danh sách users
+        Route::get('/{id}', [AdminUserController::class, 'show']); // Chi tiết user
+        Route::put('/{id}', [AdminUserController::class, 'update']); // Cập nhật user
+        Route::post('/{id}/ban', [AdminUserController::class, 'ban']); // Khóa tài khoản
+        Route::post('/{id}/unban', [AdminUserController::class, 'unban']); // Mở khóa tài khoản
+        Route::delete('/{id}', [AdminUserController::class, 'destroy']); // Xóa vĩnh viễn
+    });
+
+    // ========== QUẢN LÝ CHUYẾN BAY ==========
+    Route::prefix('flights')->group(function () {
+        Route::get('/', [AdminFlightController::class, 'index']); // Danh sách flights
+        Route::get('/statistics', [AdminFlightController::class, 'statistics']); // Thống kê
+        Route::get('/{id}', [AdminFlightController::class, 'show']); // Chi tiết flight
+        Route::post('/{id}/verify', [AdminFlightController::class, 'verify']); // Xác thực flight
+        Route::post('/{id}/reject', [AdminFlightController::class, 'reject']); // Từ chối flight
+        Route::post('/{id}/cancel', [AdminFlightController::class, 'cancel']); // Hủy flight
+    });
+
+    // ========== QUẢN LÝ ĐƠN HÀNG ==========
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [AdminOrderController::class, 'index']); // Danh sách orders
+        Route::get('/statistics', [AdminOrderController::class, 'statistics']); // Thống kê
+        Route::get('/{id}', [AdminOrderController::class, 'show']); // Chi tiết order
+        Route::put('/{id}/status', [AdminOrderController::class, 'updateStatus']); // Cập nhật trạng thái
+        Route::post('/{id}/cancel', [AdminOrderController::class, 'cancel']); // Hủy đơn hàng
+    });
+});

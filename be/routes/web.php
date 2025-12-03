@@ -69,3 +69,6 @@ Route::get('/send', function () {
 
 Route::resource('regions', RegionsController::class)
     ->middleware('auth');
+
+// Admin routes
+require __DIR__.'/admin.php';
