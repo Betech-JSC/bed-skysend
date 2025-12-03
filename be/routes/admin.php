@@ -6,6 +6,13 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\FlightController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\RequestController;
+use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\FileController;
 
 // Admin Auth Routes (public)
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -46,6 +53,52 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{id}', [OrderController::class, 'show'])->name('show');
             Route::put('/{id}/status', [OrderController::class, 'updateStatus'])->name('updateStatus');
             Route::post('/{id}/cancel', [OrderController::class, 'cancel'])->name('cancel');
+        });
+
+        // Requests Management
+        Route::prefix('requests')->name('requests.')->group(function () {
+            Route::get('/', [RequestController::class, 'index'])->name('index');
+            Route::get('/{id}', [RequestController::class, 'show'])->name('show');
+            Route::delete('/{id}', [RequestController::class, 'destroy'])->name('destroy');
+        });
+
+        // Reviews Management
+        Route::prefix('reviews')->name('reviews.')->group(function () {
+            Route::get('/', [ReviewController::class, 'index'])->name('index');
+            Route::delete('/{id}', [ReviewController::class, 'destroy'])->name('destroy');
+        });
+
+        // Reports & Analytics
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/', [ReportController::class, 'index'])->name('index');
+        });
+
+        // Notifications Management
+        Route::prefix('notifications')->name('notifications.')->group(function () {
+            Route::get('/', [NotificationController::class, 'index'])->name('index');
+            Route::get('/create', [NotificationController::class, 'create'])->name('create');
+            Route::post('/broadcast', [NotificationController::class, 'broadcast'])->name('broadcast');
+        });
+
+        // Settings Management
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', [SettingController::class, 'index'])->name('index');
+            Route::post('/', [SettingController::class, 'store'])->name('store');
+            Route::put('/', [SettingController::class, 'update'])->name('update');
+            Route::delete('/{id}', [SettingController::class, 'destroy'])->name('destroy');
+        });
+
+        // Permissions Management
+        Route::prefix('permissions')->name('permissions.')->group(function () {
+            Route::get('/', [PermissionController::class, 'index'])->name('index');
+            Route::put('/admins/{id}/roles', [PermissionController::class, 'updateAdminRole'])->name('updateAdminRole');
+        });
+
+        // Files Management
+        Route::prefix('files')->name('files.')->group(function () {
+            Route::get('/', [FileController::class, 'index'])->name('index');
+            Route::get('/{id}/download', [FileController::class, 'download'])->name('download');
+            Route::delete('/{id}', [FileController::class, 'destroy'])->name('destroy');
         });
     });
 });

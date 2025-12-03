@@ -73,7 +73,7 @@
 <script setup>
 import { ref, computed, h } from 'vue'
 import { Link, usePage, router } from '@inertiajs/vue3'
-import { MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined, DashboardOutlined, UserOutlined, SendOutlined, ShoppingOutlined } from '@ant-design/icons-vue'
+import { MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined, DashboardOutlined, UserOutlined, SendOutlined, ShoppingOutlined, FileTextOutlined, StarOutlined, BarChartOutlined, BellOutlined, SettingOutlined, SafetyOutlined, FileOutlined } from '@ant-design/icons-vue'
 
 const props = defineProps({
   admin: Object,
@@ -87,6 +87,13 @@ const selectedKeys = computed(() => {
   if (url.startsWith('/admin/users')) return ['users']
   if (url.startsWith('/admin/flights')) return ['flights']
   if (url.startsWith('/admin/orders')) return ['orders']
+  if (url.startsWith('/admin/requests')) return ['requests']
+  if (url.startsWith('/admin/reviews')) return ['reviews']
+  if (url.startsWith('/admin/reports')) return ['reports']
+  if (url.startsWith('/admin/notifications')) return ['notifications']
+  if (url.startsWith('/admin/settings')) return ['settings']
+  if (url.startsWith('/admin/permissions')) return ['permissions']
+  if (url.startsWith('/admin/files')) return ['files']
   if (url === '/admin' || url === '/admin/dashboard') return ['dashboard']
   return []
 })
@@ -112,6 +119,41 @@ const menuItems = [
     icon: h(ShoppingOutlined),
     label: 'Quản lý Đơn hàng',
   },
+  {
+    key: 'requests',
+    icon: h(FileTextOutlined),
+    label: 'Quản lý Yêu cầu',
+  },
+  {
+    key: 'reviews',
+    icon: h(StarOutlined),
+    label: 'Đánh giá & Khiếu nại',
+  },
+  {
+    key: 'reports',
+    icon: h(BarChartOutlined),
+    label: 'Báo cáo & Thống kê',
+  },
+  {
+    key: 'notifications',
+    icon: h(BellOutlined),
+    label: 'Quản lý Thông báo',
+  },
+  {
+    key: 'settings',
+    icon: h(SettingOutlined),
+    label: 'Cấu hình Hệ thống',
+  },
+  {
+    key: 'permissions',
+    icon: h(SafetyOutlined),
+    label: 'Phân quyền',
+  },
+  {
+    key: 'files',
+    icon: h(FileOutlined),
+    label: 'Quản lý File',
+  },
 ]
 
 const handleMenuClick = ({ key }) => {
@@ -120,6 +162,13 @@ const handleMenuClick = ({ key }) => {
     users: '/admin/users',
     flights: '/admin/flights',
     orders: '/admin/orders',
+    requests: '/admin/requests',
+    reviews: '/admin/reviews',
+    reports: '/admin/reports',
+    notifications: '/admin/notifications',
+    settings: '/admin/settings',
+    permissions: '/admin/permissions',
+    files: '/admin/files',
   }
   if (routes[key]) {
     router.visit(routes[key])
