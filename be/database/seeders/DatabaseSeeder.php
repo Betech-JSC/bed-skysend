@@ -33,6 +33,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
+            RolePermissionSeeder::class, // Chạy trước để tạo roles và permissions
+            AdminSeeder::class, // Sau đó mới tạo admins và gán roles
             AirportSeeder::class,
             AirlineSeeder::class,
             PaymentMethodSeeder::class,
