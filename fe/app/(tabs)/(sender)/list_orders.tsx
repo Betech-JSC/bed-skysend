@@ -21,6 +21,7 @@ function ListOrder() {
 
     const [activeTab, setActiveTab] = useState<'orders' | 'requests'>('orders');
     const [orderStatusFilter, setOrderStatusFilter] = useState<string>(''); // 'confirmed', 'picked_up', 'in_transit', 'delivered', 'completed', 'cancelled'
+    const [requestStatusFilter, setRequestStatusFilter] = useState<string>(''); // 'pending', 'accepted', 'declined', 'confirmed', 'expired', 'cancelled'
     const [orders, setOrders] = useState<any[]>([]);
     const [requests, setRequests] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -46,15 +47,27 @@ function ListOrder() {
         return statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' };
     };
 
-    // Map order status to filter tabs
-    const getStatusForTab = (tabIndex: number): string => {
-        const statusMap: { [key: number]: string } = {
-            0: 'confirmed', // Đang xử lý
-            1: 'in_transit', // Đang vận chuyển
-            2: 'completed', // Hoàn thành
-        };
-        return statusMap[tabIndex] || '';
-    };
+    // Danh sách các filter tabs cho orders
+    const orderFilterTabs = [
+        { label: 'Tất cả', status: '' },
+        { label: 'Đã xác nhận', status: 'confirmed' },
+        { label: 'Đã lấy hàng', status: 'picked_up' },
+        { label: 'Đang vận chuyển', status: 'in_transit' },
+        { label: 'Đã giao hàng', status: 'delivered' },
+        { label: 'Hoàn thành', status: 'completed' },
+        { label: 'Đã hủy', status: 'cancelled' },
+    ];
+
+    // Danh sách các filter tabs cho requests
+    const requestFilterTabs = [
+        { label: 'Tất cả', status: '' },
+        { label: 'Chờ xác nhận', status: 'pending' },
+        { label: 'Đã chấp nhận', status: 'accepted' },
+        { label: 'Đã xác nhận', status: 'confirmed' },
+        { label: 'Đã từ chối', status: 'declined' },
+        { label: 'Hết hạn', status: 'expired' },
+        { label: 'Đã hủy', status: 'cancelled' },
+    ];
 
     useEffect(() => {
         if (activeTab === 'orders') {
@@ -62,7 +75,7 @@ function ListOrder() {
         } else {
             fetchRequests();
         }
-    }, [activeTab, orderStatusFilter, role]);
+    }, [activeTab, orderStatusFilter, requestStatusFilter, role]);
 
     const fetchOrders = async () => {
         if (!role) return;
@@ -98,7 +111,12 @@ function ListOrder() {
             setLoadingRequests(true);
             setError(null);
 
-            const response = await api.get("private-requests");
+            const params: any = {};
+            if (requestStatusFilter) {
+                params.status = requestStatusFilter;
+            }
+
+            const response = await api.get("private-requests", { params });
 
             let requestsData = [];
             if (response.data?.data) {
@@ -157,7 +175,11 @@ function ListOrder() {
                 <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <View className="flex-row mx-4">
                         <TouchableOpacity
-                            onPress={() => setActiveTab('orders')}
+                            onPress={() => {
+                                setActiveTab('orders');
+                                // Reset request filter khi chuyển sang tab orders
+                                setRequestStatusFilter('');
+                            }}
                             className="flex-1 items-center py-4"
                         >
                             <Text
@@ -170,7 +192,11 @@ function ListOrder() {
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            onPress={() => setActiveTab('requests')}
+                            onPress={() => {
+                                setActiveTab('requests');
+                                // Reset order filter khi chuyển sang tab requests
+                                setOrderStatusFilter('');
+                            }}
                             className="flex-1 items-center py-4"
                         >
                             <Text
@@ -185,31 +211,67 @@ function ListOrder() {
                     </View>
                 </View>
 
-                {/* Status Filter Tabs (only for orders) */}
+                {/* Status Filter Tabs for Orders */}
                 {activeTab === 'orders' && (
                     <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                        <View className="flex-row mx-4">
-                            {["Đang xử lý", "Đang vận chuyển", "Hoàn thành"].map((tab, index) => {
-                                const status = getStatusForTab(index);
-                                const isActive = orderStatusFilter === status || (index === 0 && !orderStatusFilter);
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            className="flex-row"
+                            contentContainerStyle={{ paddingHorizontal: 16 }}
+                        >
+                            {orderFilterTabs.map((tab) => {
+                                const isActive = orderStatusFilter === tab.status;
                                 return (
                                     <TouchableOpacity
-                                        key={tab}
-                                        onPress={() => setOrderStatusFilter(index === 0 ? '' : status)}
-                                        className="flex-1 items-center py-4"
+                                        key={tab.status || 'all'}
+                                        onPress={() => setOrderStatusFilter(tab.status)}
+                                        className="items-center py-4 px-3 mr-2"
                                     >
                                         <Text
                                             className={`text-sm font-bold pb-3 ${isActive
-                                                ? "text-primary border-b-3 border-primary"
-                                                : "text-text-secondary dark:text-gray-400 border-b-3 border-transparent"
+                                                ? "text-primary border-b-2 border-primary"
+                                                : "text-text-secondary dark:text-gray-400 border-b-2 border-transparent"
                                                 }`}
                                         >
-                                            {tab}
+                                            {tab.label}
                                         </Text>
                                     </TouchableOpacity>
                                 );
                             })}
-                        </View>
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Status Filter Tabs for Requests */}
+                {activeTab === 'requests' && (
+                    <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            className="flex-row"
+                            contentContainerStyle={{ paddingHorizontal: 16 }}
+                        >
+                            {requestFilterTabs.map((tab) => {
+                                const isActive = requestStatusFilter === tab.status;
+                                return (
+                                    <TouchableOpacity
+                                        key={tab.status || 'all'}
+                                        onPress={() => setRequestStatusFilter(tab.status)}
+                                        className="items-center py-4 px-3 mr-2"
+                                    >
+                                        <Text
+                                            className={`text-sm font-bold pb-3 ${isActive
+                                                ? "text-primary border-b-2 border-primary"
+                                                : "text-text-secondary dark:text-gray-400 border-b-2 border-transparent"
+                                                }`}
+                                        >
+                                            {tab.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
                     </View>
                 )}
 

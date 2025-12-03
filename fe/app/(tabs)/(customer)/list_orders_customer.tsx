@@ -41,15 +41,17 @@ function ListOrdersCustomer() {
         return statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' };
     };
 
-    // Map order status to filter tabs
-    const getStatusForTab = (tabIndex: number): string => {
-        const statusMap: { [key: number]: string } = {
-            0: 'confirmed', // Đang xử lý
-            1: 'in_transit', // Đang vận chuyển
-            2: 'completed', // Hoàn thành
-        };
-        return statusMap[tabIndex] || '';
-    };
+    // Danh sách các filter tabs với status tương ứng
+    const filterTabs = [
+        { label: 'Tất cả', status: '' },
+        { label: 'Đã xác nhận', status: 'confirmed' },
+        { label: 'Đã lấy hàng', status: 'picked_up' },
+        { label: 'Đang vận chuyển', status: 'in_transit' },
+        { label: 'Đã đến nơi', status: 'arrived' },
+        { label: 'Đã giao hàng', status: 'delivered' },
+        { label: 'Hoàn thành', status: 'completed' },
+        { label: 'Đã hủy', status: 'cancelled' },
+    ];
 
     // Get next available status for customer
     const getNextStatus = (currentStatus: string): string | null => {
@@ -171,28 +173,32 @@ function ListOrdersCustomer() {
 
             {/* Status Filter Tabs */}
             <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <View className="flex-row mx-4">
-                    {["Đang xử lý", "Đang vận chuyển", "Hoàn thành"].map((tab, index) => {
-                        const status = getStatusForTab(index);
-                        const isActive = orderStatusFilter === status || (index === 0 && !orderStatusFilter);
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    className="flex-row"
+                    contentContainerStyle={{ paddingHorizontal: 16 }}
+                >
+                    {filterTabs.map((tab) => {
+                        const isActive = orderStatusFilter === tab.status;
                         return (
                             <TouchableOpacity
-                                key={tab}
-                                onPress={() => setOrderStatusFilter(index === 0 ? '' : status)}
-                                className="flex-1 items-center py-4"
+                                key={tab.status || 'all'}
+                                onPress={() => setOrderStatusFilter(tab.status)}
+                                className="items-center py-4 px-3 mr-2"
                             >
                                 <Text
                                     className={`text-sm font-bold pb-3 ${isActive
-                                        ? "text-primary border-b-3 border-primary"
-                                        : "text-text-secondary dark:text-gray-400 border-b-3 border-transparent"
+                                        ? "text-primary border-b-2 border-primary"
+                                        : "text-text-secondary dark:text-gray-400 border-b-2 border-transparent"
                                         }`}
                                 >
-                                    {tab}
+                                    {tab.label}
                                 </Text>
                             </TouchableOpacity>
                         );
                     })}
-                </View>
+                </ScrollView>
             </View>
 
             {/* Order List */}

@@ -21,12 +21,17 @@ class RequestController extends Controller
         private WalletService $walletService,
         private FirebaseService $firebaseService
     ) {}
-    public function index()
+    public function index(Request $request)
     {
-        $requests = ModelsRequest::with(['flight'])
-            ->where('sender_id', auth()->id())
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $query = ModelsRequest::with(['flight'])
+            ->where('sender_id', auth()->id());
+
+        // Filter theo status nếu có
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $requests = $query->orderByDesc('created_at')->paginate(20);
 
         return response()->json($requests);
     }
