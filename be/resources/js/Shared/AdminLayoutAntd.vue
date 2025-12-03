@@ -92,7 +92,7 @@ const selectedKeys = computed(() => {
   if (url.startsWith('/admin/reports')) return ['reports']
   if (url.startsWith('/admin/notifications')) return ['notifications']
   if (url.startsWith('/admin/settings')) return ['settings']
-  if (url.startsWith('/admin/permissions')) return ['permissions']
+  if (url.startsWith('/admin/roles') || url.startsWith('/admin/permissions')) return ['roles']
   if (url.startsWith('/admin/files')) return ['files']
   if (url === '/admin' || url === '/admin/dashboard') return ['dashboard']
   return []
@@ -145,9 +145,9 @@ const menuItems = [
     label: 'Cấu hình Hệ thống',
   },
   {
-    key: 'permissions',
+    key: 'roles',
     icon: h(SafetyOutlined),
-    label: 'Phân quyền',
+    label: 'Vai trò & Phân quyền',
   },
   {
     key: 'files',
@@ -167,7 +167,7 @@ const handleMenuClick = ({ key }) => {
     reports: '/admin/reports',
     notifications: '/admin/notifications',
     settings: '/admin/settings',
-    permissions: '/admin/permissions',
+    roles: '/admin/roles',
     files: '/admin/files',
   }
   if (routes[key]) {

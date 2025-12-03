@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\FileController;
 
 // Admin Auth Routes (public)
@@ -88,9 +89,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/{id}', [SettingController::class, 'destroy'])->name('destroy');
         });
 
+        // Roles Management
+        Route::prefix('roles')->name('roles.')->group(function () {
+            Route::get('/', [RoleController::class, 'index'])->name('index');
+            Route::get('/create', [RoleController::class, 'create'])->name('create');
+            Route::post('/', [RoleController::class, 'store'])->name('store');
+            Route::get('/{id}', [RoleController::class, 'show'])->name('show');
+            Route::get('/{id}/edit', [RoleController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [RoleController::class, 'update'])->name('update');
+            Route::delete('/{id}', [RoleController::class, 'destroy'])->name('destroy');
+        });
+
         // Permissions Management
         Route::prefix('permissions')->name('permissions.')->group(function () {
             Route::get('/', [PermissionController::class, 'index'])->name('index');
+            Route::get('/create', [PermissionController::class, 'create'])->name('create');
+            Route::post('/', [PermissionController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [PermissionController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [PermissionController::class, 'update'])->name('update');
+            Route::delete('/{id}', [PermissionController::class, 'destroy'])->name('destroy');
+            Route::get('/admin-roles', [PermissionController::class, 'manageAdminRoles'])->name('adminRoles');
             Route::put('/admins/{id}/roles', [PermissionController::class, 'updateAdminRole'])->name('updateAdminRole');
         });
 

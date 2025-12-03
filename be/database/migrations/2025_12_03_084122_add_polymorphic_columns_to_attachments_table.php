@@ -19,10 +19,22 @@ return new class extends Migration
             if (!Schema::hasColumn('attachments', 'attachable_type')) {
                 $table->string('attachable_type')->nullable()->after('attachable_id');
             }
-            
-            // Thêm index cho polymorphic relationship
-            $table->index(['attachable_type', 'attachable_id']);
         });
+        
+        // Thêm index riêng biệt với try-catch để tránh lỗi duplicate
+        try {
+            Schema::table('attachments', function (Blueprint $table) {
+                $table->index(['attachable_type', 'attachable_id'], 'attachments_attachable_type_attachable_id_index');
+            });
+        } catch (\Exception $e) {
+            // Index đã tồn tại, bỏ qua (kiểm tra các thông báo lỗi phổ biến)
+            $errorMessage = $e->getMessage();
+            if (strpos($errorMessage, 'Duplicate key') === false && 
+                strpos($errorMessage, 'already exists') === false &&
+                strpos($errorMessage, '1061') === false) {
+                throw $e;
+            }
+        }
     }
 
     /**
@@ -30,9 +42,23 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Drop index với try-catch
+        try {
+            Schema::table('attachments', function (Blueprint $table) {
+                $table->dropIndex('attachments_attachable_type_attachable_id_index');
+            });
+        } catch (\Exception $e) {
+            // Index không tồn tại, bỏ qua
+        }
+        
+        // Drop columns nếu tồn tại
         Schema::table('attachments', function (Blueprint $table) {
-            $table->dropIndex(['attachable_type', 'attachable_id']);
-            $table->dropColumn(['attachable_id', 'attachable_type']);
+            if (Schema::hasColumn('attachments', 'attachable_id')) {
+                $table->dropColumn('attachable_id');
+            }
+            if (Schema::hasColumn('attachments', 'attachable_type')) {
+                $table->dropColumn('attachable_type');
+            }
         });
     }
 };
