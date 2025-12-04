@@ -142,7 +142,6 @@ export default function HomeScreen() {
             flight_date: flightDateTime,
             airline: airline.trim(),
             flight_number: flightCode.trim(),
-            item_type: '',
             max_weight: parseFloat(allowedWeight),
         };
 

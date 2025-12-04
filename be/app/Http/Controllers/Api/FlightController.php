@@ -63,7 +63,6 @@ class FlightController extends Controller
             'flight_number' => 'required|string|max:20',
             'max_weight' => 'required|numeric|min:0.1',
             'note' => 'nullable|string|max:1000',
-            'item_type' => 'nullable|string|max:100',
             'attachments' => 'nullable|array',
             'attachments.*' => 'required|integer|exists:attachments,id',
         ]);
@@ -81,7 +80,6 @@ class FlightController extends Controller
                 'max_weight'     => $request->max_weight,
                 'booked_weight'  => 0.00,
                 'note'           => $request->note,
-                'item_type'      => $request->item_type,
                 'verified'       => false,
             ]);
 
