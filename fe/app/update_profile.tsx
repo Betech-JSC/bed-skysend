@@ -95,13 +95,15 @@ export default function ProfileUpdate() {
                 } as any);
             }
 
-            const response = await api.post("user/profile", data, {
+            const response = await api.put("user/profile", data, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            if (response.status === 200 && response.data?.user) {
-                dispatch(setUser(response.data.user));
-                Alert.alert("Thành công", "Cập nhật thông tin thành công!");
+            if (response.status === 200 && response.data?.success) {
+                if (response.data?.data?.user) {
+                    dispatch(setUser(response.data.data.user));
+                }
+                Alert.alert("Thành công", response.data?.message || "Cập nhật thông tin thành công!");
             } else {
                 const message =
                     response.data?.message ||

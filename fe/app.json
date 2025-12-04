@@ -18,18 +18,18 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#ffffff",
-          "defaultChannel": "default",
-          "enableBackgroundRemoteNotifications": false,
-          "sounds": [
-            "./assets/noti.wav"
-          ]
-        }
-      ],
+        [
+          "expo-notifications",
+          {
+            "icon": "./assets/icon.png",
+            "color": "#ffffff",
+            "defaultChannel": "default",
+            "enableBackgroundRemoteNotifications": true,
+            "sounds": [
+              "./assets/noti.wav"
+            ]
+          }
+        ],
       [
         "@sentry/react-native/expo",
         {

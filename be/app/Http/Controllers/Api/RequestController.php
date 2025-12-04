@@ -262,6 +262,21 @@ class RequestController extends Controller
                         'flight_id' => $request->flight_id,
                     ]
                 );
+
+                // Gửi push notification qua Expo (cho background/killed state)
+                if ($sender->fcm_token) {
+                    ExpoPushService::sendNotification(
+                        $sender->fcm_token,
+                        'Yêu cầu bị từ chối',
+                        "Yêu cầu của bạn đã bị {$customer->name} từ chối.",
+                        [
+                            'type' => 'request_declined',
+                            'request_id' => $request->id,
+                            'request_uuid' => $request->uuid,
+                            'flight_id' => $request->flight_id,
+                        ]
+                    );
+                }
             }
 
             return response()->json([
@@ -351,6 +366,24 @@ class RequestController extends Controller
                             'chat_id' => $chatId,
                         ]
                     );
+
+                    // Gửi push notification qua Expo (cho background/killed state)
+                    if ($sender->fcm_token) {
+                        ExpoPushService::sendNotification(
+                            $sender->fcm_token,
+                            'Yêu cầu được chấp nhận',
+                            "Yêu cầu của bạn đã được {$customer->name} chấp nhận. Đơn hàng #{$order->tracking_code} đã được tạo.",
+                            [
+                                'type' => 'request_accepted',
+                                'request_id' => $request->id,
+                                'request_uuid' => $request->uuid,
+                                'order_id' => $order->id,
+                                'order_uuid' => $order->uuid,
+                                'tracking_code' => $order->tracking_code,
+                                'chat_id' => $chatId,
+                            ]
+                        );
+                    }
                 }
 
                 // Trả về thông tin đẹp cho Customer

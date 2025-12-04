@@ -21,7 +21,7 @@ import { app } from "@/firebaseConfig";
 
 interface Notification {
     id: string;
-    type: "chat_message" | "order_status" | "new_request" | "request_accepted" | "request_declined" | "system";
+    type: "chat_message" | "order_status" | "flight_status" | "new_request" | "request_accepted" | "request_declined" | "system";
     title: string;
     body: string;
     timestamp: number;
@@ -34,6 +34,9 @@ interface Notification {
         request_id?: number;
         request_uuid?: string;
         flight_id?: number;
+        flight_uuid?: string;
+        flight_number?: string;
+        status?: string;
         [key: string]: any;
     };
 }
@@ -66,7 +69,9 @@ function getNotificationIcon(type: Notification["type"]): { icon: string; color:
         case "chat_message":
             return { icon: "chat-bubble", color: "#8B5CF6" }; // secondary color
         case "order_status":
-            return { icon: "flight-takeoff", color: "#2563EB" }; // primary color
+            return { icon: "local-shipping", color: "#2563EB" }; // primary color
+        case "flight_status":
+            return { icon: "flight", color: "#F97316" }; // orange
         case "new_request":
             return { icon: "inventory-2", color: "#2563EB" }; // primary color
         case "request_accepted":
@@ -174,6 +179,23 @@ export default function NotificationScreen() {
                                 pathname: '/orders_details',
                                 params: { orderId: data.tracking_code }
                             });
+                        }
+                        break;
+                    case "flight_status":
+                        // Navigate to flight detail or flight list
+                        if (data?.flight_uuid) {
+                            router.push({
+                                pathname: '/flights/[id]',
+                                params: { id: data.flight_uuid }
+                            });
+                        } else if (data?.flight_id) {
+                            router.push({
+                                pathname: '/flights/[id]',
+                                params: { id: String(data.flight_id) }
+                            });
+                        } else {
+                            // Fallback: navigate to flights list
+                            router.push('/flights');
                         }
                         break;
                     case "new_request":

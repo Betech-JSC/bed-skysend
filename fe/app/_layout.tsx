@@ -4,16 +4,41 @@ import { Provider } from "react-redux";
 import { store, persistor } from "@/store"; // import persistor
 import { PersistGate } from "redux-persist/integration/react";
 import { usePushNotifications } from "@/notifications/usePushNotifications";
+import { useHeadsUpNotification } from "@/hooks/useHeadsUpNotification";
+import HeadsUpNotification from "./components/HeadsUpNotification";
 import * as Notifications from 'expo-notifications';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { View } from "react-native";
+
+function AppContent() {
+  const { notification, isVisible, onDismiss, onPress } = useHeadsUpNotification();
+
+  return (
+    <>
+      <Stack />
+      {isVisible && notification && (
+        <HeadsUpNotification
+          notification={notification}
+          onDismiss={onDismiss}
+          onPress={onPress}
+        />
+      )}
+    </>
+  );
+}
 
 export default function Layout() {
+  // Configure notification handler
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,   // hiển thị alert
-      shouldPlaySound: true,   // phát sound
-      shouldSetBadge: false,
-    }),
+    handleNotification: async (notification) => {
+      const isAppInForeground = notification.request.trigger?.type !== 'push';
+
+      return {
+        shouldShowAlert: false,   // Không hiển thị alert mặc định, dùng heads-up thay thế khi foreground
+        shouldPlaySound: true,     // Phát âm thanh cho cả foreground và background
+        shouldSetBadge: true,     // Cập nhật badge số
+      };
+    },
   });
 
   usePushNotifications();
@@ -22,7 +47,7 @@ export default function Layout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
-          <Stack />
+          <AppContent />
         </PersistGate>
       </Provider>
     </GestureHandlerRootView>

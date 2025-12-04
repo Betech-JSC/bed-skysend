@@ -13,11 +13,13 @@ import {
     Alert,
 } from 'react-native';
 import { getDatabase, ref, onValue, push, serverTimestamp, get, set, onDisconnect } from 'firebase/database';
-import { app } from '@/firebaseConfig';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { app, storage } from '@/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { NotificationService } from '@/NotificationService';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import api from '@/api/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -225,40 +227,103 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         );
     };
 
-    // Upload image to server
+    // Upload image to Firebase Storage
     const uploadImage = async (imageUri: string) => {
         try {
             setUploading(true);
 
-            const formData = new FormData();
-            const fileName = imageUri.split('/').pop() || `img_${Date.now()}.jpg`;
-            const match = /\.(\w+)$/.exec(fileName);
-            const type = match ? `image/${match[1]}` : `image/jpeg`;
+            // Tạo tên file unique
+            const timestamp = Date.now();
+            const fileName = `chat_images/${chatId}/${user.id}_${timestamp}.jpg`;
+            const imageRef = storageRef(storage, fileName);
 
-            formData.append('files[0]', {
-                uri: imageUri,
-                type: type,
-                name: fileName,
-            } as any);
+            // Đọc file từ local URI - React Native compatible
+            let blob: Blob;
 
-            const response = await api.post('upload', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
-            if (response.data && response.data.length > 0 && response.data[0].file_url) {
-                const imageUrl = response.data[0].file_url;
-                await sendMessage('', imageUrl);
-                setSelectedImage(null);
+            if (Platform.OS === 'web') {
+                // Web: dùng fetch
+                const response = await fetch(imageUri);
+                blob = await response.blob();
             } else {
-                throw new Error('Upload failed');
+                // React Native: đọc file bằng FileSystem và convert sang blob
+                try {
+                    // Đọc file dưới dạng base64
+                    const base64 = await FileSystem.readAsStringAsync(imageUri, {
+                        encoding: 'base64' as any,
+                    });
+
+                    // Convert base64 sang Uint8Array
+                    const byteCharacters = atob(base64);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+
+                    // Tạo Blob từ Uint8Array
+                    blob = new Blob([byteArray], { type: 'image/jpeg' });
+                } catch (fileSystemError) {
+                    // Fallback: thử dùng fetch nếu FileSystem không hoạt động
+                    console.log('FileSystem failed, trying fetch:', fileSystemError);
+                    const response = await fetch(imageUri);
+                    blob = await response.blob();
+                }
             }
+
+            // Upload lên Firebase Storage
+            const uploadTask = uploadBytesResumable(imageRef, blob);
+
+            // Lắng nghe progress (optional)
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    console.log('Upload progress:', progress + '%');
+                },
+                (error: any) => {
+                    console.error('Upload error details:', {
+                        code: error.code,
+                        message: error.message,
+                        serverResponse: error.serverResponse,
+                        customData: error.customData,
+                        stack: error.stack,
+                    });
+
+                    let errorMessage = 'Không thể tải ảnh lên Firebase Storage.';
+                    if (error.code === 'storage/unauthorized') {
+                        errorMessage = 'Bạn không có quyền upload. Vui lòng kiểm tra Firebase Storage rules.';
+                    } else if (error.code === 'storage/canceled') {
+                        errorMessage = 'Upload đã bị hủy.';
+                    } else if (error.message) {
+                        errorMessage = `Lỗi: ${error.message}`;
+                    }
+
+                    Alert.alert('Lỗi upload', errorMessage);
+                    setSelectedImage(null);
+                    setUploading(false);
+                },
+                async () => {
+                    // Upload thành công, lấy download URL
+                    try {
+                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                        console.log('Image uploaded successfully:', downloadURL);
+
+                        // Gửi message với image URL
+                        await sendMessage('', downloadURL);
+                        setSelectedImage(null);
+                    } catch (error) {
+                        console.error('Error getting download URL:', error);
+                        Alert.alert('Lỗi', 'Không thể lấy URL ảnh');
+                        setSelectedImage(null);
+                    } finally {
+                        setUploading(false);
+                    }
+                }
+            );
         } catch (err: any) {
             console.error('Error uploading image:', err);
-            Alert.alert('Lỗi', err.response?.data?.message || 'Không thể tải ảnh lên');
+            Alert.alert('Lỗi', err.message || 'Không thể tải ảnh lên');
             setSelectedImage(null);
-        } finally {
             setUploading(false);
         }
     };

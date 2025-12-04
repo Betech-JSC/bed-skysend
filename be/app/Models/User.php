@@ -31,6 +31,12 @@ class User extends Authenticatable
         'role',
         'provider',
         'provider_id',
+        'kyc_status',
+        'kyc_documents',
+        'kyc_submitted_at',
+        'kyc_verified_at',
+        'kyc_verified_by',
+        'kyc_rejection_reason',
     ];
 
     /**
@@ -53,6 +59,9 @@ class User extends Authenticatable
         return [
             'owner' => 'boolean',
             'email_verified_at' => 'datetime',
+            'kyc_documents' => 'array',
+            'kyc_submitted_at' => 'datetime',
+            'kyc_verified_at' => 'datetime',
         ];
     }
 

@@ -7,12 +7,18 @@ use App\Http\Requests\UpdateFlightRequest;
 use Illuminate\Http\Request;
 
 use App\Models\Flight;
+use App\Models\User;
+use App\Services\FirebaseService;
+use App\Services\ExpoPushService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
 class FlightController extends Controller
 {
+    public function __construct(
+        private FirebaseService $firebaseService
+    ) {}
     /**
      * Lấy danh sách chuyến bay đã đăng của user hiện tại
      */
@@ -49,26 +55,58 @@ class FlightController extends Controller
     // Đăng chuyến bay
     public function store(Request $request)
     {
-        $flight = Flight::create([
-            'uuid'           => Str::uuid(),
-            'customer_id'    => auth()->id(),
-            'from_airport'   => strtoupper($request->from_airport),
-            'to_airport'     => strtoupper($request->to_airport),
-            'flight_date'    => $request->flight_date,
-            'airline'        => $request->airline,
-            'status'         => 'pending',
-            'flight_number'  => strtoupper($request->flight_number),
-            'max_weight'     => $request->max_weight,
-            'booked_weight'  => 0.00,
-            'note'           => $request->note,
-            'verified'       => false,
+        $request->validate([
+            'from_airport' => 'required|string|max:10',
+            'to_airport' => 'required|string|max:10',
+            'flight_date' => 'required|date',
+            'airline' => 'required|string|max:255',
+            'flight_number' => 'required|string|max:20',
+            'max_weight' => 'required|numeric|min:0.1',
+            'note' => 'nullable|string|max:1000',
+            'item_type' => 'nullable|string|max:100',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'required|integer|exists:attachments,id',
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Đăng chuyến bay thành công!',
-            'data'    => $flight,
-        ], 201);
+        return DB::transaction(function () use ($request) {
+            $flight = Flight::create([
+                'uuid'           => Str::uuid(),
+                'customer_id'    => auth()->id(),
+                'from_airport'   => strtoupper($request->from_airport),
+                'to_airport'     => strtoupper($request->to_airport),
+                'flight_date'    => $request->flight_date,
+                'airline'        => $request->airline,
+                'status'         => 'pending',
+                'flight_number'  => strtoupper($request->flight_number),
+                'max_weight'     => $request->max_weight,
+                'booked_weight'  => 0.00,
+                'note'           => $request->note,
+                'item_type'      => $request->item_type,
+                'verified'       => false,
+            ]);
+
+            // Attach files nếu có
+            if ($request->has('attachments') && is_array($request->attachments)) {
+                foreach ($request->attachments as $attachmentId) {
+                    $attachment = \App\Models\Attachment::find($attachmentId);
+                    if ($attachment && $attachment->uploaded_by === auth()->id()) {
+                        $attachment->update([
+                            'attachable_type' => Flight::class,
+                            'attachable_id' => $flight->id,
+                        ]);
+                    }
+                }
+            }
+
+            // Load attachments để trả về
+            $flight->load('attachments');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đăng chuyến bay thành công!',
+                'data'    => $flight,
+            ], 201);
+        });
     }
 
     public function show($id)
@@ -91,6 +129,8 @@ class FlightController extends Controller
                 ->where('id', $id)
                 ->firstOrFail();
 
+            $oldStatus = $flight->status;
+
             $flight->update([
                 'from_airport'   => strtoupper($request->filled('from_airport') ? $request->from_airport : $flight->from_airport),
                 'to_airport'     => strtoupper($request->filled('to_airport') ? $request->to_airport : $flight->to_airport),
@@ -103,6 +143,11 @@ class FlightController extends Controller
                 'item_type'      => $request->filled('item_type') ? $request->item_type : $flight->item_type,
                 'note'           => $request->filled('note') ? $request->note : $flight->note,
             ]);
+
+            // Nếu status thay đổi, gửi notification
+            if ($request->filled('status') && $oldStatus !== $flight->status) {
+                $this->pushFlightStatusNotification($flight, $oldStatus, $flight->status);
+            }
 
             return response()->json([
                 'success' => true,
@@ -136,10 +181,15 @@ class FlightController extends Controller
                 ], 400);
             }
 
+            $oldStatus = $flight->status;
+
             // HỦY CHUYẾN BAY - chỉ đổi status là đủ!
             $flight->update([
                 'status' => 'cancelled'
             ]);
+
+            // Gửi notification khi hủy chuyến bay
+            $this->pushFlightStatusNotification($flight, $oldStatus, 'cancelled');
 
             return response()->json([
                 'success' => true,
@@ -169,6 +219,8 @@ class FlightController extends Controller
                 ], 400);
             }
 
+            $oldStatus = $flight->status;
+
             // Cập nhật trạng thái + verified = true
             $flight->update([
                 'status'    => 'verified',
@@ -177,8 +229,8 @@ class FlightController extends Controller
                 'verified_by' => auth()->id(), // lưu lại admin nào verify (tùy chọn)
             ]);
 
-            // (Tùy chọn) Gửi thông báo cho người đăng chuyến bay
-            // event(new FlightVerified($flight));
+            // Gửi notification cho customer khi flight được verify
+            $this->pushFlightStatusNotification($flight, $oldStatus, 'verified');
 
             return response()->json([
                 'success' => true,

@@ -40,6 +40,8 @@ class UserController extends Controller
         // Validate dữ liệu
         $validatedData = $request->validate([
             'name' => 'sometimes|string|max:255',
+            'first_name' => 'sometimes|string|max:255',
+            'last_name' => 'sometimes|string|max:255',
             'email' => [
                 'sometimes',
                 'email',
@@ -48,7 +50,7 @@ class UserController extends Controller
             ],
             'phone' => 'sometimes|string|max:20',
             'password' => 'sometimes|string|min:6|confirmed',
-            'avatar' => 'sometimes|image|max:2048', // file ảnh, max 2MB
+            'avatar' => 'sometimes|image|mimes:jpeg,png,jpg,webp|max:5120', // max 5MB
         ]);
 
         // Hash password nếu có
@@ -59,22 +61,31 @@ class UserController extends Controller
         // Lưu avatar nếu có
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            $path = $file->store('avatars', 'public'); // lưu vào storage/app/public/avatars
+            
+            // Tạo tên file unique
+            $extension = $file->getClientOriginalExtension();
+            $fileName = 'avatar_' . $user->id . '_' . time() . '.' . $extension;
+            $path = $file->storeAs('avatars', $fileName, 'public');
+            
             $validatedData['avatar'] = $path;
 
-            // Xóa avatar cũ nếu muốn
-            if ($user->avatar) {
+            // Xóa avatar cũ nếu có
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }
         }
 
         // Cập nhật user
         $user->update($validatedData);
+        $user->refresh();
 
         return response()->json([
+            'success' => true,
             'message' => 'Cập nhật thông tin thành công',
-            'user' => $user,
-            'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+            'data' => [
+                'user' => $user,
+                'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+            ],
         ]);
     }
 

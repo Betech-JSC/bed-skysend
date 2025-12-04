@@ -46,6 +46,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
 
+    // KYC Verification
+    Route::post('kyc/submit', [\App\Http\Controllers\Api\KycController::class, 'submit']);
+    Route::get('kyc/status', [\App\Http\Controllers\Api\KycController::class, 'status']);
+
     // Ví điện tử
     Route::get('wallets/me', [WalletController::class, 'me']);
     Route::get('wallets/transactions', [WalletController::class, 'transactions']);

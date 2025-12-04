@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\User;
 use App\Services\WalletService;
 use App\Services\FirebaseService;
+use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -269,6 +271,23 @@ class OrderController extends Controller
                 'tracking_code' => $order->tracking_code,
                 'status' => $newStatus,
             ]);
+
+            // Gửi push notification qua Expo (cho background/killed state)
+            $partner = User::find($partnerId);
+            if ($partner && $partner->fcm_token) {
+                ExpoPushService::sendNotification(
+                    $partner->fcm_token,
+                    $title,
+                    $body,
+                    [
+                        'type' => 'order_status',
+                        'order_id' => $order->id,
+                        'order_uuid' => $order->uuid,
+                        'tracking_code' => $order->tracking_code,
+                        'status' => $newStatus,
+                    ]
+                );
+            }
         } catch (\Exception $e) {
             \Log::error('Error pushing order status notification: ' . $e->getMessage());
         }
