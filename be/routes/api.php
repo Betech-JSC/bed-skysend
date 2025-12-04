@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Notifications
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::put('notifications/{notification}', [NotificationController::class, 'markAsRead']);
+    Route::put('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']); // Đánh dấu tất cả đã đọc
     Route::post('notifications/broadcast', [NotificationController::class, 'broadcast']); // Gửi thông báo hệ thống
 
     Route::get('user/profile', [UserController::class, 'show']);

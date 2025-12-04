@@ -143,7 +143,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
             try {
                 const response = await api.get("orders/getList");
                 let ordersData = [];
-                
+
                 if (response.data?.success) {
                     if (response.data.data?.data) {
                         ordersData = response.data.data.data;
@@ -151,7 +151,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
                         ordersData = response.data.data;
                     }
                 }
-                
+
                 // Lọc orders có cùng chat_id
                 const related = ordersData.filter((order: any) => order.chat_id === chatId);
                 setRelatedOrders(related);
@@ -159,7 +159,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
                 console.error("Error fetching related orders:", error);
             }
         };
-        
+
         if (chatId) {
             fetchRelatedOrders();
         }
@@ -319,6 +319,44 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         }
 
         await push(messagesRef, messageData);
+
+        // Push notification vào Firebase cho đối tác
+        if (otherUserId) {
+            try {
+                const notificationRef = ref(db, `notifications/${otherUserId}`);
+
+                // Build data object, chỉ include các properties có giá trị (không phải undefined)
+                const notificationData: any = {
+                    type: 'chat_message',
+                    title: user?.name ? `Tin nhắn từ ${user.name}` : 'Tin nhắn mới',
+                    body: imageUrl ? '📷 Đã gửi ảnh' : fileUrl ? `📎 Đã gửi file: ${fileName || 'file'}` : finalText || 'Tin nhắn mới',
+                    timestamp: Date.now() / 1000,
+                    read: false,
+                    data: {
+                        chat_id: chatId,
+                        sender_id: user.id,
+                    },
+                };
+
+                // Chỉ thêm các fields có giá trị vào data
+                if (user?.name) {
+                    notificationData.data.sender_name = user.name;
+                }
+                if (imageUrl) {
+                    notificationData.data.image_url = imageUrl;
+                }
+                if (fileUrl) {
+                    notificationData.data.file_url = fileUrl;
+                }
+                if (fileName) {
+                    notificationData.data.file_name = fileName;
+                }
+
+                await push(notificationRef, notificationData);
+            } catch (error) {
+                console.error('Error pushing notification to Firebase:', error);
+            }
+        }
 
         // Gửi push notification từ frontend
         if (otherUserPushToken) {

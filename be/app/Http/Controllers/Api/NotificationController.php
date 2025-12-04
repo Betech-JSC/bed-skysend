@@ -52,6 +52,24 @@ class NotificationController extends Controller
     }
 
     /**
+     * Đánh dấu tất cả notifications của user đã đọc
+     */
+    public function markAllAsRead(Request $request)
+    {
+        $user = $request->user();
+
+        $updated = Notification::where('user_id', $user->id)
+            ->where('status', 'unread')
+            ->update(['status' => 'read']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã đánh dấu {$updated} thông báo là đã đọc.",
+            'updated_count' => $updated
+        ]);
+    }
+
+    /**
      * Gửi thông báo hệ thống tới tất cả thiết bị (cho admin)
      */
     public function broadcast(Request $request)

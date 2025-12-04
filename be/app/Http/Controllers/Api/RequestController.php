@@ -159,20 +159,40 @@ class RequestController extends Controller
             'expires_at'       => now()->addHours($expiresInHours),
         ]);
 
-        // Gửi notification tới customer
+        // Gửi notification tới customer (push notification + Firebase)
         $customer = $flight->customer;
-        if ($customer && $customer->fcm_token) {
+        if ($customer) {
             $sender = auth()->user();
-            ExpoPushService::sendNotification(
-                $customer->fcm_token,
+
+            // Push notification vào Firebase
+            $this->firebaseService->pushNotification(
+                $customer->id,
                 'Yêu cầu mới',
                 "Bạn có yêu cầu mới từ {$sender->name} với phần thưởng " . number_format($validated['reward']) . ' VNĐ',
                 [
                     'type' => 'new_request',
                     'request_id' => $privateReq->id,
+                    'request_uuid' => $privateReq->uuid,
                     'flight_id' => $flight->id,
+                    'sender_id' => $sender->id,
+                    'sender_name' => $sender->name,
+                    'reward' => $validated['reward'],
                 ]
             );
+
+            // Gửi push notification qua Expo (nếu có token)
+            if ($customer->fcm_token) {
+                ExpoPushService::sendNotification(
+                    $customer->fcm_token,
+                    'Yêu cầu mới',
+                    "Bạn có yêu cầu mới từ {$sender->name} với phần thưởng " . number_format($validated['reward']) . ' VNĐ',
+                    [
+                        'type' => 'new_request',
+                        'request_id' => $privateReq->id,
+                        'flight_id' => $flight->id,
+                    ]
+                );
+            }
         }
 
         return response()->json([
@@ -192,7 +212,7 @@ class RequestController extends Controller
         return $this->updateStatus($id, 'declined');
     }
 
-    private function updateStatus(string $id)
+    private function updateStatus(string $id, string $newStatus = 'accepted')
     {
         $request = ModelsRequest::with('flight')->where('id', $id)->firstOrFail();
 
@@ -219,6 +239,39 @@ class RequestController extends Controller
                 'message' => 'Yêu cầu đã hết hạn.'
             ], 400);
         }
+
+        // Nếu là decline, chỉ cập nhật status và gửi notification
+        if ($newStatus === 'declined') {
+            $request->update([
+                'status' => 'declined',
+                'responded_at' => now(),
+            ]);
+
+            // Push notification vào Firebase cho sender
+            $sender = $request->sender;
+            if ($sender) {
+                $customer = $request->flight->customer;
+                $this->firebaseService->pushNotification(
+                    $sender->id,
+                    'Yêu cầu bị từ chối',
+                    "Yêu cầu của bạn đã bị {$customer->name} từ chối.",
+                    [
+                        'type' => 'request_declined',
+                        'request_id' => $request->id,
+                        'request_uuid' => $request->uuid,
+                        'flight_id' => $request->flight_id,
+                    ]
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã từ chối yêu cầu.',
+                'data' => $request->fresh()
+            ], 200);
+        }
+
+        // Nếu là accept, tạo order
         try {
             // 3. Tạo Order + cập nhật trạng thái trong transaction (an toàn tuyệt đối)
             return DB::transaction(function () use ($request) {
@@ -279,6 +332,26 @@ class RequestController extends Controller
                     ->update([
                         'status'        => 'auto_declined',
                     ]);
+
+                // Push notification vào Firebase cho sender
+                $sender = $request->sender;
+                if ($sender) {
+                    $customer = $request->flight->customer;
+                    $this->firebaseService->pushNotification(
+                        $sender->id,
+                        'Yêu cầu được chấp nhận',
+                        "Yêu cầu của bạn đã được {$customer->name} chấp nhận. Đơn hàng #{$order->tracking_code} đã được tạo.",
+                        [
+                            'type' => 'request_accepted',
+                            'request_id' => $request->id,
+                            'request_uuid' => $request->uuid,
+                            'order_id' => $order->id,
+                            'order_uuid' => $order->uuid,
+                            'tracking_code' => $order->tracking_code,
+                            'chat_id' => $chatId,
+                        ]
+                    );
+                }
 
                 // Trả về thông tin đẹp cho Customer
                 return response()->json([

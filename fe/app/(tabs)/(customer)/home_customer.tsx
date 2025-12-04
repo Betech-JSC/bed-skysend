@@ -16,6 +16,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
 import CitySelectModal from '../../components/CitySelectModal';
 import DatePickerInput from '../../components/DatePickerInput';
 import ItemTypeSelect from '../../components/ItemTypeSelect';
@@ -26,6 +27,7 @@ import api from '@/api/api';
 export default function HomeScreen() {
     const router = useRouter();
     const user = useSelector((state: RootState) => state.user);
+    const unreadNotificationCount = useUnreadNotificationCount();
 
     // State cho form đăng chuyến bay
     const [departureAirport, setDepartureAirport] = useState({ value: '', label: '' });
@@ -195,8 +197,18 @@ export default function HomeScreen() {
             <View className="flex-row items-center justify-between px-4 pt-4 pb-2 bg-background-light dark:bg-background-dark sticky top-0 z-10">
                 <View className="w-12" />
                 <Text className="text-lg font-bold text-text-dark-gray dark:text-white">Trang chủ</Text>
-                <TouchableOpacity className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-sm justify-center items-center">
+                <TouchableOpacity
+                    onPress={() => router.push('/notifications')}
+                    className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-sm justify-center items-center relative"
+                >
                     <MaterialIcons name="notifications" size={24} color="#1F2937" />
+                    {unreadNotificationCount > 0 && (
+                        <View className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full items-center justify-center border-2 border-white">
+                            <Text className="text-white text-xs font-bold">
+                                {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                            </Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
 

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
 import api from '@/api/api';
 import ItemOrder from 'app/components/ItemOrder';
 import { router } from 'expo-router';
@@ -24,6 +25,7 @@ import DatePickerInput from '../../components/DatePickerInput';
 const Home = () => {
   const user = useSelector((state: RootState) => state.user);
   const role = user?.role;
+  const unreadNotificationCount = useUnreadNotificationCount();
 
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState<string | null>(null);
@@ -192,8 +194,18 @@ const Home = () => {
           <Text className="text-text-primary text-3xl font-bold dark:text-white">
             Xin chào, {user?.name || 'Bạn'}!
           </Text>
-          <TouchableOpacity onPress={() => router.push('/notifications')}>
+          <TouchableOpacity
+            onPress={() => router.push('/notifications')}
+            className="relative"
+          >
             <MaterialIcons name="notifications" size={28} color="#2563EB" />
+            {unreadNotificationCount > 0 && (
+              <View className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full items-center justify-center border-2 border-white">
+                <Text className="text-white text-xs font-bold">
+                  {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
         <Text className="text-text-secondary mt-1 dark:text-gray-400">

@@ -175,6 +175,21 @@ export default function Login() {
               <SocialMedia />
             </View>
 
+            {/* Nút chuyển role (test nhanh) */}
+            <View className="flex-row justify-center gap-4 mt-8">
+              <TouchableOpacity
+                onPress={() => router.push("/login?role=sender")}
+                className="px-4 py-2 bg-gray-200 rounded-lg"
+              >
+                <Text>Test Sender</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push("/login?role=customer")}
+                className="px-4 py-2 bg-gray-200 rounded-lg"
+              >
+                <Text>Test Customer</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>

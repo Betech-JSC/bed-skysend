@@ -222,7 +222,24 @@ export default function OrderDetailContent({
                                 {partner.email}
                             </Text>
                         )}
-                        <TouchableOpacity className="mt-3 px-4 py-2 border border-border-light dark:border-border-dark rounded-lg self-start">
+                        <TouchableOpacity
+                            onPress={() => {
+                                // partner có thể là sender hoặc customer object từ API
+                                const partnerId = partner.id || partner.user_id || (isSender ? order.customer_id : order.sender_id);
+                                if (partnerId) {
+                                    router.push({
+                                        pathname: '/user_profile/[userId]',
+                                        params: {
+                                            userId: String(partnerId),
+                                            userName: partner.name || partner.name,
+                                            userAvatar: partner.avatar || partner.avatar,
+                                            userRole: partner.role || (isSender ? 'customer' : 'sender'),
+                                        },
+                                    });
+                                }
+                            }}
+                            className="mt-3 px-4 py-2 border border-border-light dark:border-border-dark rounded-lg self-start"
+                        >
                             <Text className="text-sm font-semibold text-primary">Xem hồ sơ</Text>
                         </TouchableOpacity>
                     </View>

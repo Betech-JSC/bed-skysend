@@ -5,6 +5,7 @@ import { store, persistor } from "@/store"; // import persistor
 import { PersistGate } from "redux-persist/integration/react";
 import { usePushNotifications } from "@/notifications/usePushNotifications";
 import * as Notifications from 'expo-notifications';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function Layout() {
   Notifications.setNotificationHandler({
@@ -18,10 +19,12 @@ export default function Layout() {
   usePushNotifications();
 
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <Stack />
-      </PersistGate>
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <Stack />
+        </PersistGate>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }

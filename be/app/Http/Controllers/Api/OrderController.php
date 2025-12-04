@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\WalletService;
+use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
     public function __construct(
-        private WalletService $walletService
+        private WalletService $walletService,
+        private FirebaseService $firebaseService
     ) {}
     /**
      * Danh sách đơn hàng của user hiện tại
@@ -200,6 +203,9 @@ class OrderController extends Controller
                 }
             }
 
+            // Push notification vào Firebase cho đối tác
+            $this->pushOrderStatusNotification($order, $newStatus, $user);
+
             // Load lại dữ liệu đẹp cho frontend
             $order->load(['sender', 'customer', 'flight']);
 
@@ -223,5 +229,48 @@ class OrderController extends Controller
             'cancelled'   => 'Đơn hàng đã được hủy.',
             default       => 'Trạng thái đã được cập nhật.',
         };
+    }
+
+    /**
+     * Push notification vào Firebase khi order status thay đổi
+     */
+    private function pushOrderStatusNotification(Order $order, string $newStatus, $user): void
+    {
+        try {
+            // Xác định đối tác (người cần nhận notification)
+            $partnerId = $order->sender_id === $user->id ? $order->customer_id : $order->sender_id;
+
+            if (!$partnerId) {
+                return;
+            }
+
+            // Tạo title và body dựa trên status
+            $statusLabels = [
+                'picked_up'   => 'Đã nhận hàng',
+                'in_transit'  => 'Đang vận chuyển',
+                'arrived'     => 'Đã đến nơi',
+                'delivered'   => 'Đã giao hàng',
+                'completed'   => 'Hoàn tất',
+                'cancelled'   => 'Đã hủy',
+            ];
+
+            $title = 'Cập nhật đơn hàng';
+            $body = $this->getStatusMessage($newStatus);
+
+            if ($order->tracking_code) {
+                $body .= " - Mã đơn: {$order->tracking_code}";
+            }
+
+            // Push vào Firebase
+            $this->firebaseService->pushNotification($partnerId, $title, $body, [
+                'type' => 'order_status',
+                'order_id' => $order->id,
+                'order_uuid' => $order->uuid,
+                'tracking_code' => $order->tracking_code,
+                'status' => $newStatus,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error pushing order status notification: ' . $e->getMessage());
+        }
     }
 }
