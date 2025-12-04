@@ -104,7 +104,7 @@ class RequestController extends Controller
         $flight = Flight::with('customer')->findOrFail($validated['flight_id']);
 
         // Check if flight is verified
-        if (!$flight->verified || $flight->status !== 'verified') {
+        if (!$flight->verified) {
             return response()->json([
                 'success' => false,
                 'message' => 'Chuyến bay chưa được xác thực. Vui lòng chọn chuyến bay đã được xác thực.'
@@ -243,7 +243,7 @@ class RequestController extends Controller
                     'total_amount'           => $request->reward, // tạm thời = reward
                     'escrow_amount'          => $request->reward, // tiền sẽ giữ hộ
                     'escrow_status'          => 'held',
-                    'tracking_code'          => \Str::upper(\Str::random(8)), // VD: ABC123XY
+                    'tracking_code'          => \App\Models\Order::generateTrackingCode(), // Format: SK + random số và string
                     'status'                 => 'confirmed', // trạng thái đầu tiên
                     'confirmed_at'           => now(),
                     'customer_note'          => $request->note,

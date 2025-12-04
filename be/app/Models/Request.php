@@ -185,7 +185,7 @@ class Request extends Model
             'reward'         => $this->reward,
             'service_fee'    => $this->reward * 0.15,
             'total_amount'   => $this->reward * 1.15,
-            'tracking_code'  => 'SK' . now()->format('Ymd') . str_pad(Order::count() + 1, 5, '0', STR_PAD_LEFT),
+            'tracking_code'  => Order::generateTrackingCode(), // Format: SK + random số và string
             'status'         => 'confirmed',
             'escrow_status'  => 'held',
             'confirmed_at'   => now(),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -32,6 +32,7 @@ interface ChatItem {
     isOnline: boolean;
     isTyping: boolean;
     orderId?: number;
+    orderIds?: number[]; // Danh sách order_ids liên quan đến chat này
 }
 
 export default function ChatListScreen() {
@@ -197,13 +198,16 @@ export default function ChatListScreen() {
             const chatResults = await Promise.all(chatPromises);
             const validChats = chatResults.filter((chat): chat is ChatItem => chat !== null);
 
-            // Sắp xếp theo thời gian tin nhắn cuối
-            validChats.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+            // Gộp các chat cùng partner thành 1 chat duy nhất
+            const mergedChats = mergeChatsByPartner(validChats, user?.id);
 
-            setChats(validChats);
+            // Sắp xếp theo thời gian tin nhắn cuối
+            mergedChats.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
+            setChats(mergedChats);
 
             // Setup listeners sau khi fetch chats (chỉ setup cho chats mới)
-            setupListenersForChats(validChats);
+            setupListenersForChats(mergedChats);
         } catch (error) {
             console.error("Error fetching chats:", error);
         } finally {
@@ -211,6 +215,55 @@ export default function ChatListScreen() {
             setRefreshing(false);
         }
     }, [user?.id, db]);
+
+    // Hàm gộp các chat cùng partner thành 1 chat duy nhất
+    const mergeChatsByPartner = useCallback((chats: ChatItem[], currentUserId?: number | string): ChatItem[] => {
+        if (!currentUserId || chats.length === 0) {
+            return chats;
+        }
+
+        const chatMap = new Map<string, ChatItem>();
+
+        chats.forEach((chat) => {
+            // Tạo key duy nhất cho cặp sender-customer (sắp xếp để đảm bảo key giống nhau)
+            const userId1 = Number(currentUserId);
+            const userId2 = Number(chat.otherUserId);
+            const partnerKey = `${Math.min(userId1, userId2)}_${Math.max(userId1, userId2)}`;
+
+            const existing = chatMap.get(partnerKey);
+
+            if (!existing) {
+                // Chưa có, thêm mới
+                chatMap.set(partnerKey, {
+                    ...chat,
+                    orderIds: chat.orderId ? [chat.orderId] : [],
+                });
+            } else {
+                // Đã có, merge: lấy chat có lastMessageTime mới nhất
+                if (chat.lastMessageTime > existing.lastMessageTime) {
+                    // Chat mới hơn, dùng chat này nhưng merge unread và orderIds
+                    const mergedOrderIds = [
+                        ...(existing.orderIds || []),
+                        ...(chat.orderId ? [chat.orderId] : [])
+                    ].filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
+
+                    chatMap.set(partnerKey, {
+                        ...chat,
+                        unreadCount: existing.unreadCount + chat.unreadCount, // Tổng unread
+                        orderIds: mergedOrderIds,
+                    });
+                } else {
+                    // Chat cũ hơn, giữ chat cũ nhưng cập nhật unread và orderIds
+                    if (chat.orderId && !existing.orderIds?.includes(chat.orderId)) {
+                        existing.orderIds = [...(existing.orderIds || []), chat.orderId];
+                    }
+                    existing.unreadCount += chat.unreadCount;
+                }
+            }
+        });
+
+        return Array.from(chatMap.values());
+    }, []);
 
     // Setup listeners function - chỉ setup cho chats chưa có listeners
     const setupListenersForChats = useCallback((chatList: ChatItem[]) => {

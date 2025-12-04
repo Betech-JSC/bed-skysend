@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -174,6 +175,43 @@ class Order extends Model
     // ==================================================================
     // HÀM TIỆN ÍCH (rất hay dùng)
     // ==================================================================
+
+    /**
+     * Generate tracking code với format: SK + random số và string
+     * Format: SK + 3 số ngẫu nhiên + 3 ký tự chữ ngẫu nhiên
+     * Ví dụ: SK123ABC, SK456XYZ
+     */
+    public static function generateTrackingCode(): string
+    {
+        $maxAttempts = 10; // Tối đa 10 lần thử để tránh vòng lặp vô hạn
+        $attempt = 0;
+
+        do {
+            // Tạo 3 số ngẫu nhiên (000-999)
+            $randomNumbers = str_pad((string) rand(0, 999), 3, '0', STR_PAD_LEFT);
+            
+            // Tạo 3 ký tự chữ ngẫu nhiên (A-Z)
+            $randomChars = '';
+            for ($i = 0; $i < 3; $i++) {
+                $randomChars .= chr(rand(65, 90)); // A-Z
+            }
+            
+            $trackingCode = 'SK' . $randomNumbers . $randomChars;
+            $attempt++;
+            
+            // Kiểm tra xem tracking_code đã tồn tại chưa
+            $exists = static::where('tracking_code', $trackingCode)->exists();
+            
+            if (!$exists) {
+                return $trackingCode;
+            }
+            
+        } while ($attempt < $maxAttempts);
+        
+        // Nếu sau 10 lần thử vẫn trùng, thêm timestamp để đảm bảo unique
+        $timestamp = substr((string) time(), -4); // 4 số cuối của timestamp
+        return 'SK' . $timestamp . strtoupper(Str::random(3));
+    }
 
     /** Cập nhật trạng thái + thời gian */
     public function updateStatus(string $status, ?User $by = null): bool

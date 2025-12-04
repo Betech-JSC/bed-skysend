@@ -246,19 +246,41 @@ class FirebaseService
     }
 
     /**
-     * Tạo chat room trên Firebase cho order giữa sender và customer
+     * Tạo hoặc lấy chat room giữa sender và customer
+     * Nếu đã có chat giữa 2 người này, tái sử dụng chat đó
      * 
-     * @param int $orderId ID của order trong Laravel
-     * @param int $senderId ID của sender (user)
-     * @param int $customerId ID của customer (user)
-     * @return string|null Chat ID được tạo bởi Firebase
+     * @param int $orderId ID của order (để lưu vào metadata)
+     * @param int $senderId ID của sender
+     * @param int $customerId ID của customer
+     * @return string|null Chat ID
      */
     public function createChatRoomForOrder(int $orderId, int $senderId, int $customerId): ?string
     {
         try {
-            // Tạo chat node mới trên Firebase
+            // Tìm chat đã tồn tại giữa 2 người này
+            $existingChatId = $this->findExistingChat($senderId, $customerId);
+            
+            if ($existingChatId) {
+                // Cập nhật metadata để thêm order_id vào danh sách orders của chat này
+                $chatRef = $this->database->getReference("chats/{$existingChatId}");
+                $chatData = $chatRef->getValue();
+                
+                $orderIds = $chatData['order_ids'] ?? [];
+                if (!in_array($orderId, $orderIds)) {
+                    $orderIds[] = $orderId;
+                    $chatRef->update([
+                        'order_ids' => $orderIds,
+                        'updated_at' => now()->timestamp,
+                    ]);
+                }
+                
+                Log::info("Reusing existing chat {$existingChatId} for order {$orderId}");
+                return $existingChatId;
+            }
+            
+            // Tạo chat mới nếu chưa có
             $chatRef = $this->database->getReference("chats")->push([
-                'order_id' => $orderId,
+                'order_ids' => [$orderId], // Lưu danh sách order_ids
                 'users' => [
                     $senderId,
                     $customerId
@@ -269,14 +291,56 @@ class FirebaseService
             ]);
 
             $chatId = $chatRef->getKey();
-
+            
             if ($chatId) {
-                Log::info("Created chat room for order {$orderId} with chat_id: {$chatId}");
+                Log::info("Created new chat room {$chatId} for order {$orderId}");
             }
 
             return $chatId;
         } catch (\Exception $e) {
             Log::error('Firebase createChatRoomForOrder error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Tìm chat đã tồn tại giữa 2 users
+     * 
+     * @param int $userId1 ID của user thứ nhất
+     * @param int $userId2 ID của user thứ hai
+     * @return string|null Chat ID nếu tìm thấy, null nếu không có
+     */
+    private function findExistingChat(int $userId1, int $userId2): ?string
+    {
+        try {
+            $chatsRef = $this->database->getReference("chats");
+            $chats = $chatsRef->getValue();
+            
+            if (!$chats) {
+                return null;
+            }
+            
+            foreach ($chats as $chatId => $chatData) {
+                if (!isset($chatData['users'])) {
+                    continue;
+                }
+                
+                $users = $chatData['users'];
+                // Normalize: users có thể là array hoặc object
+                $usersList = is_array($users) ? $users : array_keys($users);
+                
+                // Kiểm tra xem có đúng 2 users và match với userId1, userId2 không
+                if (count($usersList) === 2) {
+                    $userIds = array_map('strval', $usersList);
+                    if (in_array((string)$userId1, $userIds) && in_array((string)$userId2, $userIds)) {
+                        return $chatId;
+                    }
+                }
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Firebase findExistingChat error: ' . $e->getMessage());
             return null;
         }
     }

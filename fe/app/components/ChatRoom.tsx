@@ -20,6 +20,7 @@ import { NotificationService } from '@/NotificationService';
 import * as ImagePicker from 'expo-image-picker';
 import api from '@/api/api';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 interface Message {
     id: string;
@@ -39,6 +40,7 @@ interface ChatRoomProps {
 
 export default function ChatRoom({ chatId }: ChatRoomProps) {
     const user = useSelector((state: RootState) => state.user);
+    const router = useRouter();
     const [messages, setMessages] = useState<Message[]>([]);
     const [text, setText] = useState('');
     const [otherUserId, setOtherUserId] = useState<number | string | null>(null);
@@ -48,6 +50,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isTyping, setIsTyping] = useState(false);
     const [otherUserTyping, setOtherUserTyping] = useState(false);
+    const [relatedOrders, setRelatedOrders] = useState<any[]>([]);
     const typingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
     const db = getDatabase(app);
@@ -132,6 +135,34 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         });
 
         return () => unsubscribe();
+    }, [chatId]);
+
+    // Fetch orders liên quan đến chat này
+    useEffect(() => {
+        const fetchRelatedOrders = async () => {
+            try {
+                const response = await api.get("orders/getList");
+                let ordersData = [];
+                
+                if (response.data?.success) {
+                    if (response.data.data?.data) {
+                        ordersData = response.data.data.data;
+                    } else if (Array.isArray(response.data.data)) {
+                        ordersData = response.data.data;
+                    }
+                }
+                
+                // Lọc orders có cùng chat_id
+                const related = ordersData.filter((order: any) => order.chat_id === chatId);
+                setRelatedOrders(related);
+            } catch (error) {
+                console.error("Error fetching related orders:", error);
+            }
+        };
+        
+        if (chatId) {
+            fetchRelatedOrders();
+        }
     }, [chatId]);
 
     // Request permissions
@@ -427,6 +458,39 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         );
     };
 
+    // Render order context header
+    const renderOrderContext = () => {
+        if (relatedOrders.length === 0) return null;
+
+        return (
+            <View style={styles.orderContextContainer}>
+                <Text style={styles.orderContextTitle}>
+                    Đơn hàng liên quan ({relatedOrders.length})
+                </Text>
+                {relatedOrders.map((order) => (
+                    <TouchableOpacity
+                        key={order.id}
+                        style={styles.orderItem}
+                        onPress={() => {
+                            router.push(`/orders_details?id=${order.id}`);
+                        }}
+                    >
+                        <MaterialIcons name="shopping-bag" size={20} color="#2563EB" />
+                        <View style={styles.orderItemContent}>
+                            <Text style={styles.orderItemCode}>
+                                Mã đơn: {order.tracking_code || `#${order.id}`}
+                            </Text>
+                            <Text style={styles.orderItemStatus}>
+                                Trạng thái: {order.status || 'N/A'}
+                            </Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={20} color="#999" />
+                    </TouchableOpacity>
+                ))}
+            </View>
+        );
+    };
+
     return (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
@@ -437,6 +501,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
                 keyExtractor={item => item.id}
                 renderItem={renderItem}
                 contentContainerStyle={{ padding: 10 }}
+                ListHeaderComponent={renderOrderContext}
                 ListFooterComponent={renderTypingIndicator}
             />
             {uploading && (
@@ -602,5 +667,40 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         backgroundColor: '#999',
         marginHorizontal: 2,
+    },
+    orderContextContainer: {
+        backgroundColor: '#f5f5f5',
+        padding: 12,
+        marginBottom: 10,
+        borderRadius: 8,
+        marginHorizontal: 10,
+    },
+    orderContextTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 8,
+    },
+    orderItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        padding: 10,
+        borderRadius: 6,
+        marginBottom: 6,
+    },
+    orderItemContent: {
+        flex: 1,
+        marginLeft: 10,
+    },
+    orderItemCode: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#333',
+    },
+    orderItemStatus: {
+        fontSize: 12,
+        color: '#666',
+        marginTop: 2,
     },
 });
