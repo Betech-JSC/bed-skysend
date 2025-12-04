@@ -109,9 +109,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sender/available-customers', [FlightController::class, 'availableCustomers']);
 });
 
+// Social Login Routes (Google & Facebook)
 Route::controller(AuthController::class)->group(function () {
+    // Redirect to provider (for web - optional)
     Route::get('auth/{provider}/redirect', 'redirectToProvider');
+
+    // Handle callback - support both GET (web) and POST (mobile app)
     Route::get('auth/{provider}/callback', 'handleProviderCallback');
+    Route::post('auth/{provider}/callback', 'handleProviderCallback');
+
+    // Direct login with access token (for mobile app - recommended)
+    Route::post('auth/{provider}/login', 'handleProviderCallback');
 });
 
 // Lấy danh sách tất cả sân bay

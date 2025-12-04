@@ -1,116 +1,231 @@
 // components/SocialMedia.tsx
-import React from "react";
-import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Image, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import * as Facebook from "expo-auth-session/providers/facebook";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/reducers/userSlice";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import api from "@/api/api";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { getDatabase, ref, set } from "firebase/database";
 import { app } from "@/firebaseConfig";
 
+// Lấy env variables (fallback nếu không có)
+const GOOGLE_EXPO_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID || "YOUR_GOOGLE_EXPO_CLIENT_ID";
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || "YOUR_IOS_CLIENT_ID";
+const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || "YOUR_ANDROID_CLIENT_ID";
+const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID || "YOUR_FACEBOOK_APP_ID";
+
 WebBrowser.maybeCompleteAuthSession();
 
-const SocialMedia = () => {
+interface SocialMediaProps {
+    onLoadingChange?: (loading: boolean) => void;
+}
+
+const SocialMedia: React.FC<SocialMediaProps> = ({ onLoadingChange }) => {
     const dispatch = useDispatch();
+    const { role } = useLocalSearchParams<{ role?: string }>();
+    const [loading, setLoading] = useState(false);
 
     // === GOOGLE ===
     const [requestG, responseG, promptAsyncG] = Google.useAuthRequest({
-        expoClientId: "YOUR_GOOGLE_EXPO_CLIENT_ID", // Thay bằng của bạn
-        iosClientId: "YOUR_IOS_CLIENT_ID",
-        androidClientId: "YOUR_ANDROID_CLIENT_ID",
+        expoClientId: GOOGLE_EXPO_CLIENT_ID,
+        iosClientId: GOOGLE_IOS_CLIENT_ID,
+        androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+        scopes: ['openid', 'profile', 'email'],
     });
 
     // === FACEBOOK ===
     const [requestF, responseF, promptAsyncF] = Facebook.useAuthRequest({
-        clientId: "1350395206233851", // App ID bạn vừa tạo
+        clientId: FACEBOOK_APP_ID,
+        scopes: ['public_profile', 'email'],
     });
 
-    // === XỬ LÝ RESPONSE ===
-    React.useEffect(() => {
-        console.log("responseF đã thay đổi:", responseF);
+    // Update loading state
+    useEffect(() => {
+        if (onLoadingChange) {
+            onLoadingChange(loading);
+        }
+    }, [loading, onLoadingChange]);
 
-        if (responseG?.type === "success") {
-            handleSocialLogin("google", responseG.authentication?.accessToken);
+    // === XỬ LÝ RESPONSE ===
+    useEffect(() => {
+        if (responseG?.type === "success" && responseG.authentication?.accessToken) {
+            handleSocialLogin("google", responseG.authentication.accessToken);
         } else if (responseG?.type === "error") {
-            Alert.alert("Google Error", responseG.error?.message);
+            setLoading(false);
+            Alert.alert("Lỗi Google", responseG.error?.message || "Đăng nhập Google thất bại");
         }
 
-        if (responseF?.type === "success") {
-            handleSocialLogin("facebook", responseF.authentication?.accessToken);
+        if (responseF?.type === "success" && responseF.authentication?.accessToken) {
+            handleSocialLogin("facebook", responseF.authentication.accessToken);
         } else if (responseF?.type === "cancel") {
+            setLoading(false);
             console.log("User cancelled Facebook login");
         } else if (responseF?.type === "error") {
-            Alert.alert("Facebook Error", responseF.error?.message);
+            setLoading(false);
+            Alert.alert("Lỗi Facebook", responseF.error?.message || "Đăng nhập Facebook thất bại");
         }
     }, [responseG, responseF]);
 
     // === GỌI API LARAVEL ===
-    const handleSocialLogin = async (provider: string, accessToken?: string) => {
-        if (!accessToken) return;
+    const handleSocialLogin = async (provider: string, accessToken: string) => {
+        if (!accessToken) {
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
 
         try {
-            const res = await api.post(`/auth/${provider}/callback`, {
+            // Gọi API backend với access_token
+            const res = await api.post(`/auth/${provider}/login`, {
                 access_token: accessToken,
             });
 
-            if (res.data.status === "success") {
-                const { user } = res.data.data;
+            if (res.data.success && res.data.data?.user) {
+                // Response structure: { success: true, data: { user: { ...user, token: "..." } } }
+                const userData = res.data.data.user || res.data.data;
+                const token = userData.token;
+                const user = { ...userData };
+                delete user.token; // Remove token from user object để lưu riêng
 
-                // Lưu push token vào Firebase
-                const expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
+                // Lấy Expo Push Token
+                let expoPushToken = "";
+                try {
+                    if (Constants.isDevice) {
+                        const { status } = await Notifications.requestPermissionsAsync();
+                        if (status === "granted") {
+                            expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
+                        }
+                    } else {
+                        expoPushToken = "ExponentPushToken[emulator]";
+                    }
+                } catch (error) {
+                    console.warn("Không lấy được push token:", error);
+                }
+
+                // Lưu push token vào Firebase và database
                 if (expoPushToken && user.id) {
                     const db = getDatabase(app);
                     await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
+                    
+                    // Lưu token vào Laravel database
+                    try {
+                        await api.post('/users/save-token', {
+                            user_id: user.id,
+                            token: expoPushToken,
+                        });
+                    } catch (error) {
+                        console.warn('Không thể lưu push token vào database:', error);
+                    }
                 }
 
+                // Gán role từ param hoặc từ user
+                const userRole = role === "sender" ? "sender" : (role === "customer" ? "customer" : user.role || "customer");
+                const userWithRole = {
+                    ...user,
+                    role: userRole,
+                    token: token, // Token từ API response
+                };
+
                 // Lưu vào Redux
-                dispatch(setUser({ ...user, role: "sender" }));
-                router.push("/home");
+                dispatch(setUser(userWithRole));
+
+                // Redirect theo role
+                if (userWithRole.role === "sender") {
+                    router.replace("/(tabs)/(sender)/home");
+                } else {
+                    router.replace("/(tabs)/(customer)/home_customer");
+                }
+            } else {
+                Alert.alert("Lỗi", res.data.message || "Đăng nhập thất bại");
             }
         } catch (error: any) {
-            Alert.alert("Lỗi", error.response?.data?.message || "Đăng nhập thất bại");
+            console.error("Social login error:", error);
+            Alert.alert(
+                "Lỗi đăng nhập",
+                error.response?.data?.message || "Không thể kết nối đến server"
+            );
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleFacebookLogout = async () => {
+    const handleGoogleLogin = async () => {
+        if (!requestG) {
+            Alert.alert("Lỗi", "Google login chưa sẵn sàng");
+            return;
+        }
+        setLoading(true);
         try {
-            await WebBrowser.dismissAuthSession();
-            Alert.alert("Đã đăng xuất Facebook");
+            await promptAsyncG();
         } catch (error) {
-            console.log("Logout error:", error);
+            setLoading(false);
+            Alert.alert("Lỗi", "Không thể mở Google login");
         }
     };
-    return (
-        <View className="gap-y-[16px]">
-            <Text className="text-center">Hoặc tiếp tục với</Text>
-            <View className="flex-row gap-x-[16px]">
 
+    const handleFacebookLogin = async () => {
+        if (!requestF) {
+            Alert.alert("Lỗi", "Facebook login chưa sẵn sàng");
+            return;
+        }
+        setLoading(true);
+        try {
+            await promptAsyncF();
+        } catch (error) {
+            setLoading(false);
+            Alert.alert("Lỗi", "Không thể mở Facebook login");
+        }
+    };
+
+    return (
+        <View className="gap-y-4">
+            <View className="flex-row items-center gap-3">
+                <View className="flex-1 h-px bg-gray-300" />
+                <Text className="text-gray-500 text-sm">Hoặc tiếp tục với</Text>
+                <View className="flex-1 h-px bg-gray-300" />
+            </View>
+            
+            <View className="flex-row gap-x-4">
                 {/* GOOGLE */}
                 <TouchableOpacity
-                    disabled={!requestG}
-                    onPress={() => promptAsyncG()}
-                    className="flex-1 flex-row border border-[#F2F2F7] rounded-[12px] justify-center py-[12px]"
+                    disabled={loading || !requestG}
+                    onPress={handleGoogleLogin}
+                    className="flex-1 flex-row border border-gray-300 rounded-xl justify-center items-center py-3 bg-white"
+                    style={{ opacity: loading || !requestG ? 0.6 : 1 }}
                 >
-                    <Image
-                        source={require("@assets/images/social/google.webp")}
-                        className="w-[24px] h-[24px]"
-                    />
+                    {loading ? (
+                        <ActivityIndicator size="small" color="#4285F4" />
+                    ) : (
+                        <Image
+                            source={require("@assets/images/social/google.webp")}
+                            className="w-6 h-6"
+                            resizeMode="contain"
+                        />
+                    )}
                 </TouchableOpacity>
 
                 {/* FACEBOOK */}
                 <TouchableOpacity
-                    disabled={!requestF}
-                    onPress={() => promptAsyncF({ useProxy: true })}
-                    className="flex-1 flex-row border border-[#F2F2F7] rounded-[12px] justify-center py-[12px]"
+                    disabled={loading || !requestF}
+                    onPress={handleFacebookLogin}
+                    className="flex-1 flex-row border border-gray-300 rounded-xl justify-center items-center py-3 bg-white"
+                    style={{ opacity: loading || !requestF ? 0.6 : 1 }}
                 >
-                    <Image
-                        source={require("@assets/images/social/fb.webp")}
-                        className="w-[24px] h-[24px]"
-                    />
+                    {loading ? (
+                        <ActivityIndicator size="small" color="#1877F2" />
+                    ) : (
+                        <Image
+                            source={require("@assets/images/social/fb.webp")}
+                            className="w-6 h-6"
+                            resizeMode="contain"
+                        />
+                    )}
                 </TouchableOpacity>
             </View>
         </View>

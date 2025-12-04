@@ -1,6 +1,8 @@
 import axios from "axios";
-import { store } from "@/store"; // import store trực tiếp
+import { store } from "@/store";
 import { API_URL } from "@env";
+import { clearUser } from "@/reducers/userSlice";
+import { router } from "expo-router";
 
 // Tạo instance axios
 const api = axios.create({
@@ -13,9 +15,8 @@ const api = axios.create({
 // Interceptor để gắn token vào header
 api.interceptors.request.use(
     (config) => {
-        // Lấy user từ Redux store
         const state = store.getState();
-        const user = state.user; // giả sử user lưu ở state.user
+        const user = state.user;
 
         if (user?.token) {
             config.headers['Authorization'] = `Bearer ${user.token}`;
@@ -26,10 +27,24 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Interceptor xử lý response
+// Interceptor xử lý response - Xử lý 401
 api.interceptors.response.use(
     (response) => response,
-    (error) => Promise.reject(error)
+    (error) => {
+        // Xử lý lỗi 401 (Unauthorized)
+        if (error.response?.status === 401) {
+            // Clear user từ Redux store
+            store.dispatch(clearUser());
+
+            // Redirect về login (chỉ nếu không đang ở trang login)
+            const currentRoute = router.pathname || '';
+            if (!currentRoute.includes('/login')) {
+                router.replace('/login');
+            }
+        }
+
+        return Promise.reject(error);
+    }
 );
 
 export default api;

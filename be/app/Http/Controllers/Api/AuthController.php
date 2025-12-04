@@ -137,26 +137,41 @@ class AuthController extends Controller
                 ->first();
 
             if (!$user) {
+                $email = $socialUser->getEmail();
+                $name = $socialUser->getName() ?? 'User';
+                $avatar = $socialUser->getAvatar();
+                $providerId = $socialUser->getId();
+
                 // Kiểm tra email đã tồn tại chưa (tránh duplicate)
-                $existingUser = User::where('email', $socialUser->getEmail())->first();
+                // Nếu email null (một số trường hợp Facebook), chỉ tìm theo provider_id
+                if ($email) {
+                    $existingUser = User::where('email', $email)->first();
+                } else {
+                    $existingUser = null;
+                }
 
                 if ($existingUser) {
                     // Gộp tài khoản: cập nhật provider
                     $existingUser->update([
                         'provider' => $provider,
-                        'provider_id' => $socialUser->getId(),
-                        'avatar' => $socialUser->getAvatar(),
+                        'provider_id' => $providerId,
+                        'avatar' => $avatar ?? $existingUser->avatar,
                     ]);
                     $user = $existingUser;
                 } else {
                     // Tạo user mới
+                    // Nếu email null, tạo email tạm từ provider_id
+                    if (!$email) {
+                        $email = $provider . '_' . $providerId . '@social.local';
+                    }
+
                     $user = User::create([
-                        'name' => $socialUser->getName() ?? 'User',
-                        'email' => $socialUser->getEmail(),
+                        'name' => $name,
+                        'email' => $email,
                         'provider' => $provider,
-                        'provider_id' => $socialUser->getId(),
+                        'provider_id' => $providerId,
                         'password' => Hash::make(Str::random(16)),
-                        'avatar' => $socialUser->getAvatar(),
+                        'avatar' => $avatar,
                     ]);
                 }
             } else {

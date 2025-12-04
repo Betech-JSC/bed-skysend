@@ -58,15 +58,20 @@
       },
       "usesNonExemptEncryption": false,
       "config": {
-        "usesPushNotifications": true
-      }
+        "usesPushNotifications": true,
+        "googleSignIn": {
+          "reservedClientId": "YOUR_IOS_REVERSED_CLIENT_ID"
+        }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.toannguyen112.reactnativeboilerplate"
+      "package": "com.toannguyen112.reactnativeboilerplate",
+      "googleServicesFile": "./google-services.json"
     },
     "extra": {
       "router": {},

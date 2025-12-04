@@ -18,6 +18,7 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { getDatabase, ref, set } from "firebase/database";
 import { app } from "@/firebaseConfig";
+import SocialMedia from "./components/SocialMedia";
 
 export default function Login() {
   const dispatch = useDispatch();
@@ -48,7 +49,11 @@ export default function Login() {
       const response = await api.post("login", { email, password });
 
       if (response.status === 200) {
-        const { user } = response.data.data;
+        // Response structure: { status: 'success', data: { user: { ...user, token: "..." } } }
+        const userData = response.data.data.user || response.data.data;
+        const token = userData.token;
+        const user = { ...userData };
+        delete user.token; // Remove token from user object để lưu riêng
 
         // Gán role từ param (sender hoặc customer)
         const userWithRole = {
@@ -76,7 +81,7 @@ export default function Login() {
         if (expoPushToken && user.id) {
           const db = getDatabase(app);
           await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
-          
+
           // Lưu token vào Laravel database
           try {
             await api.post('/users/save-token', {
@@ -88,14 +93,17 @@ export default function Login() {
           }
         }
 
-        // Lưu user vào Redux
-        dispatch(setUser(userWithRole));
+        // Lưu user vào Redux (bao gồm token)
+        dispatch(setUser({
+          ...userWithRole,
+          token: token, // Token từ API response
+        }));
 
         // QUAN TRỌNG: Redirect đúng theo role + cấu trúc folder mới
         if (userWithRole.role === "sender") {
-          router.replace("/(sender)/home");
+          router.replace("/(tabs)/(sender)/home");
         } else {
-          router.replace("/(customer)/home_customer");
+          router.replace("/(tabs)/(customer)/home_customer");
         }
       } else {
         Alert.alert("Đăng nhập thất bại", response.data.message || "Sai email hoặc mật khẩu");
@@ -162,21 +170,11 @@ export default function Login() {
               </Text>
             </TouchableOpacity>
 
-            {/* Nút chuyển role (test nhanh) */}
-            <View className="flex-row justify-center gap-4 mt-8">
-              <TouchableOpacity
-                onPress={() => router.push("/login?role=sender")}
-                className="px-4 py-2 bg-gray-200 rounded-lg"
-              >
-                <Text>Test Sender</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push("/login?role=customer")}
-                className="px-4 py-2 bg-gray-200 rounded-lg"
-              >
-                <Text>Test Customer</Text>
-              </TouchableOpacity>
+            {/* Social Login */}
+            <View className="mt-6">
+              <SocialMedia />
             </View>
+
           </View>
         </View>
       </ScrollView>
