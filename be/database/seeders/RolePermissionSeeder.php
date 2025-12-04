@@ -21,34 +21,34 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'users.edit', 'description' => 'Chỉnh sửa người dùng'],
             ['name' => 'users.delete', 'description' => 'Xóa người dùng'],
             ['name' => 'users.ban', 'description' => 'Khóa/Mở khóa người dùng'],
-            
+
             // Flights
             ['name' => 'flights.view', 'description' => 'Xem danh sách chuyến bay'],
             ['name' => 'flights.verify', 'description' => 'Xác thực chuyến bay'],
             ['name' => 'flights.reject', 'description' => 'Từ chối chuyến bay'],
             ['name' => 'flights.cancel', 'description' => 'Hủy chuyến bay'],
-            
+
             // Orders
             ['name' => 'orders.view', 'description' => 'Xem danh sách đơn hàng'],
             ['name' => 'orders.edit', 'description' => 'Chỉnh sửa đơn hàng'],
             ['name' => 'orders.cancel', 'description' => 'Hủy đơn hàng'],
             ['name' => 'orders.update_status', 'description' => 'Cập nhật trạng thái đơn hàng'],
-            
+
             // Requests
             ['name' => 'requests.view', 'description' => 'Xem danh sách yêu cầu'],
             ['name' => 'requests.delete', 'description' => 'Xóa yêu cầu'],
-            
+
             // Reviews
             ['name' => 'reviews.view', 'description' => 'Xem đánh giá'],
             ['name' => 'reviews.delete', 'description' => 'Xóa đánh giá'],
-            
+
             // Reports
             ['name' => 'reports.view', 'description' => 'Xem báo cáo và thống kê'],
-            
+
             // Settings
             ['name' => 'settings.view', 'description' => 'Xem cấu hình'],
             ['name' => 'settings.edit', 'description' => 'Chỉnh sửa cấu hình'],
-            
+
             // Roles & Permissions
             ['name' => 'roles.view', 'description' => 'Xem vai trò'],
             ['name' => 'roles.create', 'description' => 'Tạo vai trò'],
@@ -59,11 +59,11 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'permissions.edit', 'description' => 'Chỉnh sửa quyền'],
             ['name' => 'permissions.delete', 'description' => 'Xóa quyền'],
             ['name' => 'permissions.assign', 'description' => 'Phân quyền cho admin'],
-            
+
             // Files
             ['name' => 'files.view', 'description' => 'Xem danh sách file'],
             ['name' => 'files.delete', 'description' => 'Xóa file'],
-            
+
             // Notifications
             ['name' => 'notifications.view', 'description' => 'Xem thông báo'],
             ['name' => 'notifications.send', 'description' => 'Gửi thông báo hệ thống'],
@@ -135,4 +135,3 @@ class RolePermissionSeeder extends Seeder
         $this->command->info('Created ' . count($roles) . ' roles');
     }
 }
-

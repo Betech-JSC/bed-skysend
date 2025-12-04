@@ -211,4 +211,3 @@ class RoleController extends Controller
         return redirect()->route('admin.roles.index')->with('success', 'Đã xóa role thành công');
     }
 }
-

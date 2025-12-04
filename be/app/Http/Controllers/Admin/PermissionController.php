@@ -171,4 +171,3 @@ class PermissionController extends Controller
         return redirect()->back()->with('success', 'Đã cập nhật quyền cho admin thành công');
     }
 }
-

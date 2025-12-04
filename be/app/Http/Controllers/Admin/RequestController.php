@@ -150,4 +150,3 @@ class RequestController extends Controller
         return redirect()->route('admin.requests.index')->with('success', 'Đã xóa yêu cầu thành công');
     }
 }
-

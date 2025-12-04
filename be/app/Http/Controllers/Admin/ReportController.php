@@ -126,9 +126,9 @@ class ReportController extends Controller
 
         // Orders theo tháng (12 tháng gần nhất)
         $ordersByMonth = Order::select(
-                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
-                DB::raw('count(*) as count')
-            )
+            DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+            DB::raw('count(*) as count')
+        )
             ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('month')
             ->orderBy('month')
@@ -151,4 +151,3 @@ class ReportController extends Controller
         ]);
     }
 }
-

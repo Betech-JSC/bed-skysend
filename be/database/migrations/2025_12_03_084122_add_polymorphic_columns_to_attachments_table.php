@@ -20,7 +20,7 @@ return new class extends Migration
                 $table->string('attachable_type')->nullable()->after('attachable_id');
             }
         });
-        
+
         // Thêm index riêng biệt với try-catch để tránh lỗi duplicate
         try {
             Schema::table('attachments', function (Blueprint $table) {
@@ -29,9 +29,11 @@ return new class extends Migration
         } catch (\Exception $e) {
             // Index đã tồn tại, bỏ qua (kiểm tra các thông báo lỗi phổ biến)
             $errorMessage = $e->getMessage();
-            if (strpos($errorMessage, 'Duplicate key') === false && 
+            if (
+                strpos($errorMessage, 'Duplicate key') === false &&
                 strpos($errorMessage, 'already exists') === false &&
-                strpos($errorMessage, '1061') === false) {
+                strpos($errorMessage, '1061') === false
+            ) {
                 throw $e;
             }
         }
@@ -50,7 +52,7 @@ return new class extends Migration
         } catch (\Exception $e) {
             // Index không tồn tại, bỏ qua
         }
-        
+
         // Drop columns nếu tồn tại
         Schema::table('attachments', function (Blueprint $table) {
             if (Schema::hasColumn('attachments', 'attachable_id')) {

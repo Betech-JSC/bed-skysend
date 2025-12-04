@@ -90,4 +90,3 @@ class AdminSeeder extends Seeder
         $this->command->info('Password: support123');
     }
 }
-

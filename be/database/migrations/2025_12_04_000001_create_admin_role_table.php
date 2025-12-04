@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('admin_id')->constrained('admins')->onDelete('cascade');
             $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
             $table->timestamps();
-            
+
             // Đảm bảo mỗi admin chỉ có 1 role (hoặc bỏ unique nếu muốn nhiều roles)
             $table->unique(['admin_id', 'role_id']);
         });
@@ -30,4 +30,3 @@ return new class extends Migration
         Schema::dropIfExists('admin_role');
     }
 };
-

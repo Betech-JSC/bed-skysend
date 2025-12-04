@@ -123,4 +123,3 @@ class ReviewController extends Controller
         return redirect()->back()->with('success', 'Đã xóa đánh giá thành công');
     }
 }
-

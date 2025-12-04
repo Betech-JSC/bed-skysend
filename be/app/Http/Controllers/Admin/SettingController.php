@@ -77,4 +77,3 @@ class SettingController extends Controller
         return redirect()->back()->with('success', 'Đã xóa cấu hình thành công');
     }
 }
-
