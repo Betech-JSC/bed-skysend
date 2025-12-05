@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, useColorScheme, Text, Modal, FlatList, Pressable, TouchableOpacity, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import api from '@/api/api';
 
 // Fallback list in case API response doesn't contain an array
 const FALLBACK_CITIES = [
@@ -33,19 +34,6 @@ const CitySelectModal = ({
   if (!value && loading) selectedLabel = 'Đang tải...';
   if (!value && error) selectedLabel = `Lỗi: ${error}`;
 
-  // Fallback list in case API response doesn't contain an array
-  const FALLBACK_CITIES = [
-    { label: 'Hà Nội', value: 'HAN' },
-    { label: 'TP. Hồ Chí Minh', value: 'SGN' },
-    { label: 'Đà Nẵng', value: 'DAD' },
-    { label: 'Hải Phòng', value: 'HPH' },
-    { label: 'Cần Thơ', value: 'VCA' },
-    { label: 'Nha Trang', value: 'CXR' },
-    { label: 'Phú Quốc', value: 'PQC' },
-    { label: 'Đà Lạt', value: 'DLI' },
-    { label: 'Huế', value: 'HUI' },
-  ];
-
   // FALLBACK_CITIES is a stable module-level constant; ignore exhaustive-deps for this effect
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -55,9 +43,8 @@ const CitySelectModal = ({
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('http://localhost:8000/api/airports');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const response = await api.get('/airports');
+        const data = response.data;
 
         const findArray = (obj: any): any[] | null => {
           if (Array.isArray(obj)) return obj;
@@ -83,9 +70,19 @@ const CitySelectModal = ({
           })
           .filter((it: any) => it.value);
 
-        if (mounted && mapped.length > 0) setCities(mapped);
+        if (mounted && mapped.length > 0) {
+          setCities(mapped);
+        } else if (mounted) {
+          // Nếu không có data từ API, dùng fallback
+          setCities(FALLBACK_CITIES);
+        }
       } catch (err: any) {
-        setError(err?.message || 'Không thể tải danh sách');
+        console.error('Error fetching airports:', err);
+        // Nếu có lỗi, dùng fallback cities
+        if (mounted) {
+          setCities(FALLBACK_CITIES);
+          setError(err?.response?.data?.message || err?.message || 'Không thể tải danh sách');
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -109,9 +106,8 @@ const CitySelectModal = ({
 
       <Pressable onPress={() => setOpen(true)}>
         <View
-          className={`h-14 border bg-background-light pl-10 pr-4 dark:bg-gray-700 ${
-            isDark ? 'border-gray-600' : 'border-gray-200'
-          } justify-center rounded-lg`}
+          className={`h-14 border bg-background-light pl-10 pr-4 dark:bg-gray-700 ${isDark ? 'border-gray-600' : 'border-gray-200'
+            } justify-center rounded-lg`}
         >
           <Text style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>{selectedLabel || placeholder}</Text>
         </View>

@@ -117,13 +117,37 @@ export function useHeadsUpNotification() {
                     // Convert to array and sort by timestamp
                     const notificationsList: Notification[] = Object.keys(data)
                         .map((key) => {
-                            const notif = {
+                            const notifData = data[key];
+                            const notif: Notification = {
                                 id: key,
-                                ...data[key],
+                                type: notifData.type || 'system',
+                                title: notifData.title || 'Thông báo',
+                                body: notifData.body || '',
+                                timestamp: notifData.timestamp || Date.now() / 1000,
+                                read: notifData.read === true || notifData.read === 'true',
+                                data: notifData.data || {},
                             };
-                            // Debug: log raw notification data
-                            if (notif.type === 'flight_status') {
-                                console.log("🔍 Flight status notification found:", {
+
+                            // Extract data fields if they're at root level (for backward compatibility)
+                            if (!notif.data.order_id && notifData.order_id) {
+                                notif.data.order_id = notifData.order_id;
+                            }
+                            if (!notif.data.order_uuid && notifData.order_uuid) {
+                                notif.data.order_uuid = notifData.order_uuid;
+                            }
+                            if (!notif.data.flight_id && notifData.flight_id) {
+                                notif.data.flight_id = notifData.flight_id;
+                            }
+                            if (!notif.data.flight_uuid && notifData.flight_uuid) {
+                                notif.data.flight_uuid = notifData.flight_uuid;
+                            }
+                            if (!notif.data.chat_id && notifData.chat_id) {
+                                notif.data.chat_id = notifData.chat_id;
+                            }
+
+                            // Debug: log raw notification data for specific types
+                            if (['flight_status', 'order_status', 'chat_message'].includes(notif.type)) {
+                                console.log(`🔍 ${notif.type} notification found:`, {
                                     id: notif.id,
                                     type: notif.type,
                                     title: notif.title,
@@ -138,30 +162,45 @@ export function useHeadsUpNotification() {
                         .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
                     // Get the latest unread notification
-                    const latestUnread = notificationsList.find((n) => !n.read && n.type);
+                    // Filter for specific notification types we want to show
+                    const relevantTypes = ['chat_message', 'order_status', 'flight_status', 'new_request', 'request_accepted', 'request_declined'];
+                    const unreadNotifications = notificationsList.filter((n) => {
+                        const hasType = n.type && relevantTypes.includes(n.type);
+                        const isUnread = n.read === false || (typeof n.read === 'string' && n.read === 'false') || n.read === undefined;
+                        return hasType && isUnread;
+                    });
+
+                    // Get the latest one that hasn't been shown yet
+                    const latestUnread = unreadNotifications.find((n) => n.id !== lastNotificationIdRef.current) ||
+                        (unreadNotifications.length > 0 && lastNotificationIdRef.current === null ? unreadNotifications[0] : null);
 
                     console.log("📊 Notifications check:", {
                         total: notificationsList.length,
                         unreadCount: notificationsList.filter((n) => !n.read).length,
+                        chatCount: notificationsList.filter((n) => n.type === 'chat_message').length,
+                        orderStatusCount: notificationsList.filter((n) => n.type === 'order_status').length,
                         flightStatusCount: notificationsList.filter((n) => n.type === 'flight_status').length,
                         latestUnread: latestUnread ? {
                             id: latestUnread.id,
                             type: latestUnread.type,
                             title: latestUnread.title,
+                            body: latestUnread.body,
                             read: latestUnread.read,
                             timestamp: latestUnread.timestamp,
+                            data: latestUnread.data,
                         } : null,
                         lastShownId: lastNotificationIdRef.current,
                         isVisible,
                     });
 
-                    if (latestUnread && latestUnread.id !== lastNotificationIdRef.current) {
+                    if (latestUnread) {
                         console.log("✅ Showing heads-up notification:", {
                             id: latestUnread.id,
                             type: latestUnread.type,
                             title: latestUnread.title,
                             body: latestUnread.body,
                             timestamp: latestUnread.timestamp,
+                            data: latestUnread.data,
                         });
 
                         // Always show the latest notification, even if one is currently visible
@@ -169,18 +208,18 @@ export function useHeadsUpNotification() {
                         lastNotificationIdRef.current = latestUnread.id;
                         setCurrentNotification(latestUnread);
                         setIsVisible(true);
-                    } else if (latestUnread && latestUnread.id === lastNotificationIdRef.current) {
-                        console.log("⚠️ Notification already shown:", latestUnread.id);
-                    } else if (!latestUnread) {
-                        console.log("ℹ️ No unread notifications found");
+                    } else {
                         // Debug: show all notifications to see what's wrong
                         const allNotifications = notificationsList.map(n => ({
                             id: n.id,
                             type: n.type,
                             read: n.read,
                             title: n.title,
+                            body: n.body,
+                            timestamp: n.timestamp,
                         }));
                         console.log("📋 All notifications:", allNotifications);
+                        console.log("⚠️ No new unread notification to show");
                     }
                 } else {
                     // No notifications, reset state
