@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import api from '@/api/api';
 
 interface CitySelectModalProps {
   placeholder: string;
@@ -43,24 +44,45 @@ const CitySelectModal = ({
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('http://localhost:8000/api/airports');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const response = await api.get('/airports');
+        const data = response.data;
 
+        // Xử lý các format response khác nhau
+        let airportsData = [];
         if (data.status === 'success' && Array.isArray(data.data)) {
-          const mapped = data.data
+          airportsData = data.data;
+        } else if (Array.isArray(data.data)) {
+          airportsData = data.data;
+        } else if (Array.isArray(data)) {
+          airportsData = data;
+        }
+
+        if (mounted && airportsData.length > 0) {
+          const mapped = airportsData
             .map((airport: any) => ({
-              label: airport.display_vi || airport.name_vi || '',
-              value: airport.code || airport.city_code || '',
+              label: airport.display_vi || airport.name_vi || airport.name || '',
+              value: airport.code || airport.city_code || airport.airport_code || '',
             }))
             .filter((item: any) => item.value && item.label);
 
           if (mounted && mapped.length > 0) {
             setCities(mapped);
+          } else if (mounted) {
+            setError('Không tìm thấy dữ liệu sân bay');
           }
+        } else if (mounted) {
+          setError('Không có dữ liệu sân bay');
         }
       } catch (err: any) {
-        setError(err?.message || 'Không thể tải danh sách');
+        console.error('Error fetching airports:', err);
+        const errorMessage = 
+          err.response?.data?.message || 
+          err.response?.data?.error || 
+          err.message || 
+          'Không thể tải danh sách sân bay';
+        if (mounted) {
+          setError(errorMessage);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -100,9 +122,8 @@ const CitySelectModal = ({
 
       <Pressable onPress={() => setOpen(true)}>
         <View
-          className={`h-14 border bg-background-light pl-10 pr-4 dark:bg-gray-700 ${
-            isDark ? 'border-gray-600' : 'border-gray-200'
-          } justify-center rounded-lg`}>
+          className={`h-14 border bg-background-light pl-10 pr-4 dark:bg-gray-700 ${isDark ? 'border-gray-600' : 'border-gray-200'
+            } justify-center rounded-lg`}>
           <Text style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>
             {selectedLabel || placeholder}
           </Text>

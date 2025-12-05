@@ -65,7 +65,7 @@ export default function ProfileUpdate() {
             });
             setAvatar((user as any).avatar || null);
         }
-        loadKycStatus();
+        // loadKycStatus();
     }, [user]);
 
     const loadKycStatus = async () => {
@@ -361,14 +361,14 @@ export default function ProfileUpdate() {
                 <TouchableOpacity
                     onPress={() => setActiveTab('profile')}
                     className={`flex-1 py-4 items-center border-b-2 ${activeTab === 'profile'
-                            ? 'border-primary'
-                            : 'border-transparent'
+                        ? 'border-primary'
+                        : 'border-transparent'
                         }`}
                 >
                     <Text
                         className={`font-semibold ${activeTab === 'profile'
-                                ? 'text-primary'
-                                : 'text-gray-500 dark:text-gray-400'
+                            ? 'text-primary'
+                            : 'text-gray-500 dark:text-gray-400'
                             }`}
                     >
                         Thông tin cá nhân
@@ -377,14 +377,14 @@ export default function ProfileUpdate() {
                 <TouchableOpacity
                     onPress={() => setActiveTab('kyc')}
                     className={`flex-1 py-4 items-center border-b-2 ${activeTab === 'kyc'
-                            ? 'border-primary'
-                            : 'border-transparent'
+                        ? 'border-primary'
+                        : 'border-transparent'
                         }`}
                 >
                     <Text
                         className={`font-semibold ${activeTab === 'kyc'
-                                ? 'text-primary'
-                                : 'text-gray-500 dark:text-gray-400'
+                            ? 'text-primary'
+                            : 'text-gray-500 dark:text-gray-400'
                             }`}
                     >
                         Xác minh KYC
@@ -580,8 +580,8 @@ export default function ProfileUpdate() {
                             >
                                 <Text
                                     className={`text-base ${kycData.dateOfBirth
-                                            ? 'text-text-dark-gray dark:text-white'
-                                            : 'text-gray-400'
+                                        ? 'text-text-dark-gray dark:text-white'
+                                        : 'text-gray-400'
                                         }`}
                                 >
                                     {formatDate(kycData.dateOfBirth) || 'dd/mm/yyyy'}
@@ -679,15 +679,15 @@ export default function ProfileUpdate() {
                                 !backImage
                             }
                             className={`w-full py-4 rounded-xl mb-6 ${kycSubmitting ||
-                                    kycStatus === 'verified' ||
-                                    kycStatus === 'pending' ||
-                                    !kycData.fullName ||
-                                    !kycData.idNumber ||
-                                    !kycData.dateOfBirth ||
-                                    !frontImage ||
-                                    !backImage
-                                    ? 'bg-gray-400'
-                                    : 'bg-primary'
+                                kycStatus === 'verified' ||
+                                kycStatus === 'pending' ||
+                                !kycData.fullName ||
+                                !kycData.idNumber ||
+                                !kycData.dateOfBirth ||
+                                !frontImage ||
+                                !backImage
+                                ? 'bg-gray-400'
+                                : 'bg-primary'
                                 }`}
                         >
                             {kycSubmitting ? (

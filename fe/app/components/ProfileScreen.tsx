@@ -46,7 +46,7 @@ export default function ProfileScreen() {
     // Load user profile and KYC status
     useEffect(() => {
         loadUserProfile();
-        loadKycStatus();
+        // loadKycStatus();
     }, []);
 
     const loadUserProfile = async () => {

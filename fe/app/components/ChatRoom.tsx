@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     View,
     FlatList,
@@ -11,6 +11,7 @@ import {
     Image,
     ActivityIndicator,
     Alert,
+    SafeAreaView,
 } from 'react-native';
 import { getDatabase, ref, onValue, push, serverTimestamp, get, set, onDisconnect } from 'firebase/database';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -54,6 +55,8 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
     const [otherUserTyping, setOtherUserTyping] = useState(false);
     const [relatedOrders, setRelatedOrders] = useState<any[]>([]);
     const typingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const flatListRef = useRef<FlatList>(null);
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
 
     const db = getDatabase(app);
 
@@ -134,10 +137,24 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
             }));
             arr.sort((a, b) => a.timestamp - b.timestamp);
             setMessages(arr);
+
+            // Auto scroll to bottom when new messages arrive
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
         });
 
         return () => unsubscribe();
     }, [chatId]);
+
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        if (messages.length > 0) {
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [messages.length]);
 
     // Fetch orders liên quan đến chat này
     useEffect(() => {
@@ -595,60 +612,93 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            <FlatList
-                data={messages}
-                keyExtractor={item => item.id}
-                renderItem={renderItem}
-                contentContainerStyle={{ padding: 10 }}
-                ListHeaderComponent={renderOrderContext}
-                ListFooterComponent={renderTypingIndicator}
-            />
-            {uploading && (
-                <View style={styles.uploadingContainer}>
-                    <ActivityIndicator size="small" color="#2563EB" />
-                    <Text style={styles.uploadingText}>Đang tải lên...</Text>
-                </View>
-            )}
-            {selectedImage && (
-                <View style={styles.previewContainer}>
-                    <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+        <SafeAreaView style={{ flex: 1 }}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+            >
+                <FlatList
+                    ref={flatListRef}
+                    data={messages}
+                    keyExtractor={item => item.id}
+                    renderItem={renderItem}
+                    contentContainerStyle={{ padding: 10, paddingBottom: 20 }}
+                    ListHeaderComponent={renderOrderContext}
+                    ListFooterComponent={renderTypingIndicator}
+                    onContentSizeChange={() => {
+                        // Auto scroll when content size changes
+                        flatListRef.current?.scrollToEnd({ animated: false });
+                    }}
+                    onLayout={() => {
+                        // Scroll to bottom on initial load
+                        setTimeout(() => {
+                            flatListRef.current?.scrollToEnd({ animated: false });
+                        }, 100);
+                    }}
+                    showsVerticalScrollIndicator={true}
+                />
+                {uploading && (
+                    <View style={styles.uploadingContainer}>
+                        <ActivityIndicator size="small" color="#2563EB" />
+                        <Text style={styles.uploadingText}>Đang tải lên...</Text>
+                    </View>
+                )}
+                {selectedImage && (
+                    <View style={styles.previewContainer}>
+                        <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+                        <TouchableOpacity
+                            style={styles.removePreview}
+                            onPress={() => setSelectedImage(null)}
+                        >
+                            <MaterialIcons name="close" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+                <View style={styles.inputContainer}>
                     <TouchableOpacity
-                        style={styles.removePreview}
-                        onPress={() => setSelectedImage(null)}
+                        style={styles.attachButton}
+                        onPress={showAttachOptions}
+                        disabled={uploading}
                     >
-                        <MaterialIcons name="close" size={20} color="#fff" />
+                        <MaterialIcons name="attach-file" size={24} color="#2563EB" />
+                    </TouchableOpacity>
+                    <TextInput
+                        style={styles.input}
+                        value={text}
+                        onChangeText={(value) => {
+                            setText(value);
+                            // Scroll to bottom when typing
+                            setTimeout(() => {
+                                flatListRef.current?.scrollToEnd({ animated: true });
+                            }, 50);
+                        }}
+                        placeholder="Nhập tin nhắn..."
+                        multiline
+                        editable={!uploading}
+                        onFocus={() => {
+                            // Scroll to bottom when input is focused
+                            setTimeout(() => {
+                                flatListRef.current?.scrollToEnd({ animated: true });
+                            }, 300);
+                        }}
+                    />
+                    <TouchableOpacity
+                        style={[styles.sendButton, (!text.trim() && !selectedImage) && styles.sendButtonDisabled]}
+                        onPress={() => {
+                            sendMessage();
+                            // Scroll to bottom after sending
+                            setTimeout(() => {
+                                flatListRef.current?.scrollToEnd({ animated: true });
+                            }, 100);
+                        }}
+                        disabled={!text.trim() && !selectedImage || uploading}
+                    >
+                        <MaterialIcons name="send" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
-            )}
-            <View style={styles.inputContainer}>
-                <TouchableOpacity
-                    style={styles.attachButton}
-                    onPress={showAttachOptions}
-                    disabled={uploading}
-                >
-                    <MaterialIcons name="attach-file" size={24} color="#2563EB" />
-                </TouchableOpacity>
-                <TextInput
-                    style={styles.input}
-                    value={text}
-                    onChangeText={setText}
-                    placeholder="Nhập tin nhắn..."
-                    multiline
-                    editable={!uploading}
-                />
-                <TouchableOpacity
-                    style={[styles.sendButton, (!text.trim() && !selectedImage) && styles.sendButtonDisabled]}
-                    onPress={() => sendMessage()}
-                    disabled={!text.trim() && !selectedImage || uploading}
-                >
-                    <MaterialIcons name="send" size={20} color="#fff" />
-                </TouchableOpacity>
-            </View>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
@@ -691,7 +741,7 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         flexDirection: 'row',
-        paddingBottom: 40,
+        paddingBottom: Platform.OS === 'ios' ? 10 : 20,
         paddingTop: 10,
         paddingLeft: 10,
         paddingRight: 10,
@@ -699,6 +749,7 @@ const styles = StyleSheet.create({
         borderColor: '#ccc',
         alignItems: 'flex-end',
         backgroundColor: '#fff',
+        minHeight: 60,
     },
     attachButton: {
         padding: 8,
