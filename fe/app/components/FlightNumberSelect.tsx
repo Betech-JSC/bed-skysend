@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import api from '@/api/api';
+import { Image } from 'react-native';
+import { getAirlineLogo } from '@/constants/airlines';
 
 interface FlightNumberSelectProps {
     placeholder?: string;
@@ -197,14 +199,21 @@ const FlightNumberSelect = ({
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
                                         onPress={() => handleSelectAirline(item)}
-                                        className={`border-b border-gray-100 py-3 dark:border-gray-700 ${selectedAirline?.id === item.id ? 'bg-primary/10' : ''
+                                        className={`flex-row items-center gap-3 border-b border-gray-100 py-3 dark:border-gray-700 ${selectedAirline?.id === item.id ? 'bg-primary/10' : ''
                                             }`}>
-                                        <Text className="text-text-primary text-base font-medium dark:text-white">
-                                            {item.name_vi}
-                                        </Text>
-                                        <Text className="text-text-secondary text-sm dark:text-gray-400">
-                                            {item.iata_code} {item.icao_code ? `(${item.icao_code})` : ''}
-                                        </Text>
+                                        <Image 
+                                            source={{ uri: getAirlineLogo(item.name_vi, item.logo_url) }} 
+                                            className="h-8 w-8" 
+                                            resizeMode="contain" 
+                                        />
+                                        <View className="flex-1">
+                                            <Text className="text-text-primary text-base font-medium dark:text-white">
+                                                {item.name_vi}
+                                            </Text>
+                                            <Text className="text-text-secondary text-sm dark:text-gray-400">
+                                                {item.iata_code} {item.icao_code ? `(${item.icao_code})` : ''}
+                                            </Text>
+                                        </View>
                                     </TouchableOpacity>
                                 )}
                             />

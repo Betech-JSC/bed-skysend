@@ -14,6 +14,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import ItemOrder from "app/components/ItemOrder";
 import { router } from "expo-router";
+import { getAvatarUrl } from "@/constants/avatars";
 
 function ListOrder() {
     const user = useSelector((state: RootState) => state.user);
@@ -339,7 +340,7 @@ function ListOrder() {
                                         <View className="flex-row items-center justify-between px-4 py-4 gap-3">
                                             <View className="flex-row items-center gap-3 flex-1">
                                                 <Image
-                                                    source={{ uri: customer.avatar || 'https://via.placeholder.com/40' }}
+                                                    source={{ uri: getAvatarUrl(customer.avatar) }}
                                                     className="w-10 h-10 rounded-full"
                                                 />
                                                 <View>
@@ -389,7 +390,7 @@ function ListOrder() {
                                                                 params: {
                                                                     chatId: String(chatId),
                                                                     partnerName: customer.name || 'Hành khách',
-                                                                    partnerAvatar: customer.avatar || 'https://via.placeholder.com/40',
+                                                                    partnerAvatar: getAvatarUrl(customer.avatar),
                                                                 }
                                                             } as any);
                                                         }}
@@ -466,7 +467,7 @@ function ListOrder() {
                                         <View className="flex-row items-center justify-between px-4 py-4 gap-3">
                                             <View className="flex-row items-center gap-3 flex-1">
                                                 <Image
-                                                    source={{ uri: customer.avatar || 'https://via.placeholder.com/40' }}
+                                                    source={{ uri: getAvatarUrl(customer.avatar) }}
                                                     className="w-10 h-10 rounded-full"
                                                 />
                                                 <View>

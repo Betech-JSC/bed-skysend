@@ -4,11 +4,14 @@ import {
     Text,
     TouchableOpacity,
     ImageBackground,
+    Image,
     ActivityIndicator,
     ScrollView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { getAvatarUrl } from "@/constants/avatars";
+import { getAirlineLogo } from "@/constants/airlines";
 
 interface OrderDetailContentProps {
     order: any;
@@ -232,7 +235,7 @@ export default function OrderDetailContent({
                                         params: {
                                             userId: String(partnerId),
                                             userName: partner.name || partner.name,
-                                            userAvatar: partner.avatar || partner.avatar,
+                                            userAvatar: getAvatarUrl(partner.avatar),
                                             userRole: partner.role || (isSender ? 'customer' : 'sender'),
                                         },
                                     });
@@ -246,7 +249,7 @@ export default function OrderDetailContent({
 
                     <ImageBackground
                         source={{
-                            uri: partner.avatar || 'https://via.placeholder.com/80',
+                            uri: getAvatarUrl(partner.avatar),
                         }}
                         className="w-20 h-20 rounded-full overflow-hidden"
                         resizeMode="cover"
@@ -257,19 +260,24 @@ export default function OrderDetailContent({
                 {flight.flight_number && (
                     <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
                         <Text className="text-lg font-bold mb-3">Thông tin chuyến bay</Text>
-                        <View className="gap-2">
-                            <View className="flex-row justify-between">
-                                <Text className="text-sm text-secondary-light dark:text-secondary-dark">
+                        <View className="flex-row items-center gap-3 mb-3">
+                            <Image
+                                source={{ uri: getAirlineLogo(flight.airline) }}
+                                className="h-12 w-12"
+                                resizeMode="contain"
+                            />
+                            <View className="flex-1">
+                                <Text className="text-sm text-secondary-light dark:text-secondary-dark mb-1">
                                     Hãng bay:
                                 </Text>
                                 <Text className="font-semibold text-base">{flight.airline || 'N/A'}</Text>
                             </View>
-                            <View className="flex-row justify-between">
-                                <Text className="text-sm text-secondary-light dark:text-secondary-dark">
-                                    Số hiệu chuyến:
-                                </Text>
-                                <Text className="font-semibold text-base">{flight.flight_number}</Text>
-                            </View>
+                        </View>
+                        <View className="flex-row justify-between">
+                            <Text className="text-sm text-secondary-light dark:text-secondary-dark">
+                                Số hiệu chuyến:
+                            </Text>
+                            <Text className="font-semibold text-base">{flight.flight_number}</Text>
                         </View>
                     </View>
                 )}

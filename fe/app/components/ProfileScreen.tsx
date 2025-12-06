@@ -18,6 +18,7 @@ import api from '@/api/api';
 import { API_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { DEMO_AVATAR, getAvatarUrl } from '@/constants/avatars';
 
 interface UserProfile {
     id: string;
@@ -39,9 +40,6 @@ export default function ProfileScreen() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [kycStatus, setKycStatus] = useState<string | null>(null);
-
-    // Demo avatar URL
-    const DEMO_AVATAR = 'https://lh3.googleusercontent.com/aida-public/AB6AXuCFo5XDeGQQixCh592qCFO1BMjesd1MZYmbBe-vvMxPKdvwpOWnDZAf5B4lVwDge5nGrI1PY0IPj_XlKGudJV8BR605QD4mXxJaoSOnCLFtAXAmsiP_UdmQjyLOiDIgnX9oYHMVaGN5ze6QFC1b8CFh14sj4c_4lKg8Mf8c4JjN8WZENlqsB9wXW4IZl4WpLGmxR6I75Qla6G9TDvud5DkN3GExhodb6zDKbwkb3HHyphaWXV_7ONs_JyP_blfhAUjgxop2VuqCcrrC';
 
     // Load user profile and KYC status
     useEffect(() => {
@@ -141,20 +139,7 @@ export default function ProfileScreen() {
     };
 
     const getAvatarUri = () => {
-        if (profile?.avatar) {
-            // Nếu avatar là relative path, cần thêm domain
-            if (profile.avatar.startsWith('storage/') || profile.avatar.startsWith('avatars/')) {
-                // Lấy base URL từ API config
-                const baseUrl = API_URL || 'http://localhost:8000';
-                return `${baseUrl}/storage/${profile.avatar.replace('storage/', '')}`;
-            }
-            // Nếu là full URL
-            if (profile.avatar.startsWith('http')) {
-                return profile.avatar;
-            }
-        }
-        // Fallback to demo avatar
-        return DEMO_AVATAR;
+        return getAvatarUrl(profile?.avatar, API_URL);
     };
 
     const getKycStatusBadge = () => {

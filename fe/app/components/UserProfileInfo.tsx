@@ -1,6 +1,7 @@
 // components/UserProfileInfo.tsx
 import React from 'react';
 import { View, Text, Image, ImageSourcePropType } from 'react-native';
+import { DEMO_AVATAR, getAvatarUrl } from '@/constants/avatars';
 
 interface UserProfileInfoProps {
     avatar?: string | ImageSourcePropType;
@@ -40,12 +41,11 @@ export default function UserProfileInfo({
     className = '',
 }: UserProfileInfoProps) {
     const config = sizeConfig[size];
-    const defaultAvatar = 'https://via.placeholder.com/48';
 
     // Xử lý avatar - có thể là string URI hoặc ImageSourcePropType
     const avatarSource = typeof avatar === 'string'
-        ? { uri: avatar || defaultAvatar }
-        : avatar || { uri: defaultAvatar };
+        ? { uri: getAvatarUrl(avatar) }
+        : avatar || { uri: DEMO_AVATAR };
 
     return (
         <View className={`flex-row items-center gap-3 ${className}`}>

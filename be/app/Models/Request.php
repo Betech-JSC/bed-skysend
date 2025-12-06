@@ -177,7 +177,7 @@ class Request extends Model
 
         // Tạo Order tự động (có thể dùng Event hoặc Service)
         return Order::create([
-            'uuid'           => Str::uuid(),
+            'uuid'           => Order::generateOrderUuid(),
             'request_id'     => $this->id,
             'sender_id'      => $this->sender_id,
             'customer_id'    => $this->accepted_by,

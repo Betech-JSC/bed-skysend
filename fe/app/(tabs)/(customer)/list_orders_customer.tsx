@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { router, useRouter } from "expo-router";
 import UserProfileInfo from "../../components/UserProfileInfo";
+import { getAvatarUrl } from "@/constants/avatars";
 
 function ListOrdersCustomer() {
     const router = useRouter();
@@ -285,7 +286,7 @@ function ListOrdersCustomer() {
                                 <View className="flex-row items-center justify-between px-4 py-4 gap-3">
                                     <View className="flex-row items-center gap-3 flex-1">
                                         <UserProfileInfo
-                                            avatar={sender.avatar || 'https://via.placeholder.com/40'}
+                                            avatar={getAvatarUrl(sender.avatar)}
                                             name={sender.name || 'Người gửi'}
                                             subtitle={sender.phone || ''}
                                             size="large"
@@ -338,7 +339,7 @@ function ListOrdersCustomer() {
                                                         params: {
                                                             chatId: String(chatId),
                                                             partnerName: sender.name || 'Người gửi',
-                                                            partnerAvatar: sender.avatar || 'https://via.placeholder.com/40',
+                                                            partnerAvatar: getAvatarUrl(sender.avatar),
                                                         }
                                                     } as any);
                                                 }}

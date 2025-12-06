@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import api from "@/api/api";
+import { getAvatarUrl } from "@/constants/avatars";
 
 interface RequestDetail {
     id: number;
@@ -458,9 +459,7 @@ export default function PrivateRequestDetailScreen() {
                             <View className="flex-row items-center gap-4">
                                 <Image
                                     source={{
-                                        uri:
-                                            customer.avatar ||
-                                            "https://via.placeholder.com/56",
+                                        uri: getAvatarUrl(customer.avatar),
                                     }}
                                     className="h-14 w-14 rounded-full"
                                 />

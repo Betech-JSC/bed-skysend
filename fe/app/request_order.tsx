@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import api from '@/api/api';
 import ItemTypeSelect from './components/ItemTypeSelect';
+import { getAvatarUrl } from '@/constants/avatars';
 
 export default function RequestOrderScreen() {
     const router = useRouter();
@@ -122,7 +123,7 @@ export default function RequestOrderScreen() {
                             {/* Customer Info */}
                             <View className="flex-row items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                                 <Image
-                                    source={{ uri: customer.avatar || 'https://via.placeholder.com/48' }}
+                                    source={{ uri: getAvatarUrl(customer.avatar) }}
                                     className="w-12 h-12 rounded-full"
                                 />
                                 <View className="flex-1">

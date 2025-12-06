@@ -319,7 +319,7 @@ export default function PassengerSearchResultsScreen() {
                                     {/* Header: Avatar + tên + rating */}
                                     <View className="flex-row items-center gap-3">
                                         <UserProfileInfo
-                                            avatar={customer.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCt1uclnQVmRt4FpXFSBOmqwkd7L1z-v6wELp4awVZPFJvpgEMQxPwfI81Umsb1Ioxb-8x74MbwZwQBQx5BULoT206OeocHce63_UGWhTcJvyO1fbozdfC0OrBdgAOzmPd8-HoiOSZ9qsA0VuBkeqq9V3kRCrtRsvlkWLeQ8trYnuKqRCBjLQ3saRSJfc-1LxeUOPZ8gt5cjbqA_SU9KMzQhTRlXgzWWR9n_tHcDczWFQNsBgsN-Gk7_2fNPqRYhcISQtax1Wcc8gaC'}
+                                            avatar={customer.avatar}
                                             name={customer.name || 'Người dùng'}
                                             size="large"
                                             showVerified={true}

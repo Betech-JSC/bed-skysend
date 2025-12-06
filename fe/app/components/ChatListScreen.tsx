@@ -17,6 +17,7 @@ import { RootState } from "@/store";
 import { getDatabase, ref, onValue, get, set } from "firebase/database";
 import { app } from "@/firebaseConfig";
 import api from "@/api/api";
+import { getAvatarUrl } from "@/constants/avatars";
 
 interface ChatItem {
     chatId: string;
@@ -169,7 +170,7 @@ export default function ChatListScreen() {
 
                     // Ưu tiên thông tin từ order data (backend), fallback về Firebase
                     const otherUserName = partner?.name || otherUserData.name || "Người dùng";
-                    const otherUserAvatar = partner?.avatar || otherUserData.avatar || "https://via.placeholder.com/56";
+                    const otherUserAvatar = getAvatarUrl(partner?.avatar || otherUserData.avatar);
                     const otherUserPhone = partner?.phone || otherUserData.phone || undefined;
                     const otherUserEmail = partner?.email || otherUserData.email || undefined;
                     const otherUserRole = partner?.role || otherUserData.role || undefined;

@@ -299,7 +299,7 @@ class RequestController extends Controller
 
                 // Tạo đơn hàng
                 $order = Order::create([
-                    'uuid'                   => \Str::uuid(),
+                    'uuid'                   => Order::generateOrderUuid(),
                     'request_id'             => $request->id,
                     'sender_id'              => $request->sender_id,
                     'customer_id'            => $request->flight->customer_id,

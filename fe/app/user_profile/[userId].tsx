@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import api from "@/api/api";
+import { getAvatarUrl } from "@/constants/avatars";
 
 interface UserProfile {
     id: number;
@@ -69,7 +70,7 @@ export default function UserProfileScreen() {
             // Nếu có API endpoint để lấy user profile, sử dụng nó
             // Hiện tại có thể dùng thông tin từ order data đã có
             // Hoặc tạo API endpoint mới: GET /api/users/{id}
-            
+
             // Tạm thời sử dụng thông tin từ params nếu có
             if (userName) {
                 setProfile({
@@ -90,7 +91,7 @@ export default function UserProfileScreen() {
             console.error("Error fetching user profile:", err);
             setError(
                 err.response?.data?.message ||
-                    "Không thể tải thông tin người dùng. Vui lòng thử lại."
+                "Không thể tải thông tin người dùng. Vui lòng thử lại."
             );
         } finally {
             setLoading(false);
@@ -223,8 +224,8 @@ export default function UserProfileScreen() {
                                     {isSender
                                         ? "Người gửi"
                                         : isCustomer
-                                        ? "Hành khách"
-                                        : profile.role}
+                                            ? "Hành khách"
+                                            : profile.role}
                                 </Text>
                             </View>
                         )}
@@ -283,24 +284,24 @@ export default function UserProfileScreen() {
                         {/* Số đơn hàng */}
                         {(profile.total_orders !== undefined ||
                             profile.completed_orders !== undefined) && (
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center gap-3">
-                                    <MaterialIcons
-                                        name="shopping-bag"
-                                        size={24}
-                                        color="#2563EB"
-                                    />
-                                    <Text className="font-semibold text-text-primary-light dark:text-text-primary-dark">
-                                        {isSender
-                                            ? "Số đơn đã gửi"
-                                            : "Số đơn đã nhận"}
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center gap-3">
+                                        <MaterialIcons
+                                            name="shopping-bag"
+                                            size={24}
+                                            color="#2563EB"
+                                        />
+                                        <Text className="font-semibold text-text-primary-light dark:text-text-primary-dark">
+                                            {isSender
+                                                ? "Số đơn đã gửi"
+                                                : "Số đơn đã nhận"}
+                                        </Text>
+                                    </View>
+                                    <Text className="text-lg font-bold text-primary">
+                                        {profile.total_orders || profile.completed_orders || 0}
                                     </Text>
                                 </View>
-                                <Text className="text-lg font-bold text-primary">
-                                    {profile.total_orders || profile.completed_orders || 0}
-                                </Text>
-                            </View>
-                        )}
+                            )}
 
                         {profile.completed_orders !== undefined &&
                             profile.total_orders !== undefined &&
@@ -330,8 +331,8 @@ export default function UserProfileScreen() {
                             <>
                                 {(profile.total_orders !== undefined ||
                                     profile.completed_orders !== undefined) && (
-                                    <View className="h-px bg-border-light dark:bg-border-dark" />
-                                )}
+                                        <View className="h-px bg-border-light dark:bg-border-dark" />
+                                    )}
                                 <View className="flex-row items-center justify-between">
                                     <View className="flex-row items-center gap-3">
                                         <MaterialIcons

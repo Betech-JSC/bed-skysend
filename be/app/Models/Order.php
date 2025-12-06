@@ -177,6 +177,44 @@ class Order extends Model
     // ==================================================================
 
     /**
+     * Generate UUID đơn hàng với format: SKY-XXXXX
+     * Format: SKY- + 5 ký tự ngẫu nhiên (chữ cái A-Z và số 0-9)
+     * Ví dụ: SKY-A1B2C, SKY-123AB, SKY-XY9Z1
+     */
+    public static function generateOrderUuid(): string
+    {
+        $maxAttempts = 10; // Tối đa 10 lần thử để tránh vòng lặp vô hạn
+        $attempt = 0;
+
+        // Ký tự cho phép: A-Z và 0-9
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+        do {
+            // Tạo 5 ký tự ngẫu nhiên
+            $randomCode = '';
+            for ($i = 0; $i < 5; $i++) {
+                $randomCode .= $characters[rand(0, strlen($characters) - 1)];
+            }
+            
+            $orderUuid = 'SKY-' . $randomCode;
+            $attempt++;
+            
+            // Kiểm tra xem uuid đã tồn tại chưa
+            $exists = static::where('uuid', $orderUuid)->exists();
+            
+            if (!$exists) {
+                return $orderUuid;
+            }
+            
+        } while ($attempt < $maxAttempts);
+        
+        // Nếu sau 10 lần thử vẫn trùng, thêm timestamp để đảm bảo unique
+        $timestamp = substr((string) time(), -3); // 3 số cuối của timestamp
+        $randomChars = strtoupper(Str::random(2));
+        return 'SKY-' . $timestamp . $randomChars;
+    }
+
+    /**
      * Generate tracking code với format: SK + random số và string
      * Format: SK + 3 số ngẫu nhiên + 3 ký tự chữ ngẫu nhiên
      * Ví dụ: SK123ABC, SK456XYZ
@@ -246,5 +284,21 @@ class Order extends Model
     {
         $this->escrow_status = 'refunded';
         return $this->save();
+    }
+
+    // ==================================================================
+    // BOOT (tự động tạo UUID nếu chưa có)
+    // ==================================================================
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($order) {
+            // Tự động generate UUID nếu chưa có
+            if (empty($order->uuid)) {
+                $order->uuid = static::generateOrderUuid();
+            }
+        });
     }
 }

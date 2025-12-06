@@ -17,6 +17,8 @@ import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router'; // ĐÃ THÊM useFocusEffect
 import api from '@/api/api';
+import { getAvatarUrl } from '@/constants/avatars';
+import { getAirlineLogo } from '@/constants/airlines';
 
 interface FlightDetail {
   id: number;
@@ -264,7 +266,11 @@ export default function FlightDetailScreen() {
           <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
             <View className="flex-row items-center justify-between pb-4">
               <View className="flex-row items-center gap-3">
-                <Image source={{ uri: 'https://i.imgur.com/6k2twpL.png' }} className="h-10 w-10" resizeMode="contain" />
+                <Image 
+                  source={{ uri: getAirlineLogo(flightDetail.airline) }} 
+                  className="h-10 w-10" 
+                  resizeMode="contain" 
+                />
                 <View>
                   <Text className="text-base font-bold text-text-dark-gray dark:text-white">{flightDetail.airline}</Text>
                   <Text className="text-sm text-gray-500">{flightDetail.flight_number}</Text>
@@ -371,7 +377,7 @@ export default function FlightDetailScreen() {
                         <View className="flex-row items-center justify-between mb-3">
                           <View className="flex-row items-center gap-3 flex-1">
                             <Image
-                              source={{ uri: sender.avatar || 'https://via.placeholder.com/40' }}
+                              source={{ uri: getAvatarUrl(sender.avatar) }}
                               className="w-10 h-10 rounded-full"
                             />
                             <View className="flex-1">

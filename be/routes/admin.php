@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\FileController;
+use App\Http\Controllers\Admin\AirlineController;
+use App\Http\Controllers\Admin\AirportController;
 
 // Admin Auth Routes (public)
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -117,6 +119,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [FileController::class, 'index'])->name('index');
             Route::get('/{id}/download', [FileController::class, 'download'])->name('download');
             Route::delete('/{id}', [FileController::class, 'destroy'])->name('destroy');
+        });
+
+        // Airlines Management
+        Route::prefix('airlines')->name('airlines.')->group(function () {
+            Route::get('/', [AirlineController::class, 'index'])->name('index');
+            Route::get('/create', [AirlineController::class, 'create'])->name('create');
+            Route::post('/', [AirlineController::class, 'store'])->name('store');
+            Route::get('/{id}', [AirlineController::class, 'show'])->name('show');
+            Route::get('/{id}/edit', [AirlineController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [AirlineController::class, 'update'])->name('update');
+            Route::delete('/{id}', [AirlineController::class, 'destroy'])->name('destroy');
+        });
+
+        // Airports Management
+        Route::prefix('airports')->name('airports.')->group(function () {
+            Route::get('/', [AirportController::class, 'index'])->name('index');
+            Route::get('/create', [AirportController::class, 'create'])->name('create');
+            Route::post('/', [AirportController::class, 'store'])->name('store');
+            Route::get('/{id}', [AirportController::class, 'show'])->name('show');
+            Route::get('/{id}/edit', [AirportController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [AirportController::class, 'update'])->name('update');
+            Route::delete('/{id}', [AirportController::class, 'destroy'])->name('destroy');
         });
     });
 });

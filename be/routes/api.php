@@ -17,6 +17,8 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AdminFlightController;
 use App\Http\Controllers\Api\AdminOrderController;
+use App\Http\Controllers\Api\AdminAirlineController;
+use App\Http\Controllers\Api\AdminAirportController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -186,5 +188,23 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
         Route::get('/{id}', [AdminOrderController::class, 'show']); // Chi tiết order
         Route::put('/{id}/status', [AdminOrderController::class, 'updateStatus']); // Cập nhật trạng thái
         Route::post('/{id}/cancel', [AdminOrderController::class, 'cancel']); // Hủy đơn hàng
+    });
+
+    // ========== QUẢN LÝ HÃNG HÀNG KHÔNG ==========
+    Route::prefix('airlines')->group(function () {
+        Route::get('/', [AdminAirlineController::class, 'index']); // Danh sách airlines
+        Route::post('/', [AdminAirlineController::class, 'store']); // Tạo mới airline
+        Route::get('/{id}', [AdminAirlineController::class, 'show']); // Chi tiết airline
+        Route::put('/{id}', [AdminAirlineController::class, 'update']); // Cập nhật airline
+        Route::delete('/{id}', [AdminAirlineController::class, 'destroy']); // Xóa airline
+    });
+
+    // ========== QUẢN LÝ SÂN BAY ==========
+    Route::prefix('airports')->group(function () {
+        Route::get('/', [AdminAirportController::class, 'index']); // Danh sách airports
+        Route::post('/', [AdminAirportController::class, 'store']); // Tạo mới airport
+        Route::get('/{id}', [AdminAirportController::class, 'show']); // Chi tiết airport
+        Route::put('/{id}', [AdminAirportController::class, 'update']); // Cập nhật airport
+        Route::delete('/{id}', [AdminAirportController::class, 'destroy']); // Xóa airport
     });
 });

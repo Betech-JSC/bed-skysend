@@ -23,6 +23,7 @@ import ItemTypeSelect from '../../components/ItemTypeSelect';
 import FlightNumberSelect from '../../components/FlightNumberSelect';
 import UserProfileInfo from '../../components/UserProfileInfo';
 import api from '@/api/api';
+import { getAvatarUrl } from '@/constants/avatars';
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -324,7 +325,7 @@ export default function HomeScreen() {
                             renderItem={({ item }) => (
                                 <View className="w-72 mr-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
                                     <UserProfileInfo
-                                        avatar={item.avatar || item.sender?.avatar}
+                                        avatar={getAvatarUrl(item.avatar || item.sender?.avatar)}
                                         name={item.name || item.sender?.name}
                                         subtitle={item.item || item.item_type}
                                         size="medium"
@@ -368,7 +369,7 @@ export default function HomeScreen() {
                             {matchingRequestsAPI.map((req: any, i: number) => (
                                 <View key={req.id || i} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
                                     <UserProfileInfo
-                                        avatar={req.sender?.avatar || req.avatar || priorityRequestsDemo[0]?.avatar}
+                                        avatar={getAvatarUrl(req.sender?.avatar || req.avatar || priorityRequestsDemo[0]?.avatar)}
                                         name={req.sender?.name || req.name}
                                         subtitle={req.item_type || req.item}
                                         size="small"

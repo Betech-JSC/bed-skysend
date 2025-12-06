@@ -20,6 +20,7 @@ import { RootState } from "@/store";
 import { setUser } from "@/reducers/userSlice";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import { DEMO_AVATAR, getAvatarUrl } from "@/constants/avatars";
 
 type TabType = 'profile' | 'kyc';
 
@@ -408,8 +409,8 @@ export default function ProfileUpdate() {
                                         avatar
                                             ? { uri: avatar }
                                             : (user as any)?.avatar
-                                                ? { uri: (user as any).avatar }
-                                                : require("@assets/images/avatar.webp")
+                                                ? { uri: getAvatarUrl((user as any).avatar) }
+                                                : { uri: DEMO_AVATAR }
                                     }
                                     className="w-24 h-24 rounded-full"
                                 />
