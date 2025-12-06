@@ -569,7 +569,7 @@ class RequestController extends Controller
 
         $request = ModelsRequest::with([
             'sender',
-            'flight',
+            'flight.customer',
             'order'
         ])
             ->where('id', $id)
@@ -617,6 +617,7 @@ class RequestController extends Controller
 
             // Thông tin chuyến bay
             'flight' => [
+                'id'            => $request->flight->id,
                 'uuid'          => $request->flight->uuid,
                 'flight_number' => $request->flight->flight_number,
                 'airline'       => $request->flight->airline,
@@ -624,6 +625,14 @@ class RequestController extends Controller
                 'to_airport'    => $request->flight->to_airport,
                 'flight_date'   => $request->flight->flight_date->format('d/m/Y'),
                 'available_weight' => round($request->flight->max_weight - $request->flight->booked_weight, 2),
+                'customer'      => $request->flight->customer ? [
+                    'id'        => $request->flight->customer->id,
+                    'name'      => $request->flight->customer->name,
+                    'email'     => $request->flight->customer->email,
+                    'phone'     => $request->flight->customer->phone,
+                    'avatar'    => $request->flight->customer->avatar,
+                    'kyc_status' => $request->flight->customer->kyc_status,
+                ] : null,
             ],
 
             // Nội dung yêu cầu

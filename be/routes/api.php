@@ -50,6 +50,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
 
+    // Public user profile (lấy thông tin user khác)
+    Route::get('users/{id}', [UserController::class, 'showById']);
+
     // KYC Verification
     Route::post('kyc/submit', [\App\Http\Controllers\Api\KycController::class, 'submit']);
     Route::get('kyc/status', [\App\Http\Controllers\Api\KycController::class, 'status']);

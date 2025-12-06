@@ -410,9 +410,6 @@ export default function ChatListScreen() {
                     <Text className="text-2xl font-bold text-[#111318] dark:text-white">
                         Trò chuyện
                     </Text>
-                    <TouchableOpacity>
-                        <MaterialIcons name="add-circle" size={36} color="#2563EB" />
-                    </TouchableOpacity>
                 </View>
 
                 {/* Search Bar */}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
@@ -31,6 +32,50 @@ class UserController extends Controller
     public function show(Request $request)
     {
         return response()->json($request->user());
+    }
+
+    /**
+     * Lấy thông tin user theo ID (public profile)
+     */
+    public function showById($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy người dùng'
+            ], 404);
+        }
+
+        // Thống kê đơn hàng
+        $ordersAsSender = Order::where('sender_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+        $ordersAsCustomer = Order::where('customer_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+        $totalOrders = Order::where(function ($query) use ($user) {
+            $query->where('sender_id', $user->id)
+                ->orWhere('customer_id', $user->id);
+        })->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar' => $user->avatar,
+                'role' => $user->role,
+                'kyc_status' => $user->kyc_status,
+                'verified' => $user->kyc_status === 'verified',
+                'rating' => 5.0, // TODO: Tính toán rating thực tế từ reviews
+                'total_orders' => $totalOrders,
+                'completed_orders' => $ordersAsSender + $ordersAsCustomer,
+            ],
+        ]);
     }
 
     public function update(Request $request)
@@ -61,12 +106,12 @@ class UserController extends Controller
         // Lưu avatar nếu có
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            
+
             // Tạo tên file unique
             $extension = $file->getClientOriginalExtension();
             $fileName = 'avatar_' . $user->id . '_' . time() . '.' . $extension;
             $path = $file->storeAs('avatars', $fileName, 'public');
-            
+
             $validatedData['avatar'] = $path;
 
             // Xóa avatar cũ nếu có
