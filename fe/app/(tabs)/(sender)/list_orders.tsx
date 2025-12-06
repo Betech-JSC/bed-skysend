@@ -151,26 +151,7 @@ function ListOrder() {
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "Danh sách đơn hàng",
-                    headerShown: true,
-                }}
-            />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-                {/* Top App Bar */}
-                <View className="h-16 flex-row items-center justify-between px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
-                    <TouchableOpacity>
-                        <MaterialIcons name="arrow-back-ios-new" size={24} color="#1F2937" className="dark:text-white" />
-                    </TouchableOpacity>
-                    <Text className="text-lg font-bold text-text-primary dark:text-white absolute left-1/2 -translate-x-1/2">
-                        Đơn hàng của tôi
-                    </Text>
-                    <TouchableOpacity>
-                        <MaterialIcons name="search" size={26} color="#1F2937" className="dark:text-white" />
-                    </TouchableOpacity>
-                </View>
-
                 {/* Main Tabs: Orders vs Requests */}
                 <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <View className="flex-row mx-4">

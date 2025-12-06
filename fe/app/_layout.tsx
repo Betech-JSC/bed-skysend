@@ -17,7 +17,7 @@ function AppContent() {
     <>
       <Stack
         screenOptions={{
-          headerShown: true,
+          headerShown: false,
           headerStyle: {
             backgroundColor: '#FFFFFF',
           },

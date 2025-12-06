@@ -161,12 +161,6 @@ function ListOrdersCustomer() {
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: "Danh sách đơn hàng",
-                    headerShown: false,
-                }}
-            />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
                 {/* Top App Bar */}
                 <View className="h-16 flex-row items-center justify-between px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">

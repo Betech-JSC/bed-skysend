@@ -109,106 +109,76 @@ export default function SearchFlightModal({
             contentContainerStyle={{ paddingBottom: 20 }}
           >
             <View className="py-4 gap-4">
-                {/* Thành phố đi */}
-                <View>
-                  <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                    Thành phố đi
-                  </Text>
-                  <CitySelectModal
-                    placeholder="Ví dụ: Hà Nội"
-                    iconName="flight-takeoff"
-                    value={departureCity.value}
-                    onValueChange={(value, label) => setDepartureCity({ value, label })}
+              {/* Thành phố đi */}
+              <View>
+                <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
+                  Thành phố đi
+                </Text>
+                <CitySelectModal
+                  placeholder="Ví dụ: Hà Nội"
+                  iconName="flight-takeoff"
+                  value={departureCity.value}
+                  onValueChange={(value, label) => setDepartureCity({ value, label })}
+                />
+              </View>
+
+              {/* Thành phố đến */}
+              <View>
+                <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
+                  Thành phố đến
+                </Text>
+                <CitySelectModal
+                  placeholder="Ví dụ: TP. HCM"
+                  iconName="flight-land"
+                  value={arrivalCity.value}
+                  onValueChange={(value, label) => setArrivalCity({ value, label })}
+                />
+              </View>
+
+              {/* Ngày gửi */}
+              <View>
+                <DatePickerInput
+                  label="Ngày gửi"
+                  placeholder="Chọn ngày"
+                  value={date}
+                  onValueChange={setDate}
+                  minimumDate={new Date()}
+                />
+              </View>
+
+              {/* Loại tài liệu */}
+              <View>
+                <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
+                  Loại tài liệu
+                </Text>
+                <ItemTypeSelect
+                  placeholder="Chọn loại tài liệu"
+                  value={itemType}
+                  onValueChange={(value, label) => setItemType(value)}
+                />
+              </View>
+
+              {/* Giá trị ước tính */}
+              <View>
+                <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
+                  Giá trị ước tính tài liệu (VND)
+                </Text>
+                <View className="relative">
+                  <MaterialIcons
+                    name="payments"
+                    size={20}
+                    color="#6b7280"
+                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                  />
+                  <TextInput
+                    placeholder="Ví dụ: 5,000,000"
+                    keyboardType="numeric"
+                    value={itemValue}
+                    onChangeText={setItemValue}
+                    className="text-text-primary h-14 rounded-lg border border-gray-200 bg-background-light pl-10 pr-4 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   />
                 </View>
-
-                {/* Thành phố đến */}
-                <View>
-                  <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                    Thành phố đến
-                  </Text>
-                  <CitySelectModal
-                    placeholder="Ví dụ: TP. HCM"
-                    iconName="flight-land"
-                    value={arrivalCity.value}
-                    onValueChange={(value, label) => setArrivalCity({ value, label })}
-                  />
-                </View>
-
-                {/* Ngày gửi */}
-                <View>
-                  <DatePickerInput
-                    label="Ngày gửi"
-                    placeholder="Chọn ngày"
-                    value={date}
-                    onValueChange={setDate}
-                    minimumDate={new Date()}
-                  />
-                </View>
-
-                {/* Khung giờ (Optional) */}
-                <View>
-                  <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                    Khung giờ (Tùy chọn)
-                  </Text>
-                  <View className="flex-row gap-2">
-                    {['Sáng', 'Chiều', 'Tối'].map((slot) => (
-                      <TouchableOpacity
-                        key={slot}
-                        onPress={() => setTimeSlot(timeSlot === slot ? '' : slot)}
-                        className={`flex-1 h-12 items-center justify-center rounded-lg border ${
-                          timeSlot === slot
-                            ? 'bg-primary border-primary'
-                            : 'border-gray-200 dark:border-gray-600 bg-background-light dark:bg-gray-700'
-                        }`}
-                      >
-                        <Text
-                          className={`text-sm font-medium ${
-                            timeSlot === slot
-                              ? 'text-white'
-                              : 'text-text-primary dark:text-white'
-                          }`}
-                        >
-                          {slot}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                {/* Loại tài liệu */}
-                <View>
-                  <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                    Loại tài liệu
-                  </Text>
-                  <ItemTypeSelect
-                    placeholder="Chọn loại tài liệu"
-                    value={itemType}
-                    onValueChange={(value, label) => setItemType(value)}
-                  />
-                </View>
-
-                {/* Giá trị ước tính */}
-                <View>
-                  <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                    Giá trị ước tính tài liệu (VND)
-                  </Text>
-                  <View className="relative">
-                    <MaterialIcons
-                      name="payments"
-                      size={20}
-                      color="#6b7280"
-                      style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                    />
-                    <TextInput
-                      placeholder="Ví dụ: 5,000,000"
-                      keyboardType="numeric"
-                      value={itemValue}
-                      onChangeText={setItemValue}
-                      className="text-text-primary h-14 rounded-lg border border-gray-200 bg-background-light pl-10 pr-4 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    />
-                  </View>
-                </View>
+              </View>
             </View>
           </ScrollView>
 
@@ -226,9 +196,8 @@ export default function SearchFlightModal({
               <TouchableOpacity
                 onPress={handleSearch}
                 disabled={searchLoading}
-                className={`flex-1 h-12 items-center justify-center rounded-lg ${
-                  searchLoading ? 'bg-gray-400' : 'bg-primary'
-                }`}
+                className={`flex-1 h-12 items-center justify-center rounded-lg ${searchLoading ? 'bg-gray-400' : 'bg-primary'
+                  }`}
               >
                 {searchLoading ? (
                   <ActivityIndicator color="#fff" />

@@ -5,8 +5,22 @@ import { clearUser } from "@/reducers/userSlice";
 import { router } from "expo-router";
 
 // Tạo instance axios
+// const api = axios.create({
+//     baseURL: "http://localhost:8000/api",
+//     headers: {
+//         "Content-Type": "application/json",
+//     },
+// });
+
+// const api = axios.create({
+//     baseURL: "http://192.168.1.90:8000/api", // dùng IP LAN thay vì localhost
+//     headers: {
+//         "Content-Type": "application/json",
+//     },
+// });
+
 const api = axios.create({
-    baseURL: "https://skysend.betech-digital.com/api",
+    baseURL: "https://skysend.betech-digital.com/api", // dùng IP LAN thay vì localhost
     headers: {
         "Content-Type": "application/json",
     },
