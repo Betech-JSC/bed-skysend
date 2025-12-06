@@ -116,6 +116,24 @@ class FirebaseService
         return $this->push($notificationPath, $data);
     }
 
+    /**
+     * Update flight tracking data in Firebase Realtime Database
+     * 
+     * @param int $flightId
+     * @param array $trackingData
+     * @return bool
+     */
+    public function updateFlightTracking(int $flightId, array $trackingData): bool
+    {
+        try {
+            $path = "flight_tracking/{$flightId}";
+            return $this->set($path, $trackingData);
+        } catch (\Exception $e) {
+            Log::error('Firebase updateFlightTracking error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function pushOrder(array $order)
     {
         return $this->set("orders/{$order['id']}", $order);
