@@ -79,6 +79,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Xác thực chuyến bay
     Route::post('/flights/{id}/verify', [FlightController::class, 'verify']);
 
+    // Flight tracking
+    Route::get('flights/{id}/tracking', [FlightController::class, 'getTracking']);
+    Route::post('flights/{id}/update-tracking-status', [FlightController::class, 'updateTrackingStatus']);
+
     // Gửi yêu cầu riêng cho 1 hành khách (Private Request)
     Route::post('private-requests/sent', [RequestController::class, 'sent']);
 
