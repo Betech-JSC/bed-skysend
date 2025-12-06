@@ -28,6 +28,15 @@ class Flight extends Model
         'max_weight',
         'booked_weight',
         'note',
+        // Tracking fields
+        'current_latitude',
+        'current_longitude',
+        'current_altitude',
+        'tracking_status',
+        'departed_at',
+        'landed_at',
+        'estimated_arrival_at',
+        'last_tracking_update_at',
     ];
 
     protected $casts = [
@@ -36,6 +45,13 @@ class Flight extends Model
         'verified'    => 'boolean',
         'max_weight'  => 'decimal:2',
         'booked_weight' => 'decimal:2',
+        // Tracking casts
+        'current_latitude' => 'decimal:8',
+        'current_longitude' => 'decimal:8',
+        'departed_at' => 'datetime',
+        'landed_at' => 'datetime',
+        'estimated_arrival_at' => 'datetime',
+        'last_tracking_update_at' => 'datetime',
     ];
 
     protected $appends = [
