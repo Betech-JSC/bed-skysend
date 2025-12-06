@@ -1,4 +1,4 @@
-// app/login.tsx  (hoặc app/(auth)/login.tsx)
+// Login Screen - Professional UI/UX
 import React, { useState } from "react";
 import {
   View,
@@ -9,59 +9,85 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import api from "@/api/api";
-import { useLocalSearchParams, router } from "expo-router";
+import { useRouter } from "expo-router";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/reducers/userSlice";
+import { MaterialIcons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { getDatabase, ref, set } from "firebase/database";
 import { app } from "@/firebaseConfig";
 import SocialMedia from "./components/SocialMedia";
 
-export default function Login() {
+export default function LoginScreen() {
   const dispatch = useDispatch();
-  const { role } = useLocalSearchParams<{ role?: string }>();
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
-    email: role === "sender" ? "sender@gmail.com" : "customer@gmail.com",
-    password: role === "sender" ? "sender@gmail.com" : "customer@gmail.com",
+    email: "",
+    password: "",
   });
 
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleInputChange = (name: "email" | "password", value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Vui lòng nhập email";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Vui lòng nhập mật khẩu";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async () => {
-    const { email, password } = formData;
-
-    if (!email || !password) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ email và mật khẩu");
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await api.post("login", { email, password });
+      const response = await api.post("login", {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
 
-      if (response.status === 200) {
-        // Response structure: { status: 'success', data: { user: { ...user, token: "..." } } }
-        const userData = response.data.data.user || response.data.data;
-        const token = userData.token;
+      if (response.status === 200 || response.data?.success) {
+        const userData = response.data?.data?.user || response.data?.data;
+        const token = userData?.token;
+
+        if (!token) {
+          throw new Error("Không nhận được token từ server");
+        }
+
         const user = { ...userData };
-        delete user.token; // Remove token from user object để lưu riêng
+        delete user.token;
 
-        // Gán role từ param (sender hoặc customer)
+        // Lấy role từ user data hoặc mặc định là customer
+        const userRole = user.role || "customer";
         const userWithRole = {
           ...user,
-          role: role === "sender" ? "sender" : "customer", // ép kiểu rõ ràng
+          role: userRole,
+          token: token,
         };
 
-        // Lấy Expo Push Token (chỉ trên thiết bị thật)
+        // Lấy Expo Push Token
         let expoPushToken = "";
         try {
           if (Constants.isDevice) {
@@ -69,130 +95,201 @@ export default function Login() {
             if (status === "granted") {
               expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
             }
-          } else {
-            // Emulator thì dùng token giả hoặc bỏ qua
-            expoPushToken = "ExponentPushToken[emulator]";
           }
         } catch (error) {
           console.warn("Không lấy được push token:", error);
         }
 
-        // Lưu token lên Firebase và database nếu có
+        // Lưu token lên Firebase và database
         if (expoPushToken && user.id) {
           const db = getDatabase(app);
           await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
 
-          // Lưu token vào Laravel database
           try {
-            await api.post('/users/save-token', {
+            await api.post("/users/save-token", {
               user_id: user.id,
               token: expoPushToken,
             });
           } catch (error) {
-            console.warn('Không thể lưu push token vào database:', error);
+            console.warn("Không thể lưu push token vào database:", error);
           }
         }
 
-        // Lưu user vào Redux (bao gồm token)
-        dispatch(setUser({
-          ...userWithRole,
-          token: token, // Token từ API response
-        }));
+        // Lưu user vào Redux
+        dispatch(setUser(userWithRole));
 
-        // QUAN TRỌNG: Redirect đúng theo role + cấu trúc folder mới
+        // Redirect theo role
         if (userWithRole.role === "sender") {
           router.replace("/(tabs)/(sender)/home");
         } else {
           router.replace("/(tabs)/(customer)/home_customer");
         }
       } else {
-        Alert.alert("Đăng nhập thất bại", response.data.message || "Sai email hoặc mật khẩu");
+        throw new Error(response.data?.message || "Đăng nhập thất bại");
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      Alert.alert(
-        "Lỗi kết nối",
-        error.response?.data?.message || "Không thể kết nối đến server"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.";
+
+      // Xử lý validation errors từ backend
+      if (error.response?.data?.errors) {
+        const backendErrors = error.response.data.errors;
+        const newErrors: { [key: string]: string } = {};
+        Object.keys(backendErrors).forEach((key) => {
+          newErrors[key] = Array.isArray(backendErrors[key])
+            ? backendErrors[key][0]
+            : backendErrors[key];
+        });
+        setErrors(newErrors);
+      } else {
+        Alert.alert("Lỗi đăng nhập", errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
-    >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        <View className="flex-1 justify-center px-5 py-8">
-          {/* Logo hoặc tiêu đề */}
-          <Text className="text-3xl font-bold text-center text-primary mb-2">SkySend</Text>
-          <Text className="text-lg text-center text-gray-600 mb-10">
-            Đăng nhập {role === "sender" ? "người gửi" : "khách hàng"}
-          </Text>
-
-          {/* Form */}
-          <View className="gap-y-6">
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Email</Text>
-              <TextInput
-                className="border border-gray-300 rounded-2xl px-4 py-4 text-base"
-                placeholder="nhập email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={formData.email}
-                onChangeText={(v) => handleInputChange("email", v)}
-                editable={!loading}
-              />
-            </View>
-
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Mật khẩu</Text>
-              <TextInput
-                className="border border-gray-300 rounded-2xl px-4 py-4 text-base"
-                placeholder="nhập mật khẩu"
-                secureTextEntry
-                value={formData.password}
-                onChangeText={(v) => handleInputChange("password", v)}
-                editable={!loading}
-              />
-            </View>
-
-            <TouchableOpacity
-              onPress={handleLogin}
-              disabled={loading}
-              className={`mt-6 py-4 rounded-2xl ${loading ? "bg-blue-400" : "bg-primary"
-                }`}
-            >
-              <Text className="text-white text-center text-lg font-bold">
-                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View className="px-6 pt-6 pb-4">
+            <View className="items-center mb-8">
+              <View className="h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4">
+                <MaterialIcons name="flight" size={40} color="#2563EB" />
+              </View>
+              <Text className="text-3xl font-bold text-primary mb-2">SkySend</Text>
+              <Text className="text-base text-center text-text-secondary dark:text-gray-400">
+                Đăng nhập để tiếp tục
               </Text>
-            </TouchableOpacity>
-
-            {/* Social Login */}
-            <View className="mt-6">
-              <SocialMedia />
-            </View>
-
-            {/* Nút chuyển role (test nhanh) */}
-            <View className="flex-row justify-center gap-4 mt-8">
-              <TouchableOpacity
-                onPress={() => router.push("/login?role=sender")}
-                className="px-4 py-2 bg-gray-200 rounded-lg"
-              >
-                <Text>Test Sender</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push("/login?role=customer")}
-                className="px-4 py-2 bg-gray-200 rounded-lg"
-              >
-                <Text>Test Customer</Text>
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          {/* Form */}
+          <View className="flex-1 px-6 py-4">
+            <View className="gap-5">
+              {/* Email */}
+              <View>
+                <Text className="text-sm font-semibold text-text-primary dark:text-white mb-2">
+                  Email <Text className="text-red-500">*</Text>
+                </Text>
+                <TextInput
+                  className={`border rounded-2xl px-4 py-4 text-base bg-white dark:bg-slate-800 text-text-primary dark:text-white ${errors.email
+                    ? "border-red-500"
+                    : "border-gray-300 dark:border-gray-600"
+                    }`}
+                  placeholder="example@email.com"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={formData.email}
+                  onChangeText={(value) => {
+                    setFormData({ ...formData, email: value });
+                    if (errors.email) setErrors({ ...errors, email: "" });
+                  }}
+                  editable={!loading}
+                />
+                {errors.email && (
+                  <Text className="text-red-500 text-xs mt-1">{errors.email}</Text>
+                )}
+              </View>
+
+              {/* Password */}
+              <View>
+                <Text className="text-sm font-semibold text-text-primary dark:text-white mb-2">
+                  Mật khẩu <Text className="text-red-500">*</Text>
+                </Text>
+                <View className="relative">
+                  <TextInput
+                    className={`border rounded-2xl px-4 py-4 pr-12 text-base bg-white dark:bg-slate-800 text-text-primary dark:text-white ${errors.password
+                      ? "border-red-500"
+                      : "border-gray-300 dark:border-gray-600"
+                      }`}
+                    placeholder="Nhập mật khẩu"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={!showPassword}
+                    value={formData.password}
+                    onChangeText={(value) => {
+                      setFormData({ ...formData, password: value });
+                      if (errors.password) setErrors({ ...errors, password: "" });
+                    }}
+                    editable={!loading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-4"
+                  >
+                    <MaterialIcons
+                      name={showPassword ? "visibility" : "visibility-off"}
+                      size={24}
+                      color="#6B7280"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password && (
+                  <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>
+                )}
+              </View>
+
+              {/* Forgot Password */}
+              <TouchableOpacity
+                onPress={() => router.push("/forgot-password")}
+                className="self-end"
+              >
+                <Text className="text-primary text-sm font-medium">
+                  Quên mật khẩu?
+                </Text>
+              </TouchableOpacity>
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                onPress={handleLogin}
+                disabled={loading}
+                className={`mt-2 py-4 rounded-2xl ${loading ? "bg-gray-400" : "bg-primary"
+                  } shadow-lg`}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text className="text-white text-center text-lg font-bold">
+                    Đăng nhập
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View className="flex-row items-center gap-4 my-4">
+                <View className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+                <Text className="text-text-secondary dark:text-gray-400 text-sm">Hoặc</Text>
+                <View className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+              </View>
+
+
+              {/* Register Link */}
+              <View className="flex-row justify-center items-center gap-2 mt-4">
+                <Text className="text-text-secondary dark:text-gray-400">
+                  Chưa có tài khoản?
+                </Text>
+                <TouchableOpacity onPress={() => router.push("/role-selection")}>
+                  <Text className="text-primary font-semibold">Đăng ký ngay</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

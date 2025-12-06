@@ -20,7 +20,9 @@ class AuthController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
+                'phone' => 'nullable|string|max:20',
                 'password' => 'required|string|min:8',
+                'role' => 'nullable|string|in:sender,customer',
             ]);
 
             if ($validator->fails()) {
@@ -30,7 +32,9 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
+                'phone' => $request->phone,
                 'password' => Hash::make($request->password),
+                'role' => $request->role ?? 'customer', // Default to customer if not provided
             ]);
 
             $token = $user->createToken('MyApp')->plainTextToken;
@@ -194,6 +198,86 @@ class AuthController extends Controller
             return ApiResponse::error('Invalid access token.', 401);
         } catch (\Exception $e) {
             return ApiResponse::error('Authentication failed: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Send password reset link
+     */
+    public function forgotPassword(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|string|email|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::validationError($validator);
+            }
+
+            // Send password reset link
+            $status = \Illuminate\Support\Facades\Password::sendResetLink(
+                $request->only('email')
+            );
+
+            if ($status != \Illuminate\Support\Facades\Password::RESET_LINK_SENT) {
+                return ApiResponse::error(
+                    'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại email của bạn.',
+                    400
+                );
+            }
+
+            return ApiResponse::success(
+                null,
+                'Chúng tôi đã gửi link đặt lại mật khẩu đến email của bạn. Vui lòng kiểm tra hộp thư.'
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::error('Có lỗi xảy ra: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Reset password with token
+     */
+    public function resetPassword(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'token' => 'required|string',
+                'email' => 'required|string|email|max:255',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::validationError($validator);
+            }
+
+            // Reset password
+            $status = \Illuminate\Support\Facades\Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'),
+                function ($user) use ($request) {
+                    $user->forceFill([
+                        'password' => Hash::make($request->password),
+                        'remember_token' => Str::random(60),
+                    ])->save();
+
+                    event(new \Illuminate\Auth\Events\PasswordReset($user));
+                }
+            );
+
+            if ($status != \Illuminate\Support\Facades\Password::PASSWORD_RESET) {
+                return ApiResponse::error(
+                    'Token không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu link mới.',
+                    400
+                );
+            }
+
+            return ApiResponse::success(
+                null,
+                'Mật khẩu đã được đặt lại thành công. Bạn có thể đăng nhập với mật khẩu mới.'
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::error('Có lỗi xảy ra: ' . $e->getMessage(), 500);
         }
     }
 }

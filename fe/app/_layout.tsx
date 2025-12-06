@@ -15,7 +15,22 @@ function AppContent() {
 
   return (
     <>
-      <Stack />
+      <Stack
+        screenOptions={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+          },
+          headerTintColor: '#1F2937',
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 18,
+          },
+          headerBackTitleVisible: false,
+          headerShadowVisible: true,
+          animation: 'slide_from_right',
+        }}
+      />
       {isVisible && notification && (
         <HeadsUpNotification
           notification={notification}

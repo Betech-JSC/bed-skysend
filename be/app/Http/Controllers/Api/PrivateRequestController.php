@@ -38,7 +38,7 @@ class PrivateRequestController extends Controller
         }
 
         $privateReq = PrivateRequest::create([
-            'uuid'              => \Str::uuid(),
+            'uuid'              => PrivateRequest::generateRequestUuid(),
             'sender_id'         => auth()->id(),
             'customer_id'       => $flight->customer_id,
             'flight_id'         => $flight->id,

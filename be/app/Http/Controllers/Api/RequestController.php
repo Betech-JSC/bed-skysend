@@ -69,7 +69,7 @@ class RequestController extends Controller
         };
 
         $privateReq = ModelsRequest::create([
-            'uuid'             => \Str::uuid(),
+            'uuid'             => ModelsRequest::generateRequestUuid(),
             'sender_id'        => auth()->id(),
             'flight_id'        => $flight->id,
             'reward'           => $validated['reward'],
@@ -147,7 +147,7 @@ class RequestController extends Controller
 
         // Create the request
         $privateReq = ModelsRequest::create([
-            'uuid'             => \Str::uuid(),
+            'uuid'             => ModelsRequest::generateRequestUuid(),
             'sender_id'        => auth()->id(),
             'flight_id'        => $flight->id,
             'reward'           => $validated['reward'],

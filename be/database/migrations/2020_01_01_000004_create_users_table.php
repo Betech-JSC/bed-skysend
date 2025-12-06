@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->boolean('owner')->default(false);
             $table->string('image', 100)->nullable();
+            $table->string('phone', 100)->nullable();
 
             $table->string('role')->default('sender')
                 ->comment('User role: sender, customer');

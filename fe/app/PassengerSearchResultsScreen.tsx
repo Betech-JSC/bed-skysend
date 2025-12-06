@@ -12,7 +12,7 @@ import {
     Platform,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import api from "@/api/api";
 import UserProfileInfo from "./components/UserProfileInfo";
 import CitySelectModal from "./components/CitySelectModal";
@@ -206,330 +206,342 @@ export default function PassengerSearchResultsScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Top App Bar */}
-            <View className="bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm sticky top-0 z-10">
-                <View className="flex-row items-center justify-between px-4 pt-4 pb-2">
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <View className="w-12 h-12 rounded-full justify-center items-center">
-                            <MaterialIcons name="arrow-back" size={24} color="#1F2937" className="dark:text-white" />
-                        </View>
-                    </TouchableOpacity>
+        <>
+            <Stack.Screen
+                options={{
+                    title: 'Kết quả tìm kiếm',
+                    headerShown: true,
+                }}
+            />
+            <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
 
-                    <Text className="flex-1 text-center text-lg font-bold text-text-dark-gray dark:text-white -ml-12">
-                        Kết quả tìm kiếm
-                    </Text>
-
-                    <View className="w-12" />
-                </View>
-            </View>
-
-            {/* Filter Summary Bar */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                className="px-4 py-3"
-            >
-                <View className="flex-row gap-2">
-                    {filterDepartureCity.value && filterArrivalCity.value && (
-                        <View className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2">
-                            <MaterialIcons name="flight-takeoff" size={18} color="#2563EB" />
-                            <Text className="text-sm font-medium text-text-dark-gray dark:text-gray-200">
-                                {filterDepartureCity.value} → {filterArrivalCity.value}
-                            </Text>
-                        </View>
-                    )}
-                    {filterDate && (
-                        <View className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2">
-                            <MaterialIcons name="calendar-month" size={18} color="#2563EB" />
-                            <Text className="text-sm font-medium text-text-dark-gray dark:text-gray-200">
-                                {formatDate(filterDate)}
-                            </Text>
-                        </View>
-                    )}
-                    {filterTimeSlot && (
-                        <View className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2">
-                            <MaterialIcons name="schedule" size={18} color="#2563EB" />
-                            <Text className="text-sm font-medium text-text-dark-gray dark:text-gray-200">
-                                {filterTimeSlot}
-                            </Text>
-                        </View>
-                    )}
-                    {filterItemType && (
-                        <View className="flex-row items-center h-10 rounded-full bg-white dark:bg-slate-800 px-4 shadow-sm gap-2">
-                            <MaterialIcons name="category" size={18} color="#2563EB" />
-                            <Text className="text-sm font-medium text-text-dark-gray dark:text-gray-200">
-                                {filterItemType}
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* Nút filter */}
-                    <TouchableOpacity
-                        onPress={() => setFilterModalOpen(true)}
-                        className="ml-auto w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/30 justify-center items-center shadow-sm">
-                        <MaterialIcons name="filter-list" size={22} color="#2563EB" />
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-
-            {/* Danh sách hành khách */}
-            <ScrollView className="px-4 mt-4">
-                {loading ? (
-                    <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="#2563EB" />
-                        <Text className="mt-4 text-gray-500 dark:text-gray-400">
-                            Đang tải kết quả...
-                        </Text>
-                    </View>
-                ) : error ? (
-                    <View className="py-20 items-center">
-                        <MaterialIcons name="error-outline" size={48} color="#EF4444" />
-                        <Text className="mt-4 text-gray-600 dark:text-gray-400 text-center">
-                            {error}
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => fetchSearchResults()}
-                            className="mt-4 bg-primary px-6 py-3 rounded-lg">
-                            <Text className="text-white font-bold">Thử lại</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : flights.length === 0 ? (
-                    <View className="py-20 items-center">
-                        <MaterialIcons name="flight" size={48} color="#9CA3AF" />
-                        <Text className="mt-4 text-gray-600 dark:text-gray-400 text-center">
-                            Không tìm thấy hành khách phù hợp
-                        </Text>
-                    </View>
-                ) : (
-                    <View className="gap-4 pb-6">
-                        {flights.map((flight: any, index: number) => {
-                            const customer = flight.customer || {};
-                            const availableWeight = flight.available_weight || 0;
-                            const flightNumber = flight.flight_number || '';
-                            const route = flight.from_airport && flight.to_airport
-                                ? `${flight.from_airport} → ${flight.to_airport}`
-                                : '';
-
-                            return (
-                                <View
-                                    key={flight.id || flight.uuid || index}
-                                    className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm"
-                                >
-                                    {/* Header: Avatar + tên + rating */}
-                                    <View className="flex-row items-center gap-3">
-                                        <UserProfileInfo
-                                            avatar={customer.avatar}
-                                            name={customer.name || 'Người dùng'}
-                                            size="large"
-                                            showVerified={true}
-                                        />
-                                        <View className="flex-row items-center gap-0.5 ml-2">
-                                            <MaterialIcons name="star" size={16} color="#F97316" />
-                                            <Text className="text-sm font-semibold text-secondary">
-                                                5.0
-                                            </Text>
-                                        </View>
-                                    </View>
-
-                                    <View className="h-px bg-gray-200 dark:bg-slate-700 my-4" />
-
-                                    {/* Thông tin chi tiết */}
-                                    <View className="grid grid-cols-2 gap-4 mb-3">
-                                        <View>
-                                            <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                                Chuyến bay
-                                            </Text>
-                                            <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
-                                                {flightNumber ? `${flightNumber}: ${route}` : route}
-                                            </Text>
-                                        </View>
-                                        <View>
-                                            <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                                Hành lý trống
-                                            </Text>
-                                            <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
-                                                {availableWeight}kg
-                                            </Text>
-                                        </View>
-                                    </View>
-
-                                    <View className="mb-4">
-                                        <Text className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                            Thời gian
-                                        </Text>
-                                        <Text className="text-sm font-semibold text-text-dark-gray dark:text-white mt-0.5">
-                                            {formatFlightDateTime(flight.flight_date || date)}
-                                        </Text>
-                                    </View>
-
-                                    {/* Nút gửi yêu cầu */}
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            // Navigate to request order với flight_id và flight_data
-                                            router.push({
-                                                pathname: '/request_order',
-                                                params: {
-                                                    flight_id: flight.id || flight.uuid,
-                                                    customer_id: customer.id,
-                                                    flight_data: JSON.stringify({
-                                                        id: flight.id || flight.uuid,
-                                                        from_airport: flight.from_airport,
-                                                        to_airport: flight.to_airport,
-                                                        flight_number: flight.flight_number,
-                                                        flight_date: flight.flight_date,
-                                                        customer: customer,
-                                                    }),
-                                                }
-                                            });
-                                        }}
-                                        className="h-11 rounded-full bg-primary justify-center items-center">
-                                        <Text className="text-white text-sm font-bold">
-                                            Gửi yêu cầu
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            );
-                        })}
-                    </View>
-                )}
-            </ScrollView>
-
-            {/* Filter Modal - Full Screen */}
-            <Modal
-                visible={filterModalOpen}
-                animationType="slide"
-                transparent={false}
-                onRequestClose={() => setFilterModalOpen(false)}
-            >
-                <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-                    {/* Header */}
-                    <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                        <Text className="text-lg font-bold text-text-dark-gray dark:text-white">
-                            Bộ lọc tìm kiếm
-                        </Text>
-                        <TouchableOpacity onPress={() => setFilterModalOpen(false)}>
-                            <MaterialIcons name="close" size={24} color="#6B7280" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView className="flex-1 px-4 py-4 bg-background-light dark:bg-background-dark" showsVerticalScrollIndicator={false}>
-                        <View className="gap-4 pb-6">
-                            {/* Sân bay đi / đến */}
-                            <View className="grid grid-cols-2 gap-4">
-                                <View>
-                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                                        Sân bay đi
+                {/* Filter Summary Bar */}
+                <View className="px-4 py-3 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-700">
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 8 }}
+                    >
+                        <View className="flex-row gap-2 items-center">
+                            {filterDepartureCity.value && filterArrivalCity.value && (
+                                <View className="flex-row items-center h-10 rounded-full bg-primary/10 dark:bg-primary/20 px-3 gap-2">
+                                    <MaterialIcons name="flight-takeoff" size={16} color="#2563EB" />
+                                    <Text className="text-xs font-medium text-text-dark-gray dark:text-gray-200" numberOfLines={1}>
+                                        {filterDepartureCity.value} → {filterArrivalCity.value}
                                     </Text>
-                                    <CitySelectModal
-                                        placeholder="VD: SGN"
-                                        iconName="flight-takeoff"
-                                        value={filterDepartureCity.value}
-                                        onValueChange={(value, label) => setFilterDepartureCity({ value, label })}
-                                    />
                                 </View>
-                                <View>
-                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                                        Sân bay đến
+                            )}
+                            {filterDate && (
+                                <View className="flex-row items-center h-10 rounded-full bg-primary/10 dark:bg-primary/20 px-3 gap-2">
+                                    <MaterialIcons name="calendar-month" size={16} color="#2563EB" />
+                                    <Text className="text-xs font-medium text-text-dark-gray dark:text-gray-200" numberOfLines={1}>
+                                        {formatDate(filterDate).split(',')[0]}
                                     </Text>
-                                    <CitySelectModal
-                                        placeholder="VD: HAN"
-                                        iconName="flight-land"
-                                        value={filterArrivalCity.value}
-                                        onValueChange={(value, label) => setFilterArrivalCity({ value, label })}
-                                    />
                                 </View>
-                            </View>
-
-                            {/* Ngày gửi */}
-                            <View>
-                                <DatePickerInput
-                                    label="Ngày gửi"
-                                    placeholder="Chọn ngày"
-                                    value={filterDate}
-                                    onValueChange={setFilterDate}
-                                    minimumDate={new Date()}
-                                />
-                            </View>
-
-                            {/* Khung giờ */}
-                            <View>
-                                <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                                    Khung giờ ưu tiên
-                                </Text>
-                                <View className="relative">
-                                    <MaterialIcons
-                                        name="schedule"
-                                        size={20}
-                                        color="#6b7280"
-                                        style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                                    />
-                                    <TextInput
-                                        placeholder="Buổi sáng (6h-12h)"
-                                        value={filterTimeSlot}
-                                        onChangeText={setFilterTimeSlot}
-                                        className="h-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-10 pr-4 text-text-dark-gray dark:text-white"
-                                    />
+                            )}
+                            {filterTimeSlot && (
+                                <View className="flex-row items-center h-10 rounded-full bg-primary/10 dark:bg-primary/20 px-3 gap-2">
+                                    <MaterialIcons name="schedule" size={16} color="#2563EB" />
+                                    <Text className="text-xs font-medium text-text-dark-gray dark:text-gray-200" numberOfLines={1}>
+                                        {filterTimeSlot}
+                                    </Text>
                                 </View>
-                            </View>
-
-                            {/* Loại tài liệu */}
-                            <View>
-                                <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                                    Loại tài liệu
-                                </Text>
-                                <ItemTypeSelect
-                                    placeholder="Chọn loại tài liệu"
-                                    value={filterItemType}
-                                    onValueChange={setFilterItemType}
-                                />
-                            </View>
-
-                            {/* Giá trị ước tính */}
-                            <View>
-                                <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                                    Giá trị ước tính tài liệu (VND)
-                                </Text>
-                                <View className="relative">
-                                    <MaterialIcons
-                                        name="payments"
-                                        size={20}
-                                        color="#6b7280"
-                                        style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                                    />
-                                    <TextInput
-                                        placeholder="Ví dụ: 5,000,000"
-                                        keyboardType="numeric"
-                                        value={filterItemValue}
-                                        onChangeText={setFilterItemValue}
-                                        className="h-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-10 pr-4 text-text-dark-gray dark:text-white"
-                                    />
+                            )}
+                            {filterItemType && (
+                                <View className="flex-row items-center h-10 rounded-full bg-primary/10 dark:bg-primary/20 px-3 gap-2">
+                                    <MaterialIcons name="category" size={16} color="#2563EB" />
+                                    <Text className="text-xs font-medium text-text-dark-gray dark:text-gray-200" numberOfLines={1}>
+                                        {filterItemType}
+                                    </Text>
                                 </View>
-                            </View>
+                            )}
+
+                            {/* Nút filter */}
+                            <TouchableOpacity
+                                onPress={() => setFilterModalOpen(true)}
+                                className="w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/30 justify-center items-center"
+                            >
+                                <MaterialIcons name="filter-list" size={20} color="#2563EB" />
+                            </TouchableOpacity>
                         </View>
                     </ScrollView>
+                </View>
 
-                    {/* Footer buttons */}
-                    <View className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 flex-row gap-3 bg-white dark:bg-gray-800">
-                        <TouchableOpacity
-                            onPress={handleResetFilter}
-                            className="flex-1 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 justify-center items-center"
-                        >
-                            <Text className="text-gray-700 dark:text-gray-300 font-bold">
-                                Đặt lại
+                {/* Danh sách hành khách */}
+                <ScrollView
+                    className="flex-1"
+                    contentContainerStyle={{ padding: 16 }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {loading ? (
+                        <View className="py-20 items-center">
+                            <ActivityIndicator size="large" color="#2563EB" />
+                            <Text className="mt-4 text-gray-500 dark:text-gray-400">
+                                Đang tải kết quả...
                             </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={handleApplyFilter}
-                            className="flex-1 h-12 rounded-lg bg-primary justify-center items-center"
-                        >
-                            <Text className="text-white font-bold">
-                                Áp dụng
+                        </View>
+                    ) : error ? (
+                        <View className="py-20 items-center">
+                            <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+                            <Text className="mt-4 text-gray-600 dark:text-gray-400 text-center">
+                                {error}
                             </Text>
-                        </TouchableOpacity>
-                    </View>
-                </SafeAreaView>
-            </Modal>
-        </SafeAreaView>
+                            <TouchableOpacity
+                                onPress={() => fetchSearchResults()}
+                                className="mt-4 bg-primary px-6 py-3 rounded-lg">
+                                <Text className="text-white font-bold">Thử lại</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : flights.length === 0 ? (
+                        <View className="py-20 items-center">
+                            <MaterialIcons name="flight" size={48} color="#9CA3AF" />
+                            <Text className="mt-4 text-gray-600 dark:text-gray-400 text-center">
+                                Không tìm thấy hành khách phù hợp
+                            </Text>
+                        </View>
+                    ) : (
+                        <View className="gap-4">
+                            {flights.map((flight: any, index: number) => {
+                                const customer = flight.customer || {};
+                                const availableWeight = flight.available_weight || 0;
+                                const flightNumber = flight.flight_number || '';
+                                const route = flight.from_airport && flight.to_airport
+                                    ? `${flight.from_airport} → ${flight.to_airport}`
+                                    : '';
+
+                                return (
+                                    <View
+                                        key={flight.id || flight.uuid || index}
+                                        className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {/* Header: Avatar + tên + rating */}
+                                        <View className="flex-row items-center justify-between mb-3">
+                                            <View className="flex-row items-center flex-1">
+                                                <UserProfileInfo
+                                                    avatar={customer.avatar}
+                                                    name={customer.name || 'Người dùng'}
+                                                    size="large"
+                                                    showVerified={true}
+                                                />
+                                            </View>
+                                            <View className="flex-row items-center gap-1">
+                                                <MaterialIcons name="star" size={16} color="#F97316" />
+                                                <Text className="text-sm font-semibold text-secondary">
+                                                    5.0
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View className="h-px bg-gray-200 dark:bg-slate-700 mb-4" />
+
+                                        {/* Thông tin chi tiết */}
+                                        <View className="flex-row gap-3 mb-3">
+                                            <View className="flex-1">
+                                                <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                    Chuyến bay
+                                                </Text>
+                                                <Text className="text-sm font-semibold text-text-dark-gray dark:text-white" numberOfLines={2}>
+                                                    {flightNumber ? `${flightNumber}` : 'N/A'}
+                                                </Text>
+                                                {route && (
+                                                    <Text className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                                        {route}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                    Hành lý trống
+                                                </Text>
+                                                <Text className="text-base font-bold text-primary">
+                                                    {availableWeight}kg
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View className="mb-4">
+                                            <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                Thời gian
+                                            </Text>
+                                            <Text className="text-sm font-semibold text-text-dark-gray dark:text-white">
+                                                {formatFlightDateTime(flight.flight_date || date)}
+                                            </Text>
+                                        </View>
+
+                                        {/* Nút gửi yêu cầu */}
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                router.push({
+                                                    pathname: '/request_order',
+                                                    params: {
+                                                        flight_id: flight.id || flight.uuid,
+                                                        customer_id: customer.id,
+                                                        flight_data: JSON.stringify({
+                                                            id: flight.id || flight.uuid,
+                                                            from_airport: flight.from_airport,
+                                                            to_airport: flight.to_airport,
+                                                            flight_number: flight.flight_number,
+                                                            flight_date: flight.flight_date,
+                                                            customer: customer,
+                                                        }),
+                                                    }
+                                                });
+                                            }}
+                                            className="h-12 rounded-xl bg-primary justify-center items-center shadow-sm"
+                                            activeOpacity={0.8}
+                                        >
+                                            <Text className="text-white text-base font-bold">
+                                                Gửi yêu cầu
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    )}
+                </ScrollView>
+
+                {/* Filter Modal - Full Screen */}
+                <Modal
+                    visible={filterModalOpen}
+                    animationType="slide"
+                    transparent={false}
+                    onRequestClose={() => setFilterModalOpen(false)}
+                >
+                    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                        {/* Header */}
+                        <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                            <Text className="text-lg font-bold text-text-dark-gray dark:text-white">
+                                Bộ lọc tìm kiếm
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => setFilterModalOpen(false)}
+                                className="p-2"
+                            >
+                                <MaterialIcons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView className="flex-1 px-4 py-4 bg-background-light dark:bg-background-dark" showsVerticalScrollIndicator={false}>
+                            <View className="gap-4 pb-6">
+                                {/* Sân bay đi / đến */}
+                                <View className="flex-row gap-3">
+                                    <View className="flex-1">
+                                        <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                            Sân bay đi
+                                        </Text>
+                                        <CitySelectModal
+                                            placeholder="VD: SGN"
+                                            iconName="flight-takeoff"
+                                            value={filterDepartureCity.value}
+                                            onValueChange={(value, label) => setFilterDepartureCity({ value, label })}
+                                        />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                            Sân bay đến
+                                        </Text>
+                                        <CitySelectModal
+                                            placeholder="VD: HAN"
+                                            iconName="flight-land"
+                                            value={filterArrivalCity.value}
+                                            onValueChange={(value, label) => setFilterArrivalCity({ value, label })}
+                                        />
+                                    </View>
+                                </View>
+
+                                {/* Ngày gửi */}
+                                <View>
+                                    <DatePickerInput
+                                        label="Ngày gửi"
+                                        placeholder="Chọn ngày"
+                                        value={filterDate}
+                                        onValueChange={setFilterDate}
+                                        minimumDate={new Date()}
+                                    />
+                                </View>
+
+                                {/* Khung giờ */}
+                                <View>
+                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                        Khung giờ ưu tiên
+                                    </Text>
+                                    <View className="relative">
+                                        <MaterialIcons
+                                            name="schedule"
+                                            size={20}
+                                            color="#6b7280"
+                                            style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                                        />
+                                        <TextInput
+                                            placeholder="Buổi sáng (6h-12h)"
+                                            value={filterTimeSlot}
+                                            onChangeText={setFilterTimeSlot}
+                                            className="h-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-10 pr-4 text-text-dark-gray dark:text-white"
+                                        />
+                                    </View>
+                                </View>
+
+                                {/* Loại tài liệu */}
+                                <View>
+                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                        Loại tài liệu
+                                    </Text>
+                                    <ItemTypeSelect
+                                        placeholder="Chọn loại tài liệu"
+                                        value={filterItemType}
+                                        onValueChange={setFilterItemType}
+                                    />
+                                </View>
+
+                                {/* Giá trị ước tính */}
+                                <View>
+                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
+                                        Giá trị ước tính tài liệu (VND)
+                                    </Text>
+                                    <View className="relative">
+                                        <MaterialIcons
+                                            name="payments"
+                                            size={20}
+                                            color="#6b7280"
+                                            style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
+                                        />
+                                        <TextInput
+                                            placeholder="Ví dụ: 5,000,000"
+                                            keyboardType="numeric"
+                                            value={filterItemValue}
+                                            onChangeText={setFilterItemValue}
+                                            className="h-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-10 pr-4 text-text-dark-gray dark:text-white"
+                                        />
+                                    </View>
+                                </View>
+                            </View>
+                        </ScrollView>
+
+                        {/* Footer buttons */}
+                        <View className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 flex-row gap-3 bg-white dark:bg-gray-800">
+                            <TouchableOpacity
+                                onPress={handleResetFilter}
+                                className="flex-1 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 justify-center items-center"
+                                activeOpacity={0.7}
+                            >
+                                <Text className="text-gray-700 dark:text-gray-300 font-bold text-base">
+                                    Đặt lại
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleApplyFilter}
+                                className="flex-1 h-12 rounded-xl bg-primary justify-center items-center shadow-sm"
+                                activeOpacity={0.8}
+                            >
+                                <Text className="text-white font-bold text-base">
+                                    Áp dụng
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+                </Modal>
+            </SafeAreaView>
+        </>
     );
 }

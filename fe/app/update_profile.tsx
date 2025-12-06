@@ -18,7 +18,7 @@ import api from "@/api/api";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { setUser } from "@/reducers/userSlice";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { DEMO_AVATAR, getAvatarUrl } from "@/constants/avatars";
 
@@ -345,367 +345,365 @@ export default function ProfileUpdate() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Header */}
-            <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={28} color="#1F2937" className="dark:text-white" />
-                </TouchableOpacity>
-                <Text className="flex-1 text-center text-lg font-bold text-text-dark-gray dark:text-white -ml-10">
-                    Hồ sơ & Xác minh
-                </Text>
-                <View className="w-10" />
-            </View>
+        <>
+            <Stack.Screen
+                options={{
+                    title: 'Hồ sơ & Xác minh',
+                    headerShown: true,
+                }}
+            />
+            <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
 
-            {/* Tabs */}
-            <View className="flex-row bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <TouchableOpacity
-                    onPress={() => setActiveTab('profile')}
-                    className={`flex-1 py-4 items-center border-b-2 ${activeTab === 'profile'
-                        ? 'border-primary'
-                        : 'border-transparent'
-                        }`}
-                >
-                    <Text
-                        className={`font-semibold ${activeTab === 'profile'
-                            ? 'text-primary'
-                            : 'text-gray-500 dark:text-gray-400'
+                {/* Tabs */}
+                <View className="flex-row bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <TouchableOpacity
+                        onPress={() => setActiveTab('profile')}
+                        className={`flex-1 py-4 items-center border-b-2 ${activeTab === 'profile'
+                            ? 'border-primary'
+                            : 'border-transparent'
                             }`}
                     >
-                        Thông tin cá nhân
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => setActiveTab('kyc')}
-                    className={`flex-1 py-4 items-center border-b-2 ${activeTab === 'kyc'
-                        ? 'border-primary'
-                        : 'border-transparent'
-                        }`}
-                >
-                    <Text
-                        className={`font-semibold ${activeTab === 'kyc'
-                            ? 'text-primary'
-                            : 'text-gray-500 dark:text-gray-400'
-                            }`}
-                    >
-                        Xác minh KYC
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                {activeTab === 'profile' ? (
-                    // Profile Update Section
-                    <View className="p-4">
-                        <Text className="text-xl font-bold text-text-dark-gray dark:text-white mb-6">
-                            Cập nhật thông tin
+                        <Text
+                            className={`font-semibold ${activeTab === 'profile'
+                                ? 'text-primary'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}
+                        >
+                            Thông tin cá nhân
                         </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => setActiveTab('kyc')}
+                        className={`flex-1 py-4 items-center border-b-2 ${activeTab === 'kyc'
+                            ? 'border-primary'
+                            : 'border-transparent'
+                            }`}
+                    >
+                        <Text
+                            className={`font-semibold ${activeTab === 'kyc'
+                                ? 'text-primary'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}
+                        >
+                            Xác minh KYC
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
-                        {/* Avatar */}
-                        <Pressable onPress={pickImage} className="mb-6 items-center">
-                            <View className="relative">
-                                <Image
-                                    source={
-                                        avatar
-                                            ? { uri: avatar }
-                                            : (user as any)?.avatar
-                                                ? { uri: getAvatarUrl((user as any).avatar) }
-                                                : { uri: DEMO_AVATAR }
-                                    }
-                                    className="w-24 h-24 rounded-full"
-                                />
-                                <View className="absolute bottom-0 right-0 bg-primary rounded-full p-2">
-                                    <MaterialIcons name="camera-alt" size={20} color="white" />
+                <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+                    {activeTab === 'profile' ? (
+                        // Profile Update Section
+                        <View className="p-4">
+                            <Text className="text-xl font-bold text-text-dark-gray dark:text-white mb-6">
+                                Cập nhật thông tin
+                            </Text>
+
+                            {/* Avatar */}
+                            <Pressable onPress={pickImage} className="mb-6 items-center">
+                                <View className="relative">
+                                    <Image
+                                        source={
+                                            avatar
+                                                ? { uri: avatar }
+                                                : (user as any)?.avatar
+                                                    ? { uri: getAvatarUrl((user as any).avatar) }
+                                                    : { uri: DEMO_AVATAR }
+                                        }
+                                        className="w-24 h-24 rounded-full"
+                                    />
+                                    <View className="absolute bottom-0 right-0 bg-primary rounded-full p-2">
+                                        <MaterialIcons name="camera-alt" size={20} color="white" />
+                                    </View>
                                 </View>
-                            </View>
-                            <Text className="text-primary mt-2 font-medium">Đổi ảnh đại diện</Text>
-                        </Pressable>
+                                <Text className="text-primary mt-2 font-medium">Đổi ảnh đại diện</Text>
+                            </Pressable>
 
-                        {/* Họ tên */}
-                        <View className="mb-4">
-                            <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Họ và tên
-                            </Text>
-                            <TextInput
-                                className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
-                                placeholder="Nhập họ và tên"
-                                placeholderTextColor="#9CA3AF"
-                                value={formData.name}
-                                onChangeText={(v) => handleInputChange("name", v)}
-                            />
-                        </View>
-
-                        {/* Email */}
-                        <View className="mb-4">
-                            <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Email
-                            </Text>
-                            <TextInput
-                                className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
-                                placeholder="Nhập email"
-                                placeholderTextColor="#9CA3AF"
-                                keyboardType="email-address"
-                                value={formData.email}
-                                onChangeText={(v) => handleInputChange("email", v)}
-                            />
-                        </View>
-
-                        {/* Số điện thoại */}
-                        <View className="mb-4">
-                            <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Số điện thoại
-                            </Text>
-                            <TextInput
-                                className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
-                                placeholder="Nhập số điện thoại"
-                                placeholderTextColor="#9CA3AF"
-                                keyboardType="phone-pad"
-                                value={formData.phone}
-                                onChangeText={(v) => handleInputChange("phone", v)}
-                            />
-                        </View>
-
-                        {/* Mật khẩu */}
-                        <View className="mb-4">
-                            <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Mật khẩu mới (để trống nếu không đổi)
-                            </Text>
-                            <TextInput
-                                className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
-                                placeholder="Nhập mật khẩu mới"
-                                placeholderTextColor="#9CA3AF"
-                                secureTextEntry
-                                value={formData.password}
-                                onChangeText={(v) => handleInputChange("password", v)}
-                            />
-                        </View>
-
-                        {/* Xác nhận mật khẩu */}
-                        {formData.password ? (
-                            <View className="mb-6">
+                            {/* Họ tên */}
+                            <View className="mb-4">
                                 <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Xác nhận mật khẩu
+                                    Họ và tên
                                 </Text>
                                 <TextInput
                                     className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
-                                    placeholder="Nhập lại mật khẩu"
+                                    placeholder="Nhập họ và tên"
+                                    placeholderTextColor="#9CA3AF"
+                                    value={formData.name}
+                                    onChangeText={(v) => handleInputChange("name", v)}
+                                />
+                            </View>
+
+                            {/* Email */}
+                            <View className="mb-4">
+                                <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Email
+                                </Text>
+                                <TextInput
+                                    className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
+                                    placeholder="Nhập email"
+                                    placeholderTextColor="#9CA3AF"
+                                    keyboardType="email-address"
+                                    value={formData.email}
+                                    onChangeText={(v) => handleInputChange("email", v)}
+                                />
+                            </View>
+
+                            {/* Số điện thoại */}
+                            <View className="mb-4">
+                                <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Số điện thoại
+                                </Text>
+                                <TextInput
+                                    className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
+                                    placeholder="Nhập số điện thoại"
+                                    placeholderTextColor="#9CA3AF"
+                                    keyboardType="phone-pad"
+                                    value={formData.phone}
+                                    onChangeText={(v) => handleInputChange("phone", v)}
+                                />
+                            </View>
+
+                            {/* Mật khẩu */}
+                            <View className="mb-4">
+                                <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Mật khẩu mới (để trống nếu không đổi)
+                                </Text>
+                                <TextInput
+                                    className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
+                                    placeholder="Nhập mật khẩu mới"
                                     placeholderTextColor="#9CA3AF"
                                     secureTextEntry
-                                    value={formData.password_confirmation}
-                                    onChangeText={(v) => handleInputChange("password_confirmation", v)}
+                                    value={formData.password}
+                                    onChangeText={(v) => handleInputChange("password", v)}
                                 />
                             </View>
-                        ) : null}
 
-                        <Pressable
-                            onPress={handleUpdate}
-                            className={`bg-primary w-full py-4 rounded-xl mb-6 ${loading ? "opacity-70" : ""
-                                }`}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text className="text-white text-center text-base font-semibold">
-                                    Cập nhật thông tin
-                                </Text>
+                            {/* Xác nhận mật khẩu */}
+                            {formData.password ? (
+                                <View className="mb-6">
+                                    <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Xác nhận mật khẩu
+                                    </Text>
+                                    <TextInput
+                                        className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
+                                        placeholder="Nhập lại mật khẩu"
+                                        placeholderTextColor="#9CA3AF"
+                                        secureTextEntry
+                                        value={formData.password_confirmation}
+                                        onChangeText={(v) => handleInputChange("password_confirmation", v)}
+                                    />
+                                </View>
+                            ) : null}
+
+                            <Pressable
+                                onPress={handleUpdate}
+                                className={`bg-primary w-full py-4 rounded-xl mb-6 ${loading ? "opacity-70" : ""
+                                    }`}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text className="text-white text-center text-base font-semibold">
+                                        Cập nhật thông tin
+                                    </Text>
+                                )}
+                            </Pressable>
+                        </View>
+                    ) : (
+                        // KYC Section
+                        <View className="p-4">
+                            <Text className="text-xl font-bold text-text-dark-gray dark:text-white mb-4">
+                                Xác minh danh tính (KYC)
+                            </Text>
+
+                            {/* KYC Status Badge */}
+                            {kycStatus && (
+                                <View className="mb-6">
+                                    {getKycStatusBadge()}
+                                    {kycStatus === 'rejected' && kycRejectionReason && (
+                                        <View className="mt-3 bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-xl">
+                                            <Text className="text-red-700 dark:text-red-300 text-sm">
+                                                <Text className="font-semibold">Lý do từ chối: </Text>
+                                                {kycRejectionReason}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
                             )}
-                        </Pressable>
-                    </View>
-                ) : (
-                    // KYC Section
-                    <View className="p-4">
-                        <Text className="text-xl font-bold text-text-dark-gray dark:text-white mb-4">
-                            Xác minh danh tính (KYC)
-                        </Text>
 
-                        {/* KYC Status Badge */}
-                        {kycStatus && (
-                            <View className="mb-6">
-                                {getKycStatusBadge()}
-                                {kycStatus === 'rejected' && kycRejectionReason && (
-                                    <View className="mt-3 bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-xl">
-                                        <Text className="text-red-700 dark:text-red-300 text-sm">
-                                            <Text className="font-semibold">Lý do từ chối: </Text>
-                                            {kycRejectionReason}
-                                        </Text>
-                                    </View>
+                            <Text className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                                Vui lòng cung cấp thông tin chính xác để đảm bảo an toàn và tăng độ tin cậy. Thông tin của bạn sẽ được bảo mật.
+                            </Text>
+
+                            {/* Họ và tên */}
+                            <View className="mb-4">
+                                <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Họ và tên
+                                </Text>
+                                <TextInput
+                                    className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
+                                    placeholder="Nhập họ và tên của bạn"
+                                    placeholderTextColor="#9CA3AF"
+                                    value={kycData.fullName}
+                                    onChangeText={(value) => setKycData({ ...kycData, fullName: value })}
+                                    editable={kycStatus !== 'verified' && kycStatus !== 'pending'}
+                                />
+                            </View>
+
+                            {/* Số CMND/CCCD */}
+                            <View className="mb-4">
+                                <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Số CMND/CCCD
+                                </Text>
+                                <TextInput
+                                    className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
+                                    placeholder="Nhập số CMND/CCCD"
+                                    placeholderTextColor="#9CA3AF"
+                                    keyboardType="numeric"
+                                    value={kycData.idNumber}
+                                    onChangeText={(value) => setKycData({ ...kycData, idNumber: value })}
+                                    editable={kycStatus !== 'verified' && kycStatus !== 'pending'}
+                                />
+                            </View>
+
+                            {/* Ngày sinh */}
+                            <View className="mb-4">
+                                <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Ngày sinh
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => setShowDatePicker(true)}
+                                    disabled={kycStatus === 'verified' || kycStatus === 'pending'}
+                                    className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl justify-center"
+                                >
+                                    <Text
+                                        className={`text-base ${kycData.dateOfBirth
+                                            ? 'text-text-dark-gray dark:text-white'
+                                            : 'text-gray-400'
+                                            }`}
+                                    >
+                                        {formatDate(kycData.dateOfBirth) || 'dd/mm/yyyy'}
+                                    </Text>
+                                </TouchableOpacity>
+                                {showDatePicker && (
+                                    <DateTimePicker
+                                        value={kycData.dateOfBirth || new Date()}
+                                        mode="date"
+                                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                        onChange={(event, selectedDate) => {
+                                            setShowDatePicker(Platform.OS === 'ios');
+                                            if (selectedDate) {
+                                                setKycData({ ...kycData, dateOfBirth: selectedDate });
+                                            }
+                                        }}
+                                        maximumDate={new Date()}
+                                    />
                                 )}
                             </View>
-                        )}
 
-                        <Text className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                            Vui lòng cung cấp thông tin chính xác để đảm bảo an toàn và tăng độ tin cậy. Thông tin của bạn sẽ được bảo mật.
-                        </Text>
-
-                        {/* Họ và tên */}
-                        <View className="mb-4">
-                            <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Họ và tên
-                            </Text>
-                            <TextInput
-                                className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
-                                placeholder="Nhập họ và tên của bạn"
-                                placeholderTextColor="#9CA3AF"
-                                value={kycData.fullName}
-                                onChangeText={(value) => setKycData({ ...kycData, fullName: value })}
-                                editable={kycStatus !== 'verified' && kycStatus !== 'pending'}
-                            />
-                        </View>
-
-                        {/* Số CMND/CCCD */}
-                        <View className="mb-4">
-                            <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Số CMND/CCCD
-                            </Text>
-                            <TextInput
-                                className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-base text-text-dark-gray dark:text-white"
-                                placeholder="Nhập số CMND/CCCD"
-                                placeholderTextColor="#9CA3AF"
-                                keyboardType="numeric"
-                                value={kycData.idNumber}
-                                onChangeText={(value) => setKycData({ ...kycData, idNumber: value })}
-                                editable={kycStatus !== 'verified' && kycStatus !== 'pending'}
-                            />
-                        </View>
-
-                        {/* Ngày sinh */}
-                        <View className="mb-4">
-                            <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Ngày sinh
-                            </Text>
-                            <TouchableOpacity
-                                onPress={() => setShowDatePicker(true)}
-                                disabled={kycStatus === 'verified' || kycStatus === 'pending'}
-                                className="h-14 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl justify-center"
-                            >
-                                <Text
-                                    className={`text-base ${kycData.dateOfBirth
-                                        ? 'text-text-dark-gray dark:text-white'
-                                        : 'text-gray-400'
-                                        }`}
-                                >
-                                    {formatDate(kycData.dateOfBirth) || 'dd/mm/yyyy'}
+                            {/* Upload CMND/CCCD */}
+                            <View className="mb-6">
+                                <Text className="mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Tải lên ảnh CMND/CCCD
                                 </Text>
-                            </TouchableOpacity>
-                            {showDatePicker && (
-                                <DateTimePicker
-                                    value={kycData.dateOfBirth || new Date()}
-                                    mode="date"
-                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                                    onChange={(event, selectedDate) => {
-                                        setShowDatePicker(Platform.OS === 'ios');
-                                        if (selectedDate) {
-                                            setKycData({ ...kycData, dateOfBirth: selectedDate });
-                                        }
-                                    }}
-                                    maximumDate={new Date()}
-                                />
-                            )}
-                        </View>
 
-                        {/* Upload CMND/CCCD */}
-                        <View className="mb-6">
-                            <Text className="mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Tải lên ảnh CMND/CCCD
-                            </Text>
+                                <View className="flex-row gap-4">
+                                    {/* Mặt trước */}
+                                    <TouchableOpacity
+                                        onPress={() => pickKycImage('front')}
+                                        disabled={kycStatus === 'verified' || kycStatus === 'pending'}
+                                        className="flex-1 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl aspect-[3/2] items-center justify-center p-4"
+                                    >
+                                        {frontImage ? (
+                                            <Image
+                                                source={{ uri: frontImage }}
+                                                className="w-full h-full rounded-lg"
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <>
+                                                <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mb-2">
+                                                    <MaterialIcons name="add-a-photo" size={36} color="#2563EB" />
+                                                </View>
+                                                <Text className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                                    Mặt trước
+                                                </Text>
+                                                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    Nhấn để tải lên
+                                                </Text>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
 
-                            <View className="flex-row gap-4">
-                                {/* Mặt trước */}
-                                <TouchableOpacity
-                                    onPress={() => pickKycImage('front')}
-                                    disabled={kycStatus === 'verified' || kycStatus === 'pending'}
-                                    className="flex-1 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl aspect-[3/2] items-center justify-center p-4"
-                                >
-                                    {frontImage ? (
-                                        <Image
-                                            source={{ uri: frontImage }}
-                                            className="w-full h-full rounded-lg"
-                                            resizeMode="cover"
-                                        />
-                                    ) : (
-                                        <>
-                                            <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mb-2">
-                                                <MaterialIcons name="add-a-photo" size={36} color="#2563EB" />
-                                            </View>
-                                            <Text className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                                Mặt trước
-                                            </Text>
-                                            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                Nhấn để tải lên
-                                            </Text>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
-
-                                {/* Mặt sau */}
-                                <TouchableOpacity
-                                    onPress={() => pickKycImage('back')}
-                                    disabled={kycStatus === 'verified' || kycStatus === 'pending'}
-                                    className="flex-1 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl aspect-[3/2] items-center justify-center p-4"
-                                >
-                                    {backImage ? (
-                                        <Image
-                                            source={{ uri: backImage }}
-                                            className="w-full h-full rounded-lg"
-                                            resizeMode="cover"
-                                        />
-                                    ) : (
-                                        <>
-                                            <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mb-2">
-                                                <MaterialIcons name="add-a-photo" size={36} color="#2563EB" />
-                                            </View>
-                                            <Text className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                                Mặt sau
-                                            </Text>
-                                            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                Nhấn để tải lên
-                                            </Text>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
+                                    {/* Mặt sau */}
+                                    <TouchableOpacity
+                                        onPress={() => pickKycImage('back')}
+                                        disabled={kycStatus === 'verified' || kycStatus === 'pending'}
+                                        className="flex-1 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl aspect-[3/2] items-center justify-center p-4"
+                                    >
+                                        {backImage ? (
+                                            <Image
+                                                source={{ uri: backImage }}
+                                                className="w-full h-full rounded-lg"
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <>
+                                                <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mb-2">
+                                                    <MaterialIcons name="add-a-photo" size={36} color="#2563EB" />
+                                                </View>
+                                                <Text className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                                    Mặt sau
+                                                </Text>
+                                                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    Nhấn để tải lên
+                                                </Text>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
 
-                        <Pressable
-                            onPress={handleSubmitKyc}
-                            disabled={
-                                kycSubmitting ||
-                                kycStatus === 'verified' ||
-                                kycStatus === 'pending' ||
-                                !kycData.fullName ||
-                                !kycData.idNumber ||
-                                !kycData.dateOfBirth ||
-                                !frontImage ||
-                                !backImage
-                            }
-                            className={`w-full py-4 rounded-xl mb-6 ${kycSubmitting ||
-                                kycStatus === 'verified' ||
-                                kycStatus === 'pending' ||
-                                !kycData.fullName ||
-                                !kycData.idNumber ||
-                                !kycData.dateOfBirth ||
-                                !frontImage ||
-                                !backImage
-                                ? 'bg-gray-400'
-                                : 'bg-primary'
-                                }`}
-                        >
-                            {kycSubmitting ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text className="text-white text-center text-base font-semibold">
-                                    {kycStatus === 'verified'
-                                        ? 'Đã xác minh'
-                                        : kycStatus === 'pending'
-                                            ? 'Đang chờ duyệt'
-                                            : 'Gửi xác minh'}
-                                </Text>
-                            )}
-                        </Pressable>
-                    </View>
-                )}
-            </ScrollView>
-        </SafeAreaView>
+                            <Pressable
+                                onPress={handleSubmitKyc}
+                                disabled={
+                                    kycSubmitting ||
+                                    kycStatus === 'verified' ||
+                                    kycStatus === 'pending' ||
+                                    !kycData.fullName ||
+                                    !kycData.idNumber ||
+                                    !kycData.dateOfBirth ||
+                                    !frontImage ||
+                                    !backImage
+                                }
+                                className={`w-full py-4 rounded-xl mb-6 ${kycSubmitting ||
+                                    kycStatus === 'verified' ||
+                                    kycStatus === 'pending' ||
+                                    !kycData.fullName ||
+                                    !kycData.idNumber ||
+                                    !kycData.dateOfBirth ||
+                                    !frontImage ||
+                                    !backImage
+                                    ? 'bg-gray-400'
+                                    : 'bg-primary'
+                                    }`}
+                            >
+                                {kycSubmitting ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text className="text-white text-center text-base font-semibold">
+                                        {kycStatus === 'verified'
+                                            ? 'Đã xác minh'
+                                            : kycStatus === 'pending'
+                                                ? 'Đang chờ duyệt'
+                                                : 'Gửi xác minh'}
+                                    </Text>
+                                )}
+                            </Pressable>
+                        </View>
+                    )}
+                </ScrollView>
+            </SafeAreaView>
+        </>
     );
 }

@@ -7,7 +7,7 @@ import {
     Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import api from "@/api/api";
 import OrderDetailContent from "../app/components/OrderDetailContent";
 
@@ -59,26 +59,23 @@ export default function OrderDetailScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Top App Bar */}
-            <View className="flex-row items-center justify-between px-4 py-3 bg-card-light dark:bg-card-dark shadow-sm">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={28} color="#2463EB" />
-                </TouchableOpacity>
-                <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
-                    {order ? `Chi tiết đơn hàng #${order.uuid || order.id}` : 'Chi tiết đơn hàng'}
-                </Text>
-                <View className="w-10" />
-            </View>
-
-            {/* Order Detail Content - Component chung cho cả sender và customer */}
-            <OrderDetailContent
-                order={order}
-                loading={loading}
-                error={error}
-                onRetry={fetchOrderDetails}
+        <>
+            <Stack.Screen
+                options={{
+                    title: order ? `Đơn hàng #${order.uuid || order.id}` : 'Chi tiết đơn hàng',
+                    headerShown: true,
+                }}
             />
-        </SafeAreaView>
+            <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Order Detail Content - Component chung cho cả sender và customer */}
+                <OrderDetailContent
+                    order={order}
+                    loading={loading}
+                    error={error}
+                    onRetry={fetchOrderDetails}
+                />
+            </SafeAreaView>
+        </>
     );
 }
 

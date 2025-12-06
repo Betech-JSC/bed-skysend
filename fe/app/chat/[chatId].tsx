@@ -26,14 +26,6 @@ export default function ChatDetailScreen() {
                 options={{
                     title: partnerName || "Chat",
                     headerShown: true,
-                    headerLeft: () => (
-                        <TouchableOpacity
-                            onPress={() => router.back()}
-                            style={{ marginLeft: 16 }}
-                        >
-                            <MaterialIcons name="arrow-back" size={24} color="#000" />
-                        </TouchableOpacity>
-                    ),
                 }}
             />
             <ChatRoom chatId={chatId} />

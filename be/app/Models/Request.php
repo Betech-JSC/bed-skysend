@@ -210,6 +210,42 @@ class Request extends Model
     }
 
     // ==================================================================
+    // UUID GENERATION
+    // ==================================================================
+
+    public static function generateRequestUuid(): string
+    {
+        $maxAttempts = 10; // Tối đa 10 lần thử để tránh vòng lặp vô hạn
+        $attempt = 0;
+
+        // Ký tự cho phép: A-Z và 0-9
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+        do {
+            // Tạo 5 ký tự ngẫu nhiên
+            $randomCode = '';
+            for ($i = 0; $i < 5; $i++) {
+                $randomCode .= $characters[rand(0, strlen($characters) - 1)];
+            }
+
+            $requestUuid = 'RQ-' . $randomCode;
+            $attempt++;
+
+            // Kiểm tra xem uuid đã tồn tại chưa
+            $exists = static::where('uuid', $requestUuid)->exists();
+
+            if (!$exists) {
+                return $requestUuid;
+            }
+        } while ($attempt < $maxAttempts);
+
+        // Nếu sau 10 lần thử vẫn trùng, thêm timestamp để đảm bảo unique
+        $timestamp = substr((string) time(), -3); // 3 số cuối của timestamp
+        $randomChars = strtoupper(Str::random(2));
+        return 'RQ-' . $timestamp . $randomChars;
+    }
+
+    // ==================================================================
     // BOOT (tự động tạo UUID + expires_at)
     // ==================================================================
 
@@ -219,7 +255,7 @@ class Request extends Model
 
         static::creating(function ($request) {
             if (empty($request->uuid)) {
-                $request->uuid = Str::uuid();
+                $request->uuid = static::generateRequestUuid();
             }
             if (empty($request->expires_at)) {
                 $request->expires_at = now()->addHours(48);
