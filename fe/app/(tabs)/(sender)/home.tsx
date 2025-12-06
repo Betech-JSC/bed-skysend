@@ -18,9 +18,8 @@ import ItemOrder from 'app/components/ItemOrder';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useOrderMatchList } from '@/hooks/useOrderMatchList';
-import CitySelectModal from '../../components/CitySelectModal';
-import ItemTypeSelect from '../../components/ItemTypeSelect';
-import DatePickerInput from '../../components/DatePickerInput';
+import BannerSlider from '../../components/BannerSlider';
+import SearchFlightModal from '../../components/SearchFlightModal';
 
 const Home = () => {
   const user = useSelector((state: RootState) => state.user);
@@ -36,13 +35,16 @@ const Home = () => {
   const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
 
-  // State để lưu dữ liệu từ CitySelectModal
-  const [departureCity, setDepartureCity] = useState({ value: '', label: '' });
-  const [arrivalCity, setArrivalCity] = useState({ value: '', label: '' });
-  const [date, setDate] = useState('');
-  const [timeSlot, setTimeSlot] = useState('');
-  const [itemType, setItemType] = useState('');
-  const [itemValue, setItemValue] = useState('');
+  // State cho modal tìm kiếm
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
+
+  // Stats data
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    completedOrders: 0,
+    pendingOrders: 0,
+    totalEarnings: 0,
+  });
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -79,7 +81,41 @@ const Home = () => {
 
     fetchOrders();
     fetchAvailableCustomers();
+    fetchStats();
   }, []);
+
+  // Fetch stats
+  const fetchStats = async () => {
+    try {
+      const response = await api.get('orders/getList');
+      let ordersData = [];
+      if (response.data?.success && response.data?.data) {
+        if (response.data.data?.data) {
+          ordersData = response.data.data.data;
+        } else if (Array.isArray(response.data.data)) {
+          ordersData = response.data.data;
+        }
+      }
+
+      const completed = ordersData.filter((o: any) => o.status === 'completed').length;
+      const pending = ordersData.filter((o: any) =>
+        ['pending', 'confirmed', 'in_transit'].includes(o.status)
+      ).length;
+
+      const earnings = ordersData
+        .filter((o: any) => o.status === 'completed')
+        .reduce((sum: number, o: any) => sum + (o.reward || 0), 0);
+
+      setStats({
+        totalOrders: ordersData.length,
+        completedOrders: completed,
+        pendingOrders: pending,
+        totalEarnings: earnings,
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
 
   // Fetch available customers
   const fetchAvailableCustomers = async () => {
@@ -110,38 +146,23 @@ const Home = () => {
     }
   );
 
-  const handleSearch = async () => {
-    // Validation
-    if (!departureCity.value) {
-      Alert.alert('Thông báo', 'Vui lòng chọn thành phố đi');
-      return;
-    }
-    if (!arrivalCity.value) {
-      Alert.alert('Thông báo', 'Vui lòng chọn thành phố đến');
-      return;
-    }
-    if (!date) {
-      Alert.alert('Thông báo', 'Vui lòng chọn ngày gửi');
-      return;
-    }
-
-    const searchParams = {
-      from_airport: departureCity.value,
-      to_airport: arrivalCity.value,
-      date: date,
-      time_slot: timeSlot,
-      item_type: itemType,
-      item_value: itemValue,
-    };
-
+  const handleSearch = async (searchParams: any) => {
     console.log('Dữ liệu gửi lên API:', searchParams);
 
     setSearchLoading(true);
+    setSearchModalVisible(false);
 
     try {
       // Gọi API sử dụng instance api đã config sẵn
       const response = await api.get('flights/search', {
-        params: searchParams,
+        params: {
+          from_airport: searchParams.from_airport,
+          to_airport: searchParams.to_airport,
+          date: searchParams.date,
+          time_slot: searchParams.time_slot,
+          item_type: searchParams.item_type,
+          item_value: searchParams.item_value,
+        },
       });
 
       console.log('API Response:', response.data);
@@ -151,12 +172,12 @@ const Home = () => {
         router.push({
           pathname: '/PassengerSearchResultsScreen',
           params: {
-            departureCode: departureCity.value,
-            departureLabel: departureCity.label,
-            arrivalCode: arrivalCity.value,
-            arrivalLabel: arrivalCity.label,
-            date: date,
-            timeSlot: timeSlot,
+            departureCode: searchParams.from_airport,
+            departureLabel: searchParams.departureLabel,
+            arrivalCode: searchParams.to_airport,
+            arrivalLabel: searchParams.arrivalLabel,
+            date: searchParams.date,
+            timeSlot: searchParams.time_slot,
             searchResults: JSON.stringify(response.data.data || []),
           },
         });
@@ -213,97 +234,219 @@ const Home = () => {
         </Text>
       </View>
 
-      <ScrollView className="flex-1 px-4 pb-32">
-        {/* Form tìm hành khách */}
-        <View className="mt-4 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
-          <View className="grid grid-cols-2 gap-4">
-            {/* Thành phố đi */}
-            <View className="col-span-1">
-              <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                Thành phố đi
-              </Text>
-              <CitySelectModal
-                placeholder="Ví dụ: Hà Nội"
-                iconName="flight-takeoff"
-                value={departureCity.value}
-                onValueChange={(value, label) => setDepartureCity({ value, label })}
-              />
-            </View>
+      <ScrollView className="flex-1 px-4 pb-32" showsVerticalScrollIndicator={false}>
+        {/* Banner Slider */}
+        <View className="mt-4">
+          <BannerSlider
+            items={[
+              {
+                id: '1',
+                title: 'Gửi hàng nhanh chóng',
+                description: 'Tìm hành khách phù hợp trong vài phút',
+                icon: 'local-shipping',
+                color: '#2563EB',
+                action: () => {
+                  // Scroll to search form
+                },
+              },
+              {
+                id: '2',
+                title: 'An toàn & Bảo đảm',
+                description: 'Hệ thống bảo vệ giao dịch của bạn',
+                icon: 'verified',
+                color: '#10B981',
+                action: () => router.push('/upload_guide_screen'),
+              },
+              {
+                id: '3',
+                title: 'Kiếm thêm thu nhập',
+                description: `Đã kiếm được ${stats.totalEarnings.toLocaleString('vi-VN')} VND`,
+                icon: 'attach-money',
+                color: '#F59E0B',
+                action: () => router.push('/(tabs)/(sender)/list_orders'),
+              },
+            ]}
+            height={140}
+          />
+        </View>
 
-            {/* Thành phố đến */}
-            <View className="col-span-1">
-              <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                Thành phố đến
-              </Text>
-              <CitySelectModal
-                placeholder="Ví dụ: TP. HCM"
-                iconName="flight-land"
-                value={arrivalCity.value}
-                onValueChange={(value, label) => setArrivalCity({ value, label })}
-              />
-            </View>
-
-            {/* Ngày gửi */}
-            <View className="col-span-1">
-              <DatePickerInput
-                label="Ngày gửi"
-                placeholder="yyyy-mm-dd"
-                value={date}
-                onValueChange={setDate}
-                minimumDate={new Date()}
-              />
-            </View>
-
-            {/* Loại tài liệu */}
-            <View className="col-span-2">
-              <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                Loại tài liệu
-              </Text>
-              <ItemTypeSelect
-                placeholder="Chọn loại tài liệu"
-                value={itemType}
-                onValueChange={(value, label) => setItemType(value)}
-              />
-            </View>
-
-            {/* Giá trị ước tính */}
-            <View className="col-span-2">
-              <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                Giá trị ước tính tài liệu (VND)
-              </Text>
-              <View className="relative">
-                <MaterialIcons
-                  name="payments"
-                  size={20}
-                  color="#6b7280"
-                  style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                />
-                <TextInput
-                  placeholder="Ví dụ: 5,000,000"
-                  keyboardType="numeric"
-                  value={itemValue}
-                  onChangeText={setItemValue}
-                  className="text-text-primary h-14 rounded-lg border border-gray-200 bg-background-light pl-10 pr-4 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                />
+        {/* Quick Stats */}
+        <View className="mb-4 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+          <Text className="mb-3 text-base font-bold text-text-primary dark:text-white">
+            Thống kê nhanh
+          </Text>
+          <View className="flex-row flex-wrap gap-3">
+            <View className="flex-1 min-w-[45%] rounded-lg bg-primary/10 p-3 dark:bg-primary/20">
+              <View className="flex-row items-center gap-2 mb-1">
+                <MaterialIcons name="shopping-bag" size={20} color="#2563EB" />
+                <Text className="text-xs text-text-secondary dark:text-gray-400">
+                  Tổng đơn hàng
+                </Text>
               </View>
+              <Text className="text-xl font-bold text-primary">
+                {stats.totalOrders}
+              </Text>
+            </View>
+
+            <View className="flex-1 min-w-[45%] rounded-lg bg-green-100 p-3 dark:bg-green-900/30">
+              <View className="flex-row items-center gap-2 mb-1">
+                <MaterialIcons name="check-circle" size={20} color="#10B981" />
+                <Text className="text-xs text-text-secondary dark:text-gray-400">
+                  Đã hoàn thành
+                </Text>
+              </View>
+              <Text className="text-xl font-bold text-green-600 dark:text-green-400">
+                {stats.completedOrders}
+              </Text>
+            </View>
+
+            <View className="flex-1 min-w-[45%] rounded-lg bg-orange-100 p-3 dark:bg-orange-900/30">
+              <View className="flex-row items-center gap-2 mb-1">
+                <MaterialIcons name="schedule" size={20} color="#F59E0B" />
+                <Text className="text-xs text-text-secondary dark:text-gray-400">
+                  Đang xử lý
+                </Text>
+              </View>
+              <Text className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                {stats.pendingOrders}
+              </Text>
+            </View>
+
+            <View className="flex-1 min-w-[45%] rounded-lg bg-purple-100 p-3 dark:bg-purple-900/30">
+              <View className="flex-row items-center gap-2 mb-1">
+                <MaterialIcons name="attach-money" size={20} color="#8B5CF6" />
+                <Text className="text-xs text-text-secondary dark:text-gray-400">
+                  Tổng thu nhập
+                </Text>
+              </View>
+              <Text className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                {stats.totalEarnings.toLocaleString('vi-VN')} đ
+              </Text>
             </View>
           </View>
+        </View>
 
-          <TouchableOpacity
-            onPress={handleSearch}
-            disabled={searchLoading}
-            className={`mt-4 h-14 items-center justify-center rounded-lg ${searchLoading ? 'bg-gray-400' : 'bg-primary'
-              }`}>
-            {searchLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-base font-bold text-white">Tìm hành khách phù hợp</Text>
-            )}
-          </TouchableOpacity>
+        {/* Quick Actions */}
+        <View className="mb-4 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+          <Text className="mb-3 text-base font-bold text-text-primary dark:text-white">
+            Thao tác nhanh
+          </Text>
+          <View className="flex-row flex-wrap gap-3">
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/(sender)/list_orders')}
+              className="flex-1 min-w-[30%] items-center rounded-lg bg-primary/10 p-4 dark:bg-primary/20"
+            >
+              <MaterialIcons name="list-alt" size={32} color="#2563EB" />
+              <Text className="mt-2 text-center text-xs font-semibold text-text-primary dark:text-white">
+                Đơn hàng
+              </Text>
+            </TouchableOpacity>
 
+            <TouchableOpacity
+              onPress={() => router.push('/notifications')}
+              className="flex-1 min-w-[30%] items-center rounded-lg bg-orange-100 p-4 dark:bg-orange-900/30"
+            >
+              <View className="relative">
+                <MaterialIcons name="notifications" size={32} color="#F59E0B" />
+                {unreadNotificationCount > 0 && (
+                  <View className="absolute -top-1 -right-1 h-4 w-4 items-center justify-center rounded-full bg-red-500">
+                    <Text className="text-[8px] font-bold text-white">
+                      {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text className="mt-2 text-center text-xs font-semibold text-text-primary dark:text-white">
+                Thông báo
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/upload_guide_screen')}
+              className="flex-1 min-w-[30%] items-center rounded-lg bg-green-100 p-4 dark:bg-green-900/30"
+            >
+              <MaterialIcons name="help-outline" size={32} color="#10B981" />
+              <Text className="mt-2 text-center text-xs font-semibold text-text-primary dark:text-white">
+                Hướng dẫn
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/(sender)/profile')}
+              className="flex-1 min-w-[30%] items-center rounded-lg bg-purple-100 p-4 dark:bg-purple-900/30"
+            >
+              <MaterialIcons name="person" size={32} color="#8B5CF6" />
+              <Text className="mt-2 text-center text-xs font-semibold text-text-primary dark:text-white">
+                Hồ sơ
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/report_issue_screen')}
+              className="flex-1 min-w-[30%] items-center rounded-lg bg-red-100 p-4 dark:bg-red-900/30"
+            >
+              <MaterialIcons name="support-agent" size={32} color="#EF4444" />
+              <Text className="mt-2 text-center text-xs font-semibold text-text-primary dark:text-white">
+                Hỗ trợ
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Tips Section */}
+        <View className="mb-4 rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20">
+          <View className="mb-2 flex-row items-center gap-2">
+            <MaterialIcons name="lightbulb" size={24} color="#2563EB" />
+            <Text className="text-base font-bold text-text-primary dark:text-white">
+              Mẹo sử dụng
+            </Text>
+          </View>
+          <View className="gap-2">
+            <View className="flex-row items-start gap-2">
+              <MaterialIcons name="check-circle" size={16} color="#10B981" style={{ marginTop: 2 }} />
+              <Text className="flex-1 text-sm text-text-secondary dark:text-gray-300">
+                Điền đầy đủ thông tin để tìm được hành khách phù hợp nhất
+              </Text>
+            </View>
+            <View className="flex-row items-start gap-2">
+              <MaterialIcons name="check-circle" size={16} color="#10B981" style={{ marginTop: 2 }} />
+              <Text className="flex-1 text-sm text-text-secondary dark:text-gray-300">
+                Ước tính giá trị tài liệu chính xác để đặt mức thưởng phù hợp
+              </Text>
+            </View>
+            <View className="flex-row items-start gap-2">
+              <MaterialIcons name="check-circle" size={16} color="#10B981" style={{ marginTop: 2 }} />
+              <Text className="flex-1 text-sm text-text-secondary dark:text-gray-300">
+                Kiểm tra thông báo thường xuyên để không bỏ lỡ cơ hội
+              </Text>
+            </View>
+          </View>
         </View>
 
       </ScrollView>
+
+      {/* Floating Action Button - Tìm hành khách */}
+      <TouchableOpacity
+        onPress={() => setSearchModalVisible(true)}
+        className="absolute bottom-6 right-6 h-16 w-16 items-center justify-center rounded-full bg-primary shadow-lg"
+        style={{
+          shadowColor: '#2563EB',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 8,
+        }}
+      >
+        <MaterialIcons name="search" size={28} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      {/* Search Modal */}
+      <SearchFlightModal
+        visible={searchModalVisible}
+        onClose={() => setSearchModalVisible(false)}
+        onSearch={handleSearch}
+        searchLoading={searchLoading}
+      />
     </SafeAreaView>
   );
 };
