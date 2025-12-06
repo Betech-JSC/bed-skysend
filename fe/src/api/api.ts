@@ -6,7 +6,7 @@ import { router } from "expo-router";
 
 // Tạo instance axios
 const api = axios.create({
-    baseURL: "http://localhost:8000/api",
+    baseURL: "https://skysend.betech-digital.com/api",
     headers: {
         "Content-Type": "application/json",
     },

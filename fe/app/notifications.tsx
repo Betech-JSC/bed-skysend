@@ -14,7 +14,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { Swipeable } from "react-native-gesture-handler";
 import { getDatabase, ref, onValue, off, set, remove } from "firebase/database";
 import { app } from "@/firebaseConfig";
@@ -380,160 +380,175 @@ export default function NotificationScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#2563EB" />
-                    <Text style={styles.loadingText}>Đang tải thông báo...</Text>
-                </View>
-            </SafeAreaView>
+            <>
+                <Stack.Screen
+                    options={{
+                        title: "Thông báo",
+                        headerShown: true,
+                    }}
+                />
+                <SafeAreaView style={styles.container}>
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#2563EB" />
+                        <Text style={styles.loadingText}>Đang tải thông báo...</Text>
+                    </View>
+                </SafeAreaView>
+            </>
+
         );
     }
 
     const hasNotifications = filteredNotifications.length > 0;
 
     return (
-        <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Top App Bar - Compact */}
-            <View className="flex-row items-center justify-between px-4 pt-3 pb-2 bg-background-light/80 dark:bg-background-dark/80">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={24} color="#1F2937" />
-                </TouchableOpacity>
-                <Text className="flex-1 text-center text-base font-bold text-text-primary-light dark:text-text-primary-dark -ml-6">
-                    Thông báo
-                </Text>
-                <TouchableOpacity
-                    onPress={handleMarkAllAsRead}
-                    disabled={markingAllAsRead || filteredNotifications.filter((n) => !n.read).length === 0}
-                >
-                    <Text
-                        className={`text-xs font-semibold ${markingAllAsRead || filteredNotifications.filter((n) => !n.read).length === 0
-                            ? "text-gray-400"
-                            : "text-primary"
-                            }`}
-                    >
-                        {markingAllAsRead ? "Đang xử lý..." : "Đánh dấu đã đọc"}
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Tab Filter - Compact */}
-            <View className="px-4 py-2">
-                <View className="flex-row border-b border-gray-200 dark:border-gray-700">
-                    {(["Tất cả", "Chưa đọc"] as const).map((tab) => {
-                        const isActive = filter === (tab === "Tất cả" ? "all" : "unread");
-                        return (
-                            <TouchableOpacity
-                                key={tab}
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                    const newFilter = tab === "Tất cả" ? "all" : "unread";
-                                    if (filter !== newFilter) {
-                                        setFilter(newFilter);
-                                    }
-                                }}
-                                className={`flex-1 pb-2 items-center border-b-2 ${isActive
-                                    ? "border-primary"
-                                    : "border-transparent"
-                                    }`}
-                            >
-                                <Text
-                                    className={`text-xs font-semibold ${isActive
-                                        ? "text-primary"
-                                        : "text-text-secondary-light dark:text-text-secondary-dark"
-                                        }`}
-                                >
-                                    {tab}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </View>
-
-            {/* Notification List */}
-            <FlatList
-                data={hasNotifications ? filteredNotifications : []}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item: notif }) => {
-                    const { icon, color } = getNotificationIcon(notif.type);
-                    return (
-                        <View className="px-3 mb-2">
-                            <Swipeable
-                                renderRightActions={(progress) => renderRightActions(notif, progress)}
-                                overshootRight={false}
-                                friction={2}
-                            >
-                                <TouchableOpacity
-                                    onPress={() => handleNotificationPress(notif)}
-                                    activeOpacity={0.7}
-                                    className={`flex-row items-center p-3 rounded-lg ${!notif.read
-                                        ? "bg-card-light dark:bg-card-dark border-l-2 border-primary"
-                                        : "bg-card-light/50 dark:bg-card-dark/50"
-                                        }`}
-                                >
-                                    {/* Icon - Compact */}
-                                    <View
-                                        style={{ backgroundColor: `${color}15` }}
-                                        className="w-10 h-10 rounded-full justify-center items-center mr-3"
-                                    >
-                                        <MaterialIcons name={icon as any} size={20} color={color} />
-                                    </View>
-
-                                    {/* Content - Compact */}
-                                    <View className="flex-1 mr-2">
-                                        <View className="flex-row items-center justify-between mb-0.5">
-                                            <Text
-                                                className={`text-sm font-semibold flex-1 ${!notif.read
-                                                    ? "text-text-primary-light dark:text-text-primary-dark"
-                                                    : "text-text-primary-light/70 dark:text-text-primary-dark/70"
-                                                    }`}
-                                                numberOfLines={1}
-                                            >
-                                                {notif.title}
-                                            </Text>
-                                            {/* Unread dot - Compact */}
-                                            {!notif.read && (
-                                                <View className="w-2 h-2 rounded-full bg-primary ml-2" />
-                                            )}
-                                        </View>
-                                        <Text
-                                            className={`text-xs ${!notif.read
-                                                ? "text-text-secondary-light dark:text-text-secondary-dark"
-                                                : "text-text-secondary-light/70 dark:text-text-secondary-dark/70"
-                                                }`}
-                                            numberOfLines={2}
-                                        >
-                                            {notif.body}
-                                        </Text>
-                                        <Text className="text-xs text-text-secondary-light/60 dark:text-text-secondary-dark/60 mt-0.5">
-                                            {formatTimeAgo(notif.timestamp)}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            </Swipeable>
-                        </View>
-                    );
+        <>
+            <Stack.Screen
+                options={{
+                    title: "Thông báo",
+                    headerShown: true,
                 }}
-                ListEmptyComponent={() => (
-                    <View className="items-center py-12 px-4">
-                        <View className="w-16 h-16 rounded-full bg-slate-200/60 dark:bg-slate-800 justify-center items-center">
-                            <MaterialIcons name="notifications" size={40} color="#94A3B8" />
-                        </View>
-                        <Text className="mt-4 text-base font-bold text-text-primary-light dark:text-text-primary-dark">
-                            {filter === "unread" ? "Không có thông báo chưa đọc" : "Chưa có thông báo nào"}
-                        </Text>
-                        <Text className="mt-1 text-xs text-text-secondary-light dark:text-text-secondary-dark text-center px-8">
-                            {filter === "unread"
-                                ? "Tất cả thông báo của bạn đã được đọc."
-                                : "Tất cả thông báo của bạn sẽ được hiển thị ở đây."}
-                        </Text>
-                    </View>
-                )}
-                contentContainerStyle={{ paddingTop: 8, paddingBottom: 16 }}
-                ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             />
-        </SafeAreaView>
+            <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Top App Bar - Compact */}
+                <View className="flex-row items-center justify-between px-4 pt-3 pb-2 bg-background-light/80 dark:bg-background-dark/80">
+                    <Text className="flex-1 text-center text-base font-bold text-text-primary-light dark:text-text-primary-dark -ml-6">
+                        Thông báo
+                    </Text>
+                    <TouchableOpacity
+                        onPress={handleMarkAllAsRead}
+                        disabled={markingAllAsRead || filteredNotifications.filter((n) => !n.read).length === 0}
+                    >
+                        <Text
+                            className={`text-xs font-semibold ${markingAllAsRead || filteredNotifications.filter((n) => !n.read).length === 0
+                                ? "text-gray-400"
+                                : "text-primary"
+                                }`}
+                        >
+                            {markingAllAsRead ? "Đang xử lý..." : "Đánh dấu đã đọc"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Tab Filter - Compact */}
+                <View className="px-4 py-2">
+                    <View className="flex-row border-b border-gray-200 dark:border-gray-700">
+                        {(["Tất cả", "Chưa đọc"] as const).map((tab) => {
+                            const isActive = filter === (tab === "Tất cả" ? "all" : "unread");
+                            return (
+                                <TouchableOpacity
+                                    key={tab}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        const newFilter = tab === "Tất cả" ? "all" : "unread";
+                                        if (filter !== newFilter) {
+                                            setFilter(newFilter);
+                                        }
+                                    }}
+                                    className={`flex-1 pb-2 items-center border-b-2 ${isActive
+                                        ? "border-primary"
+                                        : "border-transparent"
+                                        }`}
+                                >
+                                    <Text
+                                        className={`text-xs font-semibold ${isActive
+                                            ? "text-primary"
+                                            : "text-text-secondary-light dark:text-text-secondary-dark"
+                                            }`}
+                                    >
+                                        {tab}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+
+                {/* Notification List */}
+                <FlatList
+                    data={hasNotifications ? filteredNotifications : []}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item: notif }) => {
+                        const { icon, color } = getNotificationIcon(notif.type);
+                        return (
+                            <View className="px-3 mb-2">
+                                <Swipeable
+                                    renderRightActions={(progress) => renderRightActions(notif, progress)}
+                                    overshootRight={false}
+                                    friction={2}
+                                >
+                                    <TouchableOpacity
+                                        onPress={() => handleNotificationPress(notif)}
+                                        activeOpacity={0.7}
+                                        className={`flex-row items-center p-3 rounded-lg ${!notif.read
+                                            ? "bg-card-light dark:bg-card-dark border-l-2 border-primary"
+                                            : "bg-card-light/50 dark:bg-card-dark/50"
+                                            }`}
+                                    >
+                                        {/* Icon - Compact */}
+                                        <View
+                                            style={{ backgroundColor: `${color}15` }}
+                                            className="w-10 h-10 rounded-full justify-center items-center mr-3"
+                                        >
+                                            <MaterialIcons name={icon as any} size={20} color={color} />
+                                        </View>
+
+                                        {/* Content - Compact */}
+                                        <View className="flex-1 mr-2">
+                                            <View className="flex-row items-center justify-between mb-0.5">
+                                                <Text
+                                                    className={`text-sm font-semibold flex-1 ${!notif.read
+                                                        ? "text-text-primary-light dark:text-text-primary-dark"
+                                                        : "text-text-primary-light/70 dark:text-text-primary-dark/70"
+                                                        }`}
+                                                    numberOfLines={1}
+                                                >
+                                                    {notif.title}
+                                                </Text>
+                                                {/* Unread dot - Compact */}
+                                                {!notif.read && (
+                                                    <View className="w-2 h-2 rounded-full bg-primary ml-2" />
+                                                )}
+                                            </View>
+                                            <Text
+                                                className={`text-xs ${!notif.read
+                                                    ? "text-text-secondary-light dark:text-text-secondary-dark"
+                                                    : "text-text-secondary-light/70 dark:text-text-secondary-dark/70"
+                                                    }`}
+                                                numberOfLines={2}
+                                            >
+                                                {notif.body}
+                                            </Text>
+                                            <Text className="text-xs text-text-secondary-light/60 dark:text-text-secondary-dark/60 mt-0.5">
+                                                {formatTimeAgo(notif.timestamp)}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                </Swipeable>
+                            </View>
+                        );
+                    }}
+                    ListEmptyComponent={() => (
+                        <View className="items-center py-12 px-4">
+                            <View className="w-16 h-16 rounded-full bg-slate-200/60 dark:bg-slate-800 justify-center items-center">
+                                <MaterialIcons name="notifications" size={40} color="#94A3B8" />
+                            </View>
+                            <Text className="mt-4 text-base font-bold text-text-primary-light dark:text-text-primary-dark">
+                                {filter === "unread" ? "Không có thông báo chưa đọc" : "Chưa có thông báo nào"}
+                            </Text>
+                            <Text className="mt-1 text-xs text-text-secondary-light dark:text-text-secondary-dark text-center px-8">
+                                {filter === "unread"
+                                    ? "Tất cả thông báo của bạn đã được đọc."
+                                    : "Tất cả thông báo của bạn sẽ được hiển thị ở đây."}
+                            </Text>
+                        </View>
+                    )}
+                    contentContainerStyle={{ paddingTop: 8, paddingBottom: 16 }}
+                    ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                />
+            </SafeAreaView>
+        </>
+
     );
 }
 

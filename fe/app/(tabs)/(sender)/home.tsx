@@ -47,6 +47,20 @@ const Home = () => {
   });
 
   useEffect(() => {
+    // Chỉ fetch khi user đã đăng nhập
+    if (!user?.token) {
+      setOrders([]);
+      setAvailableCustomers([]);
+      setStats({
+        totalOrders: 0,
+        completedOrders: 0,
+        pendingOrders: 0,
+        totalEarnings: 0,
+      });
+      setLoading(false);
+      return;
+    }
+
     const fetchOrders = async () => {
       try {
         const response = await api.get('orders/getList');
@@ -70,10 +84,13 @@ const Home = () => {
         }
 
         setOrders(ordersData);
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError('Error fetching orders');
-        // Không set orders = [] để tránh làm mất data nếu có lỗi
+      } catch (err: any) {
+        // Chỉ log error nếu không phải 401 (unauthorized)
+        if (err.response?.status !== 401) {
+          console.error('Error fetching orders:', err);
+          setError('Error fetching orders');
+        }
+        setOrders([]);
       } finally {
         setLoading(false);
       }
@@ -82,10 +99,21 @@ const Home = () => {
     fetchOrders();
     fetchAvailableCustomers();
     fetchStats();
-  }, []);
+  }, [user?.token]);
 
   // Fetch stats
   const fetchStats = async () => {
+    // Kiểm tra authentication trước khi gọi API
+    if (!user?.token) {
+      setStats({
+        totalOrders: 0,
+        completedOrders: 0,
+        pendingOrders: 0,
+        totalEarnings: 0,
+      });
+      return;
+    }
+
     try {
       const response = await api.get('orders/getList');
       let ordersData = [];
@@ -112,13 +140,29 @@ const Home = () => {
         pendingOrders: pending,
         totalEarnings: earnings,
       });
-    } catch (err) {
-      console.error('Error fetching stats:', err);
+    } catch (err: any) {
+      // Chỉ log error nếu không phải 401 (unauthorized)
+      if (err.response?.status !== 401) {
+        console.error('Error fetching stats:', err);
+      }
+      setStats({
+        totalOrders: 0,
+        completedOrders: 0,
+        pendingOrders: 0,
+        totalEarnings: 0,
+      });
     }
   };
 
   // Fetch available customers
   const fetchAvailableCustomers = async () => {
+    // Kiểm tra authentication trước khi gọi API
+    if (!user?.token) {
+      setAvailableCustomers([]);
+      setLoadingCustomers(false);
+      return;
+    }
+
     try {
       setLoadingCustomers(true);
       const response = await api.get('sender/available-customers');
@@ -131,9 +175,12 @@ const Home = () => {
       }
 
       setAvailableCustomers(customersData);
-    } catch (err) {
-      console.error('Error fetching available customers:', err);
-      // Không hiển thị alert để không làm gián đoạn UX
+    } catch (err: any) {
+      // Chỉ log error nếu không phải 401 (unauthorized)
+      if (err.response?.status !== 401) {
+        console.error('Error fetching available customers:', err);
+      }
+      setAvailableCustomers([]);
     } finally {
       setLoadingCustomers(false);
     }

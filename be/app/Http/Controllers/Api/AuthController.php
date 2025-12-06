@@ -7,6 +7,7 @@ use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\Controller;
 use Laravel\Socialite\Facades\Socialite;
@@ -23,19 +24,33 @@ class AuthController extends Controller
                 'phone' => 'nullable|string|max:20',
                 'password' => 'required|string|min:8',
                 'role' => 'nullable|string|in:sender,customer',
+                'fcm_token' => 'nullable|string', // FCM token từ frontend
             ]);
 
             if ($validator->fails()) {
                 return ApiResponse::validationError($validator);
             }
 
-            $user = User::create([
+            $userData = [
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'password' => Hash::make($request->password),
                 'role' => $request->role ?? 'customer', // Default to customer if not provided
-            ]);
+            ];
+
+            // Lưu FCM token nếu có
+            if ($request->has('fcm_token') && !empty($request->fcm_token)) {
+                $userData['fcm_token'] = $request->fcm_token;
+                Log::info('FCM token provided during registration', ['fcm_token' => $request->fcm_token]);
+            } else {
+                Log::info('FCM token not provided during registration', [
+                    'has_fcm_token' => $request->has('fcm_token'),
+                    'fcm_token_value' => $request->input('fcm_token'),
+                ]);
+            }
+
+            $user = User::create($userData);
 
             $token = $user->createToken('MyApp')->plainTextToken;
 
@@ -56,6 +71,7 @@ class AuthController extends Controller
             $validator = Validator::make($request->all(), [
                 'email' => 'required|string|email|max:255',
                 'password' => 'required|string|min:8',
+                'fcm_token' => 'nullable|string', // FCM token từ frontend
             ]);
 
             if ($validator->fails()) {
@@ -67,6 +83,18 @@ class AuthController extends Controller
             if (!$user || !Hash::check($request->password, $user->password)) {
                 throw ValidationException::withMessages([
                     'email' => ['The provided credentials are incorrect.'],
+                ]);
+            }
+
+            // Lưu FCM token nếu có
+            if ($request->has('fcm_token') && !empty($request->fcm_token)) {
+                $user->fcm_token = $request->fcm_token;
+                $user->save();
+                Log::info('FCM token saved for user: ' . $user->id, ['fcm_token' => $request->fcm_token]);
+            } else {
+                Log::info('FCM token not provided or empty for user: ' . $user->id, [
+                    'has_fcm_token' => $request->has('fcm_token'),
+                    'fcm_token_value' => $request->input('fcm_token'),
                 ]);
             }
 

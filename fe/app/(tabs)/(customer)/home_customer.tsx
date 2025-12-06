@@ -75,6 +75,12 @@ export default function HomeScreen() {
 
     // Fetch Priority Requests từ API
     const fetchPriorityRequests = async () => {
+        // Kiểm tra authentication trước khi gọi API
+        if (!user?.token) {
+            setPriorityRequestsAPI([]);
+            return;
+        }
+
         try {
             setLoadingPriority(true);
             const response = await api.get('customer/requests/priority');
@@ -88,8 +94,11 @@ export default function HomeScreen() {
                 setPriorityRequestsAPI(data);
             }
         } catch (err: any) {
-            console.error('Lỗi tải priority requests:', err);
-            // Không hiển thị alert, chỉ log error để không làm gián đoạn UX
+            // Chỉ log error nếu không phải 401 (unauthorized)
+            if (err.response?.status !== 401) {
+                console.error('Lỗi tải priority requests:', err);
+            }
+            setPriorityRequestsAPI([]);
         } finally {
             setLoadingPriority(false);
         }
@@ -97,6 +106,12 @@ export default function HomeScreen() {
 
     // Fetch Matching Requests từ API
     const fetchMatchingRequests = async () => {
+        // Kiểm tra authentication trước khi gọi API
+        if (!user?.token) {
+            setMatchingRequestsAPI([]);
+            return;
+        }
+
         try {
             setLoadingMatching(true);
             const response = await api.get('customer/requests/matching');
@@ -110,18 +125,28 @@ export default function HomeScreen() {
                 setMatchingRequestsAPI(data);
             }
         } catch (err: any) {
-            console.error('Lỗi tải matching requests:', err);
-            // Không hiển thị alert, chỉ log error để không làm gián đoạn UX
+            // Chỉ log error nếu không phải 401 (unauthorized)
+            if (err.response?.status !== 401) {
+                console.error('Lỗi tải matching requests:', err);
+            }
+            setMatchingRequestsAPI([]);
         } finally {
             setLoadingMatching(false);
         }
     };
 
-    // Load data khi component mount
+    // Load data khi component mount hoặc user thay đổi
     useEffect(() => {
-        fetchPriorityRequests();
-        fetchMatchingRequests();
-    }, []);
+        // Chỉ fetch khi user đã đăng nhập
+        if (user?.token) {
+            fetchPriorityRequests();
+            fetchMatchingRequests();
+        } else {
+            // Clear data khi logout
+            setPriorityRequestsAPI([]);
+            setMatchingRequestsAPI([]);
+        }
+    }, [user?.token]);
 
     // Kết hợp data demo + API
     const allPriorityRequests = [...priorityRequestsAPI];

@@ -16,25 +16,55 @@ export function useUnreadChatCount() {
     const chatUnreadMapRef = useRef<Map<string, number>>(new Map());
 
     useEffect(() => {
-        if (!user?.id) {
+        // Check cả user id và token để đảm bảo user đã đăng nhập
+        if (!user?.id || !user?.token) {
             setUnreadCount(0);
+            // Cleanup listeners nếu có
+            listenersRef.current.forEach((unsubscribe) => unsubscribe());
+            listenersRef.current = [];
+            chatUnreadMapRef.current.clear();
             return;
         }
 
         let isMounted = true;
+        // Lưu token hiện tại để check trong async function
+        const currentToken = user?.token;
 
         const fetchAndListenUnreadCount = async () => {
             try {
-                // Lấy orders từ API
-                const response = await api.get("orders/getList");
-                let ordersData = [];
+                // Kiểm tra lại token trước khi gọi API
+                if (!currentToken || !isMounted) {
+                    return;
+                }
 
-                if (response.data?.success) {
-                    if (response.data.data?.data) {
-                        ordersData = response.data.data.data;
-                    } else if (Array.isArray(response.data.data)) {
-                        ordersData = response.data.data;
+                // Lấy orders từ API với error handling
+                let ordersData = [];
+                try {
+                    const response = await api.get("orders/getList");
+                    
+                    if (response.data?.success) {
+                        if (response.data.data?.data) {
+                            ordersData = response.data.data.data;
+                        } else if (Array.isArray(response.data.data)) {
+                            ordersData = response.data.data;
+                        }
                     }
+                } catch (apiError: any) {
+                    // Nếu là 401 (unauthorized), user đã logout - không cần xử lý
+                    if (apiError.response?.status === 401) {
+                        // Silent fail - user đã logout
+                        return;
+                    }
+                    // Log các lỗi khác nhưng không throw
+                    if (isMounted && currentToken) {
+                        console.error("Error fetching orders for unread count:", apiError);
+                    }
+                    return;
+                }
+
+                // Kiểm tra lại sau khi fetch API (user có thể đã logout trong lúc fetch)
+                if (!currentToken || !isMounted) {
+                    return;
                 }
 
                 // Lọc orders có chat_id
@@ -109,16 +139,30 @@ export function useUnreadChatCount() {
                         listenersRef.current.push(messagesUnsubscribe);
 
                     } catch (error) {
-                        console.error(`Error fetching chat ${chatId}:`, error);
+                        // Chỉ log error nếu không phải do user logout
+                        if (isMounted && currentToken) {
+                            console.error(`Error fetching chat ${chatId}:`, error);
+                        }
                     }
+                }
+
+                // Kiểm tra lại trước khi update (user có thể đã logout)
+                if (!currentToken || !isMounted) {
+                    return;
                 }
 
                 // Tính tổng ban đầu
                 updateTotalUnread();
 
-            } catch (error) {
-                console.error("Error fetching unread count:", error);
-                if (isMounted) {
+            } catch (error: any) {
+                // Nếu là 401 (unauthorized), user đã logout - không cần xử lý
+                if (error.response?.status === 401) {
+                    // Silent fail - user đã logout
+                    return;
+                }
+                // Chỉ log và update nếu user vẫn còn đăng nhập
+                if (isMounted && currentToken) {
+                    console.error("Error fetching unread count:", error);
                     setUnreadCount(0);
                 }
             }
@@ -132,7 +176,7 @@ export function useUnreadChatCount() {
             listenersRef.current = [];
             chatUnreadMapRef.current.clear();
         };
-    }, [user?.id, db]);
+    }, [user?.id, user?.token, db]);
 
     return unreadCount;
 }

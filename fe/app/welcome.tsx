@@ -1,11 +1,34 @@
 // Welcome/Onboarding Screen
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, SafeAreaView, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, Image, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function WelcomeScreen() {
     const router = useRouter();
+    const user = useSelector((state: RootState) => state.user);
+
+    // Redirect nếu đã đăng nhập
+    useEffect(() => {
+        if (user?.token && user?.role) {
+            if (user.role === "sender") {
+                router.replace("/(tabs)/(sender)/home");
+            } else if (user.role === "customer") {
+                router.replace("/(tabs)/(customer)/home_customer");
+            }
+        }
+    }, [user, router]);
+
+    // Nếu đang check auth, hiển thị loading
+    if (user?.token && user?.role) {
+        return (
+            <View className="flex-1 items-center justify-center bg-background-light dark:bg-background-dark">
+                <ActivityIndicator size="large" color="#2563EB" />
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">

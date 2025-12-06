@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 import { getDatabase, ref, onValue } from "firebase/database";
 import * as Notifications from "expo-notifications";
 import { app } from "@/firebaseConfig";
@@ -18,10 +20,14 @@ export function useOrderMatchList(
     onConfirm: (chatId: string) => void,
     onReject?: (orderId: string) => void
 ) {
+    const user = useSelector((state: RootState) => state.user);
     const shownMatchesRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
-        if (!orderIds || orderIds.length === 0) return;
+        // Chỉ chạy khi user đã đăng nhập và có orders
+        if (!user?.token || !orderIds || orderIds.length === 0) {
+            return;
+        }
 
         const unsubscribes = orderIds.map(orderId => {
             const matchRef = ref(db, `matches/${orderId}`);
@@ -50,18 +56,29 @@ export function useOrderMatchList(
 
                     // Nếu app đang mở, vẫn có thể hiển thị alert xác nhận
                     const confirmMatch = async () => {
+                        // Kiểm tra authentication trước khi gọi API
+                        if (!user?.token) {
+                            return;
+                        }
                         try {
                             const res = await api.post("/orders/confirm-match", {
                                 orderId,
                                 action: "confirm",
                             });
                             if (res.data.chat_id) onConfirm(res.data.chat_id);
-                        } catch (err) {
-                            console.error("Error confirming match", err);
+                        } catch (err: any) {
+                            // Chỉ log error nếu không phải 401 (unauthorized)
+                            if (err.response?.status !== 401) {
+                                console.error("Error confirming match", err);
+                            }
                         }
                     };
 
                     const rejectMatch = async () => {
+                        // Kiểm tra authentication trước khi gọi API
+                        if (!user?.token) {
+                            return;
+                        }
                         try {
                             await api.post("/orders/confirm-match", {
                                 orderId,
@@ -69,8 +86,11 @@ export function useOrderMatchList(
                             });
                             if (onReject) onReject(orderId);
                             shownMatchesRef.current.delete(orderId);
-                        } catch (err) {
-                            console.error("Error rejecting match", err);
+                        } catch (err: any) {
+                            // Chỉ log error nếu không phải 401 (unauthorized)
+                            if (err.response?.status !== 401) {
+                                console.error("Error rejecting match", err);
+                            }
                         }
                     };
 
@@ -84,5 +104,5 @@ export function useOrderMatchList(
         });
 
         return () => unsubscribes.forEach(unsub => unsub());
-    }, [orderIds]);
+    }, [orderIds, user?.token]);
 }

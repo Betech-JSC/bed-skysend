@@ -13,7 +13,7 @@ import api from "@/api/api";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import ItemOrder from "app/components/ItemOrder";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { getAvatarUrl } from "@/constants/avatars";
 
 function ListOrder() {
@@ -148,16 +148,15 @@ function ListOrder() {
         );
     }
 
-    // if (error) {
-    //     return (
-    //         <View className="flex-1 justify-center items-center">
-    //             <Text>{error}</Text>
-    //         </View>
-    //     );
-    // }
 
     return (
         <>
+            <Stack.Screen
+                options={{
+                    title: "Danh sách đơn hàng",
+                    headerShown: true,
+                }}
+            />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
                 {/* Top App Bar */}
                 <View className="h-16 flex-row items-center justify-between px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">

@@ -1,5 +1,5 @@
 // Login Screen - Professional UI/UX
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,8 +14,9 @@ import {
 } from "react-native";
 import api from "@/api/api";
 import { useRouter } from "expo-router";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "@/reducers/userSlice";
+import { RootState } from "@/store";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
@@ -26,7 +27,9 @@ import SocialMedia from "./components/SocialMedia";
 export default function LoginScreen() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const user = useSelector((state: RootState) => state.user);
 
+  // Tất cả hooks phải được gọi trước conditional return
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -35,6 +38,26 @@ export default function LoginScreen() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect nếu đã đăng nhập
+  useEffect(() => {
+    if (user?.token && user?.role) {
+      if (user.role === "sender") {
+        router.replace("/(tabs)/(sender)/home");
+      } else if (user.role === "customer") {
+        router.replace("/(tabs)/(customer)/home_customer");
+      }
+    }
+  }, [user, router]);
+
+  // Nếu đang check auth, hiển thị loading
+  if (user?.token && user?.role) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background-light dark:bg-background-dark">
+        <ActivityIndicator size="large" color="#2563EB" />
+      </View>
+    );
+  }
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -63,10 +86,34 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const response = await api.post("login", {
+      // Lấy Expo Push Token trước khi login
+      let expoPushToken = "";
+      try {
+        if (Constants.isDevice) {
+          const { status } = await Notifications.requestPermissionsAsync();
+          if (status === "granted") {
+            const tokenData = await Notifications.getExpoPushTokenAsync();
+            expoPushToken = tokenData.data;
+            console.log("Expo Push Token:", expoPushToken);
+          }
+        }
+      } catch (error) {
+        console.warn("Không lấy được push token:", error);
+      }
+
+      // Gửi FCM token trong request login
+      const loginPayload: any = {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
-      });
+      };
+
+      // Chỉ gửi fcm_token nếu có giá trị
+      if (expoPushToken && expoPushToken.trim() !== "") {
+        loginPayload.fcm_token = expoPushToken;
+        console.log("Sending FCM token to backend:", expoPushToken);
+      }
+
+      const response = await api.post("login", loginPayload);
 
       if (response.status === 200 || response.data?.success) {
         const userData = response.data?.data?.user || response.data?.data;
@@ -87,32 +134,24 @@ export default function LoginScreen() {
           token: token,
         };
 
-        // Lấy Expo Push Token
-        let expoPushToken = "";
-        try {
-          if (Constants.isDevice) {
-            const { status } = await Notifications.requestPermissionsAsync();
-            if (status === "granted") {
-              expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
-            }
+        // Lưu token lên Firebase (backup)
+        if (expoPushToken && user.id) {
+          try {
+            const db = getDatabase(app);
+            await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
+          } catch (error) {
+            console.warn("Không thể lưu push token vào Firebase:", error);
           }
-        } catch (error) {
-          console.warn("Không lấy được push token:", error);
         }
 
-        // Lưu token lên Firebase và database
-        if (expoPushToken && user.id) {
-          const db = getDatabase(app);
-          await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
+        // Lưu user vào Redux
+        dispatch(setUser(userWithRole));
 
-          try {
-            await api.post("/users/save-token", {
-              user_id: user.id,
-              token: expoPushToken,
-            });
-          } catch (error) {
-            console.warn("Không thể lưu push token vào database:", error);
-          }
+        // Redirect theo role - sử dụng replace để không thể quay lại
+        if (userWithRole.role === "sender") {
+          router.replace("/(tabs)/(sender)/home");
+        } else {
+          router.replace("/(tabs)/(customer)/home_customer");
         }
 
         // Lưu user vào Redux

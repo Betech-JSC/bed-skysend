@@ -1,5 +1,5 @@
 // Reset Password Screen
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -13,13 +13,17 @@ import {
     ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 import { MaterialIcons } from "@expo/vector-icons";
 import api from "@/api/api";
 
 export default function ResetPasswordScreen() {
     const router = useRouter();
+    const user = useSelector((state: RootState) => state.user);
     const { token, email } = useLocalSearchParams<{ token?: string; email?: string }>();
 
+    // Tất cả hooks phải được gọi trước conditional return
     const [formData, setFormData] = useState({
         email: email || "",
         password: "",
@@ -28,6 +32,31 @@ export default function ResetPasswordScreen() {
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [loading, setLoading] = useState(false);
+
+    // Redirect nếu đã đăng nhập (trừ khi có token reset password từ email)
+    useEffect(() => {
+        // Nếu có token reset password từ email, cho phép truy cập
+        if (token) {
+            return;
+        }
+        
+        if (user?.token && user?.role) {
+            if (user.role === "sender") {
+                router.replace("/(tabs)/(sender)/home");
+            } else if (user.role === "customer") {
+                router.replace("/(tabs)/(customer)/home_customer");
+            }
+        }
+    }, [user, router, token]);
+
+    // Nếu đang check auth và không có token reset, hiển thị loading
+    if (user?.token && user?.role && !token) {
+        return (
+            <View className="flex-1 items-center justify-center bg-background-light dark:bg-background-dark">
+                <ActivityIndicator size="large" color="#2563EB" />
+            </View>
+        );
+    }
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [success, setSuccess] = useState(false);

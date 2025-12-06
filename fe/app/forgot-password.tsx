@@ -1,5 +1,5 @@
 // Forgot Password Screen
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -13,16 +13,40 @@ import {
     ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 import { MaterialIcons } from "@expo/vector-icons";
 import api from "@/api/api";
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
+    const user = useSelector((state: RootState) => state.user);
 
+    // Tất cả hooks phải được gọi trước conditional return
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+
+    // Redirect nếu đã đăng nhập
+    useEffect(() => {
+        if (user?.token && user?.role) {
+            if (user.role === "sender") {
+                router.replace("/(tabs)/(sender)/home");
+            } else if (user.role === "customer") {
+                router.replace("/(tabs)/(customer)/home_customer");
+            }
+        }
+    }, [user, router]);
+
+    // Nếu đang check auth, hiển thị loading
+    if (user?.token && user?.role) {
+        return (
+            <View className="flex-1 items-center justify-center bg-background-light dark:bg-background-dark">
+                <ActivityIndicator size="large" color="#2563EB" />
+            </View>
+        );
+    }
 
     const validateEmail = (email: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

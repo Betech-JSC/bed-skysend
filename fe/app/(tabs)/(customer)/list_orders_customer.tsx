@@ -14,7 +14,7 @@ import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import api from "@/api/api";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { router, useRouter } from "expo-router";
+import { router, Stack, useRouter } from "expo-router";
 import UserProfileInfo from "../../components/UserProfileInfo";
 import { getAvatarUrl } from "@/constants/avatars";
 
@@ -160,221 +160,229 @@ function ListOrdersCustomer() {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Top App Bar */}
-            <View className="h-16 flex-row items-center justify-between px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back-ios-new" size={24} color="#1F2937" className="dark:text-white" />
-                </TouchableOpacity>
-                <Text className="text-lg font-bold text-text-primary dark:text-white absolute left-1/2 -translate-x-1/2">
-                    Đơn hàng của tôi
-                </Text>
-                <View className="w-10" />
-            </View>
+        <>
+            <Stack.Screen
+                options={{
+                    title: "Danh sách đơn hàng",
+                    headerShown: false,
+                }}
+            />
+            <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Top App Bar */}
+                <View className="h-16 flex-row items-center justify-between px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <MaterialIcons name="arrow-back-ios-new" size={24} color="#1F2937" className="dark:text-white" />
+                    </TouchableOpacity>
+                    <Text className="text-lg font-bold text-text-primary dark:text-white absolute left-1/2 -translate-x-1/2">
+                        Đơn hàng của tôi
+                    </Text>
+                    <View className="w-10" />
+                </View>
 
-            {/* Status Filter Tabs */}
-            <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    className="flex-row"
-                    contentContainerStyle={{ paddingHorizontal: 16 }}
-                >
-                    {filterTabs.map((tab) => {
-                        const isActive = orderStatusFilter === tab.status;
-                        return (
-                            <TouchableOpacity
-                                key={tab.status || 'all'}
-                                onPress={() => setOrderStatusFilter(tab.status)}
-                                className="items-center py-4 px-3 mr-2"
-                            >
-                                <Text
-                                    className={`text-sm font-bold pb-3 ${isActive
-                                        ? "text-primary border-b-2 border-primary"
-                                        : "text-text-secondary dark:text-gray-400 border-b-2 border-transparent"
-                                        }`}
+                {/* Status Filter Tabs */}
+                <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        className="flex-row"
+                        contentContainerStyle={{ paddingHorizontal: 16 }}
+                    >
+                        {filterTabs.map((tab) => {
+                            const isActive = orderStatusFilter === tab.status;
+                            return (
+                                <TouchableOpacity
+                                    key={tab.status || 'all'}
+                                    onPress={() => setOrderStatusFilter(tab.status)}
+                                    className="items-center py-4 px-3 mr-2"
                                 >
-                                    {tab.label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
-            </View>
-
-            {/* Order List */}
-            <ScrollView
-                className="flex-1 px-4 py-4"
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
-            >
-                {error ? (
-                    <View className="items-center pt-16">
-                        <MaterialIcons name="error-outline" size={48} color="#EF4444" />
-                        <Text className="mt-4 text-gray-600 dark:text-gray-400 text-center">
-                            {error}
-                        </Text>
-                        <TouchableOpacity
-                            onPress={fetchOrders}
-                            className="mt-4 bg-primary px-6 py-3 rounded-lg"
-                        >
-                            <Text className="text-white font-bold">Thử lại</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : orders.length === 0 ? (
-                    <View className="items-center pt-16">
-                        <View className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center">
-                            <MaterialIcons name="inventory-2" size={48} color="#9CA3AF" />
-                        </View>
-                        <Text className="mt-5 text-lg font-bold text-text-primary dark:text-white">
-                            Chưa có đơn hàng nào
-                        </Text>
-                        <Text className="text-sm text-text-secondary dark:text-gray-400 mt-1 text-center px-8">
-                            Khi bạn có đơn hàng, chúng sẽ xuất hiện ở đây.
-                        </Text>
-                    </View>
-                ) : (
-                    orders.map((order: any) => {
-                        const flight = order.flight || {};
-                        const sender = order.sender || order.partner || {};
-                        const request = order.request || {};
-                        const statusInfo = getStatusLabel(order.status || 'pending');
-                        const nextStatus = getNextStatus(order.status);
-
-                        return (
-                            <View
-                                key={order.id || order.uuid}
-                                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-4"
-                            >
-                                {/* Header: ID + Status */}
-                                <View className="flex-row justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                                    <Text className="text-sm font-semibold text-text-secondary dark:text-gray-400">
-                                        #{order.uuid || order.id}
+                                    <Text
+                                        className={`text-sm font-bold pb-3 ${isActive
+                                            ? "text-primary border-b-2 border-primary"
+                                            : "text-text-secondary dark:text-gray-400 border-b-2 border-transparent"
+                                            }`}
+                                    >
+                                        {tab.label}
                                     </Text>
-                                    <View className={`px-2.5 py-1 rounded-full ${statusInfo.color}`}>
-                                        <Text className="text-xs font-bold">{statusInfo.label}</Text>
-                                    </View>
-                                </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
 
-                                {/* Route */}
-                                <View className="px-4 py-6">
-                                    <View className="flex-row items-center justify-between">
-                                        <Text className="text-xl font-bold text-text-primary dark:text-white">
-                                            {flight.from_airport || 'Chưa có'}
+                {/* Order List */}
+                <ScrollView
+                    className="flex-1 px-4 py-4"
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    }
+                >
+                    {error ? (
+                        <View className="items-center pt-16">
+                            <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+                            <Text className="mt-4 text-gray-600 dark:text-gray-400 text-center">
+                                {error}
+                            </Text>
+                            <TouchableOpacity
+                                onPress={fetchOrders}
+                                className="mt-4 bg-primary px-6 py-3 rounded-lg"
+                            >
+                                <Text className="text-white font-bold">Thử lại</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : orders.length === 0 ? (
+                        <View className="items-center pt-16">
+                            <View className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center">
+                                <MaterialIcons name="inventory-2" size={48} color="#9CA3AF" />
+                            </View>
+                            <Text className="mt-5 text-lg font-bold text-text-primary dark:text-white">
+                                Chưa có đơn hàng nào
+                            </Text>
+                            <Text className="text-sm text-text-secondary dark:text-gray-400 mt-1 text-center px-8">
+                                Khi bạn có đơn hàng, chúng sẽ xuất hiện ở đây.
+                            </Text>
+                        </View>
+                    ) : (
+                        orders.map((order: any) => {
+                            const flight = order.flight || {};
+                            const sender = order.sender || order.partner || {};
+                            const request = order.request || {};
+                            const statusInfo = getStatusLabel(order.status || 'pending');
+                            const nextStatus = getNextStatus(order.status);
+
+                            return (
+                                <View
+                                    key={order.id || order.uuid}
+                                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-4"
+                                >
+                                    {/* Header: ID + Status */}
+                                    <View className="flex-row justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                                        <Text className="text-sm font-semibold text-text-secondary dark:text-gray-400">
+                                            #{order.uuid || order.id}
                                         </Text>
-                                        <View className="flex-row items-center gap-2">
-                                            <View className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
-                                            <MaterialIcons name="flight-takeoff" size={20} color="#2563EB" />
-                                            <View className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
+                                        <View className={`px-2.5 py-1 rounded-full ${statusInfo.color}`}>
+                                            <Text className="text-xs font-bold">{statusInfo.label}</Text>
                                         </View>
-                                        <Text className="text-xl font-bold text-text-primary dark:text-white">
-                                            {flight.to_airport || 'Chưa có'}
-                                        </Text>
-                                    </View>
-                                    {flight.flight_date && (() => {
-                                        try {
-                                            const date = new Date(flight.flight_date);
-                                            if (!isNaN(date.getTime())) {
-                                                return (
-                                                    <Text className="text-center text-sm text-gray-500 mt-2">
-                                                        {date.toLocaleDateString('vi-VN')}
-                                                    </Text>
-                                                );
-                                            }
-                                        } catch {}
-                                        return null;
-                                    })()}
-                                </View>
-
-                                <View className="h-px bg-gray-100 dark:bg-gray-700" />
-
-                                {/* Sender Info + Reward */}
-                                <View className="flex-row items-center justify-between px-4 py-4 gap-3">
-                                    <View className="flex-row items-center gap-3 flex-1">
-                                        <UserProfileInfo
-                                            avatar={getAvatarUrl(sender.avatar)}
-                                            name={sender.name || 'Người gửi'}
-                                            subtitle={sender.phone || ''}
-                                            size="large"
-                                        />
                                     </View>
 
-                                    <View className="items-end">
-                                        <Text className="font-bold text-text-primary dark:text-white">
-                                            {order.reward ? `${Number(order.reward).toLocaleString('vi-VN')}đ` : 'Chưa có'}
-                                        </Text>
-                                        <Text className="text-xs text-text-secondary dark:text-gray-400">
-                                            Phần thưởng
-                                        </Text>
+                                    {/* Route */}
+                                    <View className="px-4 py-6">
+                                        <View className="flex-row items-center justify-between">
+                                            <Text className="text-xl font-bold text-text-primary dark:text-white">
+                                                {flight.from_airport || 'Chưa có'}
+                                            </Text>
+                                            <View className="flex-row items-center gap-2">
+                                                <View className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
+                                                <MaterialIcons name="flight-takeoff" size={20} color="#2563EB" />
+                                                <View className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
+                                            </View>
+                                            <Text className="text-xl font-bold text-text-primary dark:text-white">
+                                                {flight.to_airport || 'Chưa có'}
+                                            </Text>
+                                        </View>
+                                        {flight.flight_date && (() => {
+                                            try {
+                                                const date = new Date(flight.flight_date);
+                                                if (!isNaN(date.getTime())) {
+                                                    return (
+                                                        <Text className="text-center text-sm text-gray-500 mt-2">
+                                                            {date.toLocaleDateString('vi-VN')}
+                                                        </Text>
+                                                    );
+                                                }
+                                            } catch { }
+                                            return null;
+                                        })()}
                                     </View>
-                                </View>
 
-                                {/* Request Info */}
-                                {request.item_description && (
-                                    <View className="px-4 pb-3">
-                                        <Text className="text-xs text-gray-500 mb-1">Mô tả:</Text>
-                                        <Text className="text-sm text-text-dark-gray dark:text-white">
-                                            {request.item_description}
-                                        </Text>
+                                    <View className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                                    {/* Sender Info + Reward */}
+                                    <View className="flex-row items-center justify-between px-4 py-4 gap-3">
+                                        <View className="flex-row items-center gap-3 flex-1">
+                                            <UserProfileInfo
+                                                avatar={getAvatarUrl(sender.avatar)}
+                                                name={sender.name || 'Người gửi'}
+                                                subtitle={sender.phone || ''}
+                                                size="large"
+                                            />
+                                        </View>
+
+                                        <View className="items-end">
+                                            <Text className="font-bold text-text-primary dark:text-white">
+                                                {order.reward ? `${Number(order.reward).toLocaleString('vi-VN')}đ` : 'Chưa có'}
+                                            </Text>
+                                            <Text className="text-xs text-text-secondary dark:text-gray-400">
+                                                Phần thưởng
+                                            </Text>
+                                        </View>
                                     </View>
-                                )}
 
-                                {/* Action Buttons */}
-                                <View className="px-4 pb-4 pt-0 gap-2">
-                                    <View className="flex-row gap-2">
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                const orderIdentifier = order.id || order.uuid;
-                                                router.push({
-                                                    pathname: '/orders_details',
-                                                    params: { orderId: String(orderIdentifier) }
-                                                });
-                                            }}
-                                            className="bg-primary flex-1 h-11 rounded-lg items-center justify-center"
-                                        >
-                                            <Text className="text-white font-bold text-sm">Xem chi tiết</Text>
-                                        </TouchableOpacity>
+                                    {/* Request Info */}
+                                    {request.item_description && (
+                                        <View className="px-4 pb-3">
+                                            <Text className="text-xs text-gray-500 mb-1">Mô tả:</Text>
+                                            <Text className="text-sm text-text-dark-gray dark:text-white">
+                                                {request.item_description}
+                                            </Text>
+                                        </View>
+                                    )}
 
-                                        {sender.name && (
+                                    {/* Action Buttons */}
+                                    <View className="px-4 pb-4 pt-0 gap-2">
+                                        <View className="flex-row gap-2">
                                             <TouchableOpacity
                                                 onPress={() => {
-                                                    // Use chat_id if available, otherwise use order id/uuid
-                                                    const chatId = order.chat_id || order.id || order.uuid;
+                                                    const orderIdentifier = order.id || order.uuid;
                                                     router.push({
-                                                        pathname: '/chat/[chatId]',
-                                                        params: {
-                                                            chatId: String(chatId),
-                                                            partnerName: sender.name || 'Người gửi',
-                                                            partnerAvatar: getAvatarUrl(sender.avatar),
-                                                        }
-                                                    } as any);
+                                                        pathname: '/orders_details',
+                                                        params: { orderId: String(orderIdentifier) }
+                                                    });
                                                 }}
-                                                className="bg-blue-600 h-11 rounded-lg items-center justify-center px-4"
+                                                className="bg-primary flex-1 h-11 rounded-lg items-center justify-center"
                                             >
-                                                <MaterialIcons name="chat" size={20} color="white" />
+                                                <Text className="text-white font-bold text-sm">Xem chi tiết</Text>
+                                            </TouchableOpacity>
+
+                                            {sender.name && (
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        // Use chat_id if available, otherwise use order id/uuid
+                                                        const chatId = order.chat_id || order.id || order.uuid;
+                                                        router.push({
+                                                            pathname: '/chat/[chatId]',
+                                                            params: {
+                                                                chatId: String(chatId),
+                                                                partnerName: sender.name || 'Người gửi',
+                                                                partnerAvatar: getAvatarUrl(sender.avatar),
+                                                            }
+                                                        } as any);
+                                                    }}
+                                                    className="bg-blue-600 h-11 rounded-lg items-center justify-center px-4"
+                                                >
+                                                    <MaterialIcons name="chat" size={20} color="white" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+
+                                        {nextStatus && (
+                                            <TouchableOpacity
+                                                onPress={() => handleUpdateStatus(order.id, order.uuid, order.status)}
+                                                className="bg-green-600 h-11 rounded-lg items-center justify-center"
+                                            >
+                                                <Text className="text-white font-bold text-sm">
+                                                    Cập nhật: {getStatusLabel(nextStatus).label}
+                                                </Text>
                                             </TouchableOpacity>
                                         )}
                                     </View>
-
-                                    {nextStatus && (
-                                        <TouchableOpacity
-                                            onPress={() => handleUpdateStatus(order.id, order.uuid, order.status)}
-                                            className="bg-green-600 h-11 rounded-lg items-center justify-center"
-                                        >
-                                            <Text className="text-white font-bold text-sm">
-                                                Cập nhật: {getStatusLabel(nextStatus).label}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
                                 </View>
-                            </View>
-                        );
-                    })
-                )}
-            </ScrollView>
-        </SafeAreaView>
+                            );
+                        })
+                    )}
+                </ScrollView>
+            </SafeAreaView>
+        </>
     );
 }
 

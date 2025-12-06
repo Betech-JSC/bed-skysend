@@ -265,28 +265,6 @@ export default function ProfileScreen() {
 
                         <View className="mx-4 border-t border-slate-100 dark:border-slate-700" />
 
-                        {/* Vai trò của tôi - chỉ hiển thị cho customer */}
-                        {!isSender && (
-                            <>
-                                <View className="flex-row items-center justify-between px-4 py-4">
-                                    <View className="flex-row items-center gap-4">
-                                        <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                            <MaterialIcons name="swap-horiz" size={24} color="#2563EB" />
-                                        </View>
-                                        <Text className="text-base font-medium text-text-primary dark:text-white">
-                                            Vai trò của tôi
-                                        </Text>
-                                    </View>
-                                    <Switch
-                                        value={isSender}
-                                        onValueChange={toggleRole}
-                                        trackColor={{ false: '#D1D5DB', true: '#2563EB' }}
-                                        thumbColor={isSender ? '#ffffff' : '#f4f3f4'}
-                                    />
-                                </View>
-                                <View className="mx-4 border-t border-slate-100 dark:border-slate-700" />
-                            </>
-                        )}
                     </View>
 
                     {/* Group 2 */}
