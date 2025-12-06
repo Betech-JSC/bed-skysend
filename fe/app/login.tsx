@@ -88,18 +88,22 @@ export default function LoginScreen() {
     try {
       // Lấy Expo Push Token trước khi login
       let expoPushToken = "";
-      try {
-        if (Constants.isDevice) {
-          const { status } = await Notifications.requestPermissionsAsync();
-          if (status === "granted") {
-            const tokenData = await Notifications.getExpoPushTokenAsync();
-            expoPushToken = tokenData.data;
-            console.log("Expo Push Token:", expoPushToken);
-          }
-        }
-      } catch (error) {
-        console.warn("Không lấy được push token:", error);
-      }
+
+      const tokenData = await Notifications.getExpoPushTokenAsync();
+      expoPushToken = tokenData.data;
+
+      // try {
+      //   if (Constants.isDevice) {
+      //     const { status } = await Notifications.requestPermissionsAsync();
+      //     if (status === "granted") {
+      //       const tokenData = await Notifications.getExpoPushTokenAsync();
+      //       expoPushToken = tokenData.data;
+      //       console.log("Expo Push Token:", expoPushToken);
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.warn("Không lấy được push token:", error);
+      // }
 
       // Gửi FCM token trong request login
       const loginPayload: any = {
