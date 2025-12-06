@@ -8,16 +8,20 @@ use Illuminate\Http\Request;
 
 use App\Models\Flight;
 use App\Models\User;
+use App\Models\Order;
 use App\Services\FirebaseService;
+use App\Services\FlightTrackingService;
 use App\Services\ExpoPushService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class FlightController extends Controller
 {
     public function __construct(
-        private FirebaseService $firebaseService
+        private FirebaseService $firebaseService,
+        private FlightTrackingService $trackingService
     ) {}
     /**
      * Lấy danh sách chuyến bay đã đăng của user hiện tại
@@ -327,5 +331,225 @@ class FlightController extends Controller
                 'has_more' => $flights->hasMorePages(),
             ],
         ]);
+    }
+
+    /**
+     * Get current tracking data for a flight
+     * 
+     * @param int $id Flight ID
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTracking($id)
+    {
+        $flight = Flight::where('customer_id', auth()->id())
+            ->findOrFail($id);
+
+        // Try to fetch latest data from OpenSky Network
+        $flightData = null;
+        if ($flight->flight_number && $flight->flight_date) {
+            $flightData = $this->trackingService->fetchFlightData(
+                $flight->flight_number,
+                $flight->flight_date->format('Y-m-d')
+            );
+
+            // Update flight position if we got data
+            if ($flightData) {
+                $this->trackingService->updateFlightPosition($flight, $flightData);
+                $this->trackingService->pushTrackingUpdateToFirebase($flight, $this->firebaseService);
+            }
+        }
+
+        // Get airport coordinates
+        $fromCoords = $this->trackingService->getAirportCoordinates($flight->from_airport);
+        $toCoords = $this->trackingService->getAirportCoordinates($flight->to_airport);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'flight' => [
+                    'id' => $flight->id,
+                    'flight_number' => $flight->flight_number,
+                    'from_airport' => $flight->from_airport,
+                    'to_airport' => $flight->to_airport,
+                    'tracking_status' => $flight->tracking_status,
+                    'departed_at' => $flight->departed_at?->toIso8601String(),
+                    'landed_at' => $flight->landed_at?->toIso8601String(),
+                    'estimated_arrival_at' => $flight->estimated_arrival_at?->toIso8601String(),
+                ],
+                'current_position' => [
+                    'latitude' => $flight->current_latitude,
+                    'longitude' => $flight->current_longitude,
+                    'altitude' => $flight->current_altitude,
+                ],
+                'airports' => [
+                    'from' => [
+                        'code' => $flight->from_airport,
+                        'latitude' => $fromCoords[0] ?? null,
+                        'longitude' => $fromCoords[1] ?? null,
+                    ],
+                    'to' => [
+                        'code' => $flight->to_airport,
+                        'latitude' => $toCoords[0] ?? null,
+                        'longitude' => $toCoords[1] ?? null,
+                    ],
+                ],
+                'realtime_data' => $flightData,
+                'last_updated' => $flight->last_tracking_update_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Update flight tracking status (departed/landed)
+     * Customer manually updates when flight takes off or lands
+     * 
+     * @param Request $request
+     * @param int $id Flight ID
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateTrackingStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:departed,landed',
+        ]);
+
+        return DB::transaction(function () use ($request, $id) {
+            $flight = Flight::where('customer_id', auth()->id())
+                ->findOrFail($id);
+
+            $newStatus = $request->status;
+            $oldStatus = $flight->tracking_status;
+
+            // Validate status transition
+            if ($newStatus === 'departed') {
+                if (!in_array($oldStatus, ['scheduled', 'boarding'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Chỉ có thể xác nhận cất cánh khi chuyến bay ở trạng thái scheduled hoặc boarding',
+                    ], 400);
+                }
+            } elseif ($newStatus === 'landed') {
+                if ($oldStatus !== 'in_flight') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Chỉ có thể xác nhận hạ cánh khi chuyến bay đang bay',
+                    ], 400);
+                }
+            }
+
+            // Update flight tracking status
+            $updateData = [
+                'tracking_status' => $newStatus,
+                'last_tracking_update_at' => now(),
+            ];
+
+            if ($newStatus === 'departed') {
+                $updateData['departed_at'] = now();
+            } elseif ($newStatus === 'landed') {
+                $updateData['landed_at'] = now();
+            }
+
+            $flight->update($updateData);
+
+            // Auto-update related orders
+            $this->updateRelatedOrders($flight, $newStatus);
+
+            // Push update to Firebase
+            $this->trackingService->pushTrackingUpdateToFirebase($flight, $this->firebaseService);
+
+            // Send notifications
+            $this->notifyOrderStatusUpdate($flight, $newStatus);
+
+            return response()->json([
+                'success' => true,
+                'message' => $newStatus === 'departed'
+                    ? 'Đã xác nhận chuyến bay cất cánh'
+                    : 'Đã xác nhận chuyến bay hạ cánh',
+                'data' => $flight->fresh(),
+            ]);
+        });
+    }
+
+    /**
+     * Auto-update related orders when flight status changes
+     * 
+     * @param Flight $flight
+     * @param string $flightStatus
+     * @return void
+     */
+    protected function updateRelatedOrders(Flight $flight, string $flightStatus): void
+    {
+        $orders = Order::where('flight_id', $flight->id)
+            ->whereIn('status', ['picked_up', 'in_transit', 'arrived'])
+            ->get();
+
+        foreach ($orders as $order) {
+            if ($flightStatus === 'departed' && $order->status === 'picked_up') {
+                // Flight departed → order in transit
+                $order->update([
+                    'status' => 'in_transit',
+                ]);
+                Log::info("Auto-updated order {$order->id} to in_transit (flight departed)");
+            } elseif ($flightStatus === 'landed' && $order->status === 'in_transit') {
+                // Flight landed → order arrived
+                $order->update([
+                    'status' => 'arrived',
+                ]);
+                Log::info("Auto-updated order {$order->id} to arrived (flight landed)");
+            }
+        }
+    }
+
+    /**
+     * Send notifications to senders when order status auto-updates
+     * 
+     * @param Flight $flight
+     * @param string $flightStatus
+     * @return void
+     */
+    protected function notifyOrderStatusUpdate(Flight $flight, string $flightStatus): void
+    {
+        $orders = Order::where('flight_id', $flight->id)
+            ->with('sender')
+            ->get();
+
+        foreach ($orders as $order) {
+            $sender = $order->sender;
+            if (!$sender) continue;
+
+            $title = 'Cập nhật đơn hàng';
+            $body = '';
+
+            if ($flightStatus === 'departed') {
+                $body = "Chuyến bay {$flight->flight_number} đã cất cánh. Đơn hàng của bạn đang được vận chuyển.";
+            } elseif ($flightStatus === 'landed') {
+                $body = "Chuyến bay {$flight->flight_number} đã hạ cánh. Đơn hàng của bạn đã đến sân bay đích.";
+            }
+
+            if ($body) {
+                // Push to Firebase
+                $this->firebaseService->pushNotification($sender->id, $title, $body, [
+                    'type' => 'order_status',
+                    'order_id' => $order->id,
+                    'order_uuid' => $order->uuid,
+                    'flight_id' => $flight->id,
+                ]);
+
+                // Send Expo push notification
+                if ($sender->fcm_token) {
+                    ExpoPushService::sendNotification(
+                        $sender->fcm_token,
+                        $title,
+                        $body,
+                        [
+                            'type' => 'order_status',
+                            'order_id' => $order->id,
+                            'order_uuid' => $order->uuid,
+                            'flight_id' => $flight->id,
+                        ]
+                    );
+                }
+            }
+        }
     }
 }

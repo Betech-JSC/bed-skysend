@@ -9,6 +9,11 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import FlightTrackingMap from "./FlightTrackingMap";
+import FlightStatusUpdateButtons from "./FlightStatusUpdateButtons";
+import { useFlightTracking } from "@/hooks/useFlightTracking";
 
 interface OrderDetailContentProps {
     order: any;
@@ -24,6 +29,20 @@ export default function OrderDetailContent({
     onRetry,
 }: OrderDetailContentProps) {
     const router = useRouter();
+    const user = useSelector((state: RootState) => state.user);
+
+    // Flight tracking hook - only if order has flight and status >= picked_up
+    const shouldShowTracking = order?.flight?.id &&
+        ['picked_up', 'in_transit', 'arrived', 'delivered'].includes(order?.status);
+
+    const { trackingData, loading: trackingLoading, refresh: refreshTracking } = useFlightTracking({
+        flightId: order?.flight?.id || 0,
+        autoFetch: shouldShowTracking,
+        refreshInterval: 30, // Refresh every 30 seconds
+    });
+
+    // Check if current user is the customer (can update flight status)
+    const isCustomer = order?.flight?.customer_id === user?.id;
 
     const getStatusLabel = (status: string) => {
         const statusMap: { [key: string]: { label: string; step: number } } = {
@@ -57,6 +76,18 @@ export default function OrderDetailContent({
             return '--:--';
         }
     };
+
+    const getFlightStatusLabel = React.useCallback((status: string): string => {
+        const labels: { [key: string]: string } = {
+            scheduled: 'Đã lên lịch',
+            boarding: 'Đang lên máy bay',
+            departed: 'Đã cất cánh',
+            in_flight: 'Đang bay',
+            landed: 'Đã hạ cánh',
+            arrived: 'Đã đến nơi',
+        };
+        return labels[status] || status;
+    }, []);
 
     if (loading) {
         return (
@@ -118,6 +149,57 @@ export default function OrderDetailContent({
                         <Text className={statusInfo.step >= 4 ? 'font-bold text-primary' : ''}>Hoàn thành</Text>
                     </View>
                 </View>
+
+                {/* Flight Tracking Section - Only show if order has flight and status >= picked_up */}
+                {shouldShowTracking && order?.flight?.id && (
+                    <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
+                        <Text className="text-lg font-bold mb-3">Theo dõi chuyến bay</Text>
+
+                        <FlightTrackingMap
+                            trackingData={trackingData}
+                            loading={trackingLoading}
+                            height={300}
+                        />
+
+                        {/* Flight status update buttons - Only for customer */}
+                        {isCustomer && (
+                            <FlightStatusUpdateButtons
+                                flightId={order.flight.id}
+                                currentStatus={trackingData?.flight?.tracking_status || 'scheduled'}
+                                onStatusUpdated={refreshTracking}
+                                isCustomer={isCustomer}
+                            />
+                        )}
+
+                        {/* Tracking timeline */}
+                        {trackingData?.flight && (
+                            <View className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <View className="flex-row items-center justify-between mb-2">
+                                    <Text className="text-sm text-gray-600 dark:text-gray-400">Trạng thái chuyến bay</Text>
+                                    <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+                                        {getFlightStatusLabel(trackingData.flight.tracking_status)}
+                                    </Text>
+                                </View>
+                                {trackingData.flight.departed_at && (
+                                    <View className="flex-row items-center justify-between mb-2">
+                                        <Text className="text-sm text-gray-600 dark:text-gray-400">Cất cánh</Text>
+                                        <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            {formatTime(trackingData.flight.departed_at)}
+                                        </Text>
+                                    </View>
+                                )}
+                                {trackingData.flight.landed_at && (
+                                    <View className="flex-row items-center justify-between">
+                                        <Text className="text-sm text-gray-600 dark:text-gray-400">Hạ cánh</Text>
+                                        <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            {formatTime(trackingData.flight.landed_at)}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 {/* Thông tin đơn hàng */}
                 <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
