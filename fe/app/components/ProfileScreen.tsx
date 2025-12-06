@@ -290,22 +290,6 @@ export default function ProfileScreen() {
                                 <View className="mx-4 border-t border-slate-100 dark:border-slate-700" />
                             </>
                         )}
-
-                        {/* Ngân hàng */}
-                        <TouchableOpacity
-                            onPress={() => router.push('/bank_info')}
-                            className="flex-row items-center justify-between px-4 py-4"
-                        >
-                            <View className="flex-row items-center gap-4">
-                                <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                    <MaterialIcons name="account-balance-wallet" size={24} color="#2563EB" />
-                                </View>
-                                <Text className="text-base font-medium text-text-primary dark:text-white">
-                                    Thông tin ngân hàng / Ví nhận tiền
-                                </Text>
-                            </View>
-                            <MaterialIcons name="chevron-right" size={24} color="#6B7280" />
-                        </TouchableOpacity>
                     </View>
 
                     {/* Group 2 */}

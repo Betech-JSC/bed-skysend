@@ -262,7 +262,7 @@ function ListOrdersCustomer() {
                                 <View className="px-4 py-6">
                                     <View className="flex-row items-center justify-between">
                                         <Text className="text-xl font-bold text-text-primary dark:text-white">
-                                            {flight.from_airport || 'N/A'}
+                                            {flight.from_airport || 'Chưa có'}
                                         </Text>
                                         <View className="flex-row items-center gap-2">
                                             <View className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
@@ -270,14 +270,22 @@ function ListOrdersCustomer() {
                                             <View className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
                                         </View>
                                         <Text className="text-xl font-bold text-text-primary dark:text-white">
-                                            {flight.to_airport || 'N/A'}
+                                            {flight.to_airport || 'Chưa có'}
                                         </Text>
                                     </View>
-                                    {flight.flight_date && (
-                                        <Text className="text-center text-sm text-gray-500 mt-2">
-                                            {new Date(flight.flight_date).toLocaleDateString('vi-VN')}
-                                        </Text>
-                                    )}
+                                    {flight.flight_date && (() => {
+                                        try {
+                                            const date = new Date(flight.flight_date);
+                                            if (!isNaN(date.getTime())) {
+                                                return (
+                                                    <Text className="text-center text-sm text-gray-500 mt-2">
+                                                        {date.toLocaleDateString('vi-VN')}
+                                                    </Text>
+                                                );
+                                            }
+                                        } catch {}
+                                        return null;
+                                    })()}
                                 </View>
 
                                 <View className="h-px bg-gray-100 dark:bg-gray-700" />
@@ -295,7 +303,7 @@ function ListOrdersCustomer() {
 
                                     <View className="items-end">
                                         <Text className="font-bold text-text-primary dark:text-white">
-                                            {order.reward ? `${Number(order.reward).toLocaleString('vi-VN')}đ` : 'N/A'}
+                                            {order.reward ? `${Number(order.reward).toLocaleString('vi-VN')}đ` : 'Chưa có'}
                                         </Text>
                                         <Text className="text-xs text-text-secondary dark:text-gray-400">
                                             Phần thưởng

@@ -601,7 +601,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
                                 Mã đơn: {order.tracking_code || `#${order.id}`}
                             </Text>
                             <Text style={styles.orderItemStatus}>
-                                Trạng thái: {order.status || 'N/A'}
+                                Trạng thái: {order.status || 'Chưa xác định'}
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={20} color="#999" />

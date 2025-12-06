@@ -127,14 +127,31 @@ export default function PrivateRequestDetailScreen() {
         }).format(amount);
     };
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("vi-VN", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
+    const formatDate = (dateString: string | null | undefined): string | null => {
+        if (!dateString) return null;
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return null;
+            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+            return `${days[date.getDay()]}, ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        } catch {
+            return null;
+        }
+    };
+
+    const formatAirport = (airport: string | null | undefined): string | null => {
+        if (!airport || airport.trim() === '') return null;
+        return airport.trim();
+    };
+
+    const formatFlightNumber = (flightNumber: string | null | undefined): string | null => {
+        if (!flightNumber || flightNumber.trim() === '') return null;
+        return flightNumber.trim();
+    };
+
+    const formatName = (name: string | null | undefined): string | null => {
+        if (!name || name.trim() === '') return null;
+        return name.trim();
     };
 
     const getStatusLabel = (status: string) => {
@@ -280,7 +297,7 @@ export default function PrivateRequestDetailScreen() {
                                     />
                                 </View>
                                 <Text className="flex-1 text-base font-medium text-text-primary dark:text-white">
-                                    {flight.from_airport || "N/A"}
+                                    {formatAirport(flight.from_airport) || "Chưa có thông tin"}
                                 </Text>
                             </View>
 
@@ -300,7 +317,7 @@ export default function PrivateRequestDetailScreen() {
                                     />
                                 </View>
                                 <Text className="flex-1 text-base font-medium text-text-primary dark:text-white">
-                                    {flight.to_airport || "N/A"}
+                                    {formatAirport(flight.to_airport) || "Chưa có thông tin"}
                                 </Text>
                             </View>
 
@@ -321,7 +338,7 @@ export default function PrivateRequestDetailScreen() {
                                         Số hiệu chuyến bay
                                     </Text>
                                     <Text className="text-base font-medium text-text-primary dark:text-white">
-                                        {flight.flight_number || "N/A"}
+                                        {formatFlightNumber(flight.flight_number) || "Chưa có thông tin"}
                                     </Text>
                                 </View>
                             </View>
@@ -340,9 +357,7 @@ export default function PrivateRequestDetailScreen() {
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-base font-medium text-text-primary dark:text-white">
-                                        {flight.flight_date
-                                            ? formatDate(flight.flight_date)
-                                            : "N/A"}
+                                        {formatDate(flight.flight_date) || "Chưa có thông tin"}
                                     </Text>
                                     {request.time_slot && (
                                         <Text className="text-sm text-text-secondary dark:text-slate-400">
@@ -371,12 +386,12 @@ export default function PrivateRequestDetailScreen() {
                                 />
                             </View>
                             <View className="flex-1">
-                                <Text className="text-sm text-text-secondary dark:text-slate-400">
-                                    Mô tả
-                                </Text>
-                                <Text className="text-base font-medium text-text-primary dark:text-white">
-                                    {request.item_description || "N/A"}
-                                </Text>
+                                    <Text className="text-sm text-text-secondary dark:text-slate-400">
+                                        Mô tả
+                                    </Text>
+                                    <Text className="text-base font-medium text-text-primary dark:text-white">
+                                        {request.item_description || "Chưa có mô tả"}
+                                    </Text>
                             </View>
                         </View>
 
@@ -465,7 +480,7 @@ export default function PrivateRequestDetailScreen() {
                                 />
                                 <View className="flex-1">
                                     <Text className="text-base font-bold text-text-primary dark:text-white">
-                                        {customer.name || "N/A"}
+                                        {formatName(customer.name) || "Chưa có thông tin"}
                                     </Text>
                                     {customer.phone && (
                                         <Text className="text-sm text-text-secondary dark:text-slate-400 mt-1">
@@ -494,7 +509,7 @@ export default function PrivateRequestDetailScreen() {
                                         Hết hạn vào
                                     </Text>
                                     <Text className="text-base font-medium text-text-primary dark:text-white">
-                                        {formatDate(request.expires_at)}
+                                        {formatDate(request.expires_at) || "Không xác định"}
                                     </Text>
                                 </View>
                             </View>

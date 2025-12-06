@@ -98,10 +98,18 @@ export default function RequestOrderScreen() {
     const customer = flight.customer || {};
     const route = flight.from_airport && flight.to_airport
         ? `${flight.from_airport} → ${flight.to_airport}`
-        : 'N/A';
+        : 'Chưa có thông tin';
     const flightDate = flight.flight_date
-        ? new Date(flight.flight_date).toLocaleDateString('vi-VN')
-        : 'N/A';
+        ? (() => {
+            try {
+                const date = new Date(flight.flight_date);
+                if (!isNaN(date.getTime())) {
+                    return date.toLocaleDateString('vi-VN');
+                }
+            } catch {}
+            return 'Chưa có thông tin';
+        })()
+        : 'Chưa có thông tin';
 
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">

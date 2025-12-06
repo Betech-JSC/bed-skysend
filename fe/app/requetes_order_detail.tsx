@@ -123,18 +123,6 @@ export default function OrderDetailScreen() {
                             </View>
                         </View>
 
-                        {/* Phí dịch vụ */}
-                        <View className="flex-row items-center gap-4 py-2">
-                            <View className="h-10 w-10 items-center justify-center rounded-lg bg-background-light dark:bg-slate-700">
-                                <MaterialIcons name="local-shipping" size={24} color="#1E293B" className="dark:text-white" />
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-sm text-text-secondary dark:text-slate-400">Phí dịch vụ</Text>
-                                <Text className="text-base font-medium text-text-primary dark:text-white">
-                                    350,000 VNĐ
-                                </Text>
-                            </View>
-                        </View>
                     </View>
 
                     {/* Thông tin hành khách */}

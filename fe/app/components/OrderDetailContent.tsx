@@ -40,25 +40,32 @@ export default function OrderDetailContent({
         return statusMap[status] || { label: status, step: 0 };
     };
 
-    const formatDate = (dateString: string) => {
-        if (!dateString) return 'N/A';
+    const formatDate = (dateString: string | null | undefined): string | null => {
+        if (!dateString) return null;
         try {
             const date = new Date(dateString);
+            if (isNaN(date.getTime())) return null;
             const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
             return `${days[date.getDay()]}, ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
         } catch {
-            return dateString;
+            return null;
         }
     };
 
-    const formatTime = (dateString: string) => {
-        if (!dateString) return '--:--';
+    const formatTime = (dateString: string | null | undefined): string | null => {
+        if (!dateString) return null;
         try {
             const date = new Date(dateString);
+            if (isNaN(date.getTime())) return null;
             return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         } catch {
-            return '--:--';
+            return null;
         }
+    };
+
+    const formatAirport = (airport: string | null | undefined): string | null => {
+        if (!airport || airport.trim() === '') return null;
+        return airport.trim();
     };
 
     if (loading) {
@@ -126,36 +133,40 @@ export default function OrderDetailContent({
                 <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
                     <Text className="text-lg font-bold mb-4">Thông tin đơn hàng</Text>
 
-                    <View className="flex-row items-center gap-3 mb-4">
-                        <MaterialIcons name="flight-takeoff" size={24} color="#2463EB" />
-                        <View className="flex-1">
-                            <Text className="text-sm text-secondary-light dark:text-secondary-dark">
-                                Tuyến đường
-                            </Text>
-                            <Text className="font-semibold text-base">
-                                {flight.from_airport || 'N/A'} → {flight.to_airport || 'N/A'}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View className="flex-row items-center gap-3 mb-4">
-                        <MaterialIcons name="schedule" size={24} color="#2463EB" />
-                        <View className="flex-1">
-                            <Text className="text-sm text-secondary-light dark:text-secondary-dark">
-                                Thời gian
-                            </Text>
-                            <Text className="font-semibold text-base">
-                                {flight.flight_date ? formatDate(flight.flight_date) : 'N/A'}
-                            </Text>
-                            {request.time_slot && (
-                                <Text className="text-xs text-gray-500 mt-1">
-                                    Khung giờ: {request.time_slot === 'morning' ? 'Buổi sáng' :
-                                        request.time_slot === 'afternoon' ? 'Buổi chiều' :
-                                            request.time_slot === 'evening' ? 'Buổi tối' : 'Bất kỳ'}
+                    {(formatAirport(flight.from_airport) || formatAirport(flight.to_airport)) && (
+                        <View className="flex-row items-center gap-3 mb-4">
+                            <MaterialIcons name="flight-takeoff" size={24} color="#2463EB" />
+                            <View className="flex-1">
+                                <Text className="text-sm text-secondary-light dark:text-secondary-dark">
+                                    Tuyến đường
                                 </Text>
-                            )}
+                                <Text className="font-semibold text-base">
+                                    {formatAirport(flight.from_airport) || 'Chưa có'} → {formatAirport(flight.to_airport) || 'Chưa có'}
+                                </Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
+
+                    {formatDate(flight.flight_date) && (
+                        <View className="flex-row items-center gap-3 mb-4">
+                            <MaterialIcons name="schedule" size={24} color="#2463EB" />
+                            <View className="flex-1">
+                                <Text className="text-sm text-secondary-light dark:text-secondary-dark">
+                                    Thời gian
+                                </Text>
+                                <Text className="font-semibold text-base">
+                                    {formatDate(flight.flight_date)}
+                                </Text>
+                                {request.time_slot && (
+                                    <Text className="text-xs text-gray-500 mt-1">
+                                        Khung giờ: {request.time_slot === 'morning' ? 'Buổi sáng' :
+                                            request.time_slot === 'afternoon' ? 'Buổi chiều' :
+                                                request.time_slot === 'evening' ? 'Buổi tối' : 'Bất kỳ'}
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                    )}
 
                     {request.item_description && (
                         <View className="flex-row items-center gap-3 mb-4">
@@ -214,7 +225,7 @@ export default function OrderDetailContent({
                         <Text className="text-lg font-bold mb-1">
                             {isSender ? 'Thông tin hành khách' : 'Thông tin người gửi'}
                         </Text>
-                        <Text className="font-semibold text-base">{partner.name || 'N/A'}</Text>
+                        <Text className="font-semibold text-base">{partner.name || 'Chưa có thông tin'}</Text>
                         {partner.phone && (
                             <Text className="text-sm text-secondary-light dark:text-secondary-dark mt-1">
                                 {partner.phone}
@@ -270,7 +281,7 @@ export default function OrderDetailContent({
                                 <Text className="text-sm text-secondary-light dark:text-secondary-dark mb-1">
                                     Hãng bay:
                                 </Text>
-                                <Text className="font-semibold text-base">{flight.airline || 'N/A'}</Text>
+                                <Text className="font-semibold text-base">{flight.airline || 'Chưa có thông tin'}</Text>
                             </View>
                         </View>
                         <View className="flex-row justify-between">
@@ -282,57 +293,6 @@ export default function OrderDetailContent({
                     </View>
                 )}
 
-                {/* Thanh toán */}
-                <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
-                    <Text className="text-lg font-bold mb-3">Thanh toán</Text>
-                    <View className="gap-2 mb-3">
-                        <View className="flex-row justify-between">
-                            <Text className="text-sm text-secondary-light dark:text-secondary-dark">
-                                Phần thưởng:
-                            </Text>
-                            <Text className="font-semibold text-base">
-                                {Number(order.reward || 0).toLocaleString('vi-VN')} VNĐ
-                            </Text>
-                        </View>
-                        {order.service_fee > 0 && (
-                            <View className="flex-row justify-between">
-                                <Text className="text-sm text-secondary-light dark:text-secondary-dark">
-                                    Phí dịch vụ:
-                                </Text>
-                                <Text className="font-semibold text-base">
-                                    {Number(order.service_fee || 0).toLocaleString('vi-VN')} VNĐ
-                                </Text>
-                            </View>
-                        )}
-                        {order.insurance_fee > 0 && (
-                            <View className="flex-row justify-between">
-                                <Text className="text-sm text-secondary-light dark:text-secondary-dark">
-                                    Phí bảo hiểm:
-                                </Text>
-                                <Text className="font-semibold text-base">
-                                    {Number(order.insurance_fee || 0).toLocaleString('vi-VN')} VNĐ
-                                </Text>
-                            </View>
-                        )}
-                        <View className="flex-row justify-between pt-2 border-t border-border-light dark:border-border-dark">
-                            <Text className="font-bold text-base">Tổng cộng:</Text>
-                            <Text className="font-bold text-base text-primary">
-                                {Number(order.total_amount || order.reward || 0).toLocaleString('vi-VN')} VNĐ
-                            </Text>
-                        </View>
-                    </View>
-                    <View className="flex-row gap-3 mt-3">
-                        <MaterialIcons name="lock" size={20} color="#F97316" />
-                        <View className="flex-1">
-                            <Text className="font-semibold text-base">
-                                Tiền đang được SkySend giữ
-                            </Text>
-                            <Text className="text-sm text-secondary-light dark:text-secondary-dark mt-1">
-                                Trạng thái: {order.escrow_status || 'held'} • Số tiền: {Number(order.escrow_amount || 0).toLocaleString('vi-VN')} VNĐ
-                            </Text>
-                        </View>
-                    </View>
-                </View>
 
                 {/* Ghi chú */}
                 {(request.note || order.customer_note) && (
