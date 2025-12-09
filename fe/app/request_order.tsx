@@ -106,7 +106,7 @@ export default function RequestOrderScreen() {
                 if (!isNaN(date.getTime())) {
                     return date.toLocaleDateString('vi-VN');
                 }
-            } catch {}
+            } catch { }
             return 'Chưa có thông tin';
         })()
         : 'Chưa có thông tin';
@@ -130,10 +130,11 @@ export default function RequestOrderScreen() {
                         <View className="gap-4">
                             {/* Customer Info */}
                             <View className="flex-row items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
-                                <Image
+                                {/* Avatar temporarily hidden */}
+                                {/* <Image
                                     source={{ uri: getAvatarUrl(customer.avatar) }}
                                     className="w-12 h-12 rounded-full"
-                                />
+                                /> */}
                                 <View className="flex-1">
                                     <Text className="font-bold text-text-primary dark:text-white">
                                         {customer.name || 'Hành khách'}

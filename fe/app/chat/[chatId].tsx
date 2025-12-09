@@ -24,8 +24,7 @@ export default function ChatDetailScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: partnerName || "Chat",
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <ChatRoom chatId={chatId} />

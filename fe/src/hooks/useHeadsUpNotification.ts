@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { getDatabase, ref, onValue, off } from "firebase/database";
+import { getDatabase, ref, onChildAdded, off } from "firebase/database";
 import { app } from "@/firebaseConfig";
 import { useRouter } from "expo-router";
 
@@ -103,147 +103,133 @@ export function useHeadsUpNotification() {
     // Listen for new notifications
     useEffect(() => {
         if (!user?.id) {
+            console.log("🔴 No user ID, skipping notification listener setup");
+            // Reset state when no user
+            lastNotificationIdRef.current = null;
+            setCurrentNotification(null);
+            setIsVisible(false);
             return;
         }
 
+        console.log("🟢 Setting up notification listener for user:", user.id);
         const notificationsRef = ref(db, `notifications/${user.id}`);
 
-        // Listen for changes
-        const unsubscribe = onValue(
+        // Reset lastNotificationIdRef when user changes to allow showing first notification
+        lastNotificationIdRef.current = null;
+
+        // Listen for new child notifications (onChildAdded only triggers for new additions)
+        const unsubscribe = onChildAdded(
             notificationsRef,
             (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    // Convert to array and sort by timestamp
-                    const notificationsList: Notification[] = Object.keys(data)
-                        .map((key) => {
-                            const notifData = data[key];
-                            const notif: Notification = {
-                                id: key,
-                                type: notifData.type || 'system',
-                                title: notifData.title || 'Thông báo',
-                                body: notifData.body || '',
-                                timestamp: notifData.timestamp || Date.now() / 1000,
-                                read: notifData.read === true || notifData.read === 'true',
-                                data: notifData.data || {},
-                            };
+                const notifId = snapshot.key;
+                const notifData = snapshot.val();
 
-                            // Extract data fields if they're at root level (for backward compatibility)
-                            if (!notif.data.order_id && notifData.order_id) {
-                                notif.data.order_id = notifData.order_id;
-                            }
-                            if (!notif.data.order_uuid && notifData.order_uuid) {
-                                notif.data.order_uuid = notifData.order_uuid;
-                            }
-                            if (!notif.data.flight_id && notifData.flight_id) {
-                                notif.data.flight_id = notifData.flight_id;
-                            }
-                            if (!notif.data.flight_uuid && notifData.flight_uuid) {
-                                notif.data.flight_uuid = notifData.flight_uuid;
-                            }
-                            if (!notif.data.chat_id && notifData.chat_id) {
-                                notif.data.chat_id = notifData.chat_id;
-                            }
+                if (!notifId || !notifData) {
+                    console.log("⚠️ Received notification with missing ID or data");
+                    return;
+                }
 
-                            // Debug: log raw notification data for specific types
-                            if (['flight_status', 'order_status', 'chat_message'].includes(notif.type)) {
-                                console.log(`🔍 ${notif.type} notification found:`, {
-                                    id: notif.id,
-                                    type: notif.type,
-                                    title: notif.title,
-                                    body: notif.body,
-                                    read: notif.read,
-                                    timestamp: notif.timestamp,
-                                    data: notif.data,
-                                });
-                            }
-                            return notif;
-                        })
-                        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                // Skip if this notification was already shown
+                if (notifId === lastNotificationIdRef.current) {
+                    console.log("⏭️ Skipping already shown notification:", notifId);
+                    return;
+                }
 
-                    // Get the latest unread notification
-                    // Filter for specific notification types we want to show
-                    const relevantTypes = ['chat_message', 'order_status', 'flight_status', 'new_request', 'request_accepted', 'request_declined'];
-                    const unreadNotifications = notificationsList.filter((n) => {
-                        const hasType = n.type && relevantTypes.includes(n.type);
-                        const isUnread = n.read === false || (typeof n.read === 'string' && n.read === 'false') || n.read === undefined;
-                        return hasType && isUnread;
+                // Build notification object
+                const notif: Notification = {
+                    id: notifId,
+                    type: notifData.type || 'system',
+                    title: notifData.title || 'Thông báo',
+                    body: notifData.body || '',
+                    timestamp: notifData.timestamp || Date.now() / 1000,
+                    read: notifData.read === true || notifData.read === 'true',
+                    data: notifData.data || {},
+                };
+
+                // Extract data fields if they're at root level (for backward compatibility)
+                if (!notif.data.order_id && notifData.order_id) {
+                    notif.data.order_id = notifData.order_id;
+                }
+                if (!notif.data.order_uuid && notifData.order_uuid) {
+                    notif.data.order_uuid = notifData.order_uuid;
+                }
+                if (!notif.data.flight_id && notifData.flight_id) {
+                    notif.data.flight_id = notifData.flight_id;
+                }
+                if (!notif.data.flight_uuid && notifData.flight_uuid) {
+                    notif.data.flight_uuid = notifData.flight_uuid;
+                }
+                if (!notif.data.chat_id && notifData.chat_id) {
+                    notif.data.chat_id = notifData.chat_id;
+                }
+                if (!notif.data.request_id && notifData.request_id) {
+                    notif.data.request_id = notifData.request_id;
+                }
+                if (!notif.data.request_uuid && notifData.request_uuid) {
+                    notif.data.request_uuid = notifData.request_uuid;
+                }
+
+                // Filter for relevant notification types
+                const relevantTypes = ['chat_message', 'order_status', 'flight_status', 'new_request', 'request_accepted', 'request_declined'];
+                const hasRelevantType = notif.type && relevantTypes.includes(notif.type);
+                const isUnread = notif.read === false || (typeof notif.read === 'string' && notif.read === 'false') || notif.read === undefined;
+
+                console.log("📨 New notification received:", {
+                    id: notif.id,
+                    type: notif.type,
+                    title: notif.title,
+                    body: notif.body,
+                    read: notif.read,
+                    timestamp: notif.timestamp,
+                    hasRelevantType,
+                    isUnread,
+                    data: notif.data,
+                });
+
+                // Only show if it's a relevant type and unread
+                if (hasRelevantType && isUnread) {
+                    console.log("✅ Showing heads-up notification:", {
+                        id: notif.id,
+                        type: notif.type,
+                        title: notif.title,
+                        body: notif.body,
+                        timestamp: notif.timestamp,
+                        data: notif.data,
                     });
 
-                    // Get the latest one that hasn't been shown yet
-                    const latestUnread = unreadNotifications.find((n) => n.id !== lastNotificationIdRef.current) ||
-                        (unreadNotifications.length > 0 && lastNotificationIdRef.current === null ? unreadNotifications[0] : null);
-
-                    console.log("📊 Notifications check:", {
-                        total: notificationsList.length,
-                        unreadCount: notificationsList.filter((n) => !n.read).length,
-                        chatCount: notificationsList.filter((n) => n.type === 'chat_message').length,
-                        orderStatusCount: notificationsList.filter((n) => n.type === 'order_status').length,
-                        flightStatusCount: notificationsList.filter((n) => n.type === 'flight_status').length,
-                        latestUnread: latestUnread ? {
-                            id: latestUnread.id,
-                            type: latestUnread.type,
-                            title: latestUnread.title,
-                            body: latestUnread.body,
-                            read: latestUnread.read,
-                            timestamp: latestUnread.timestamp,
-                            data: latestUnread.data,
-                        } : null,
-                        lastShownId: lastNotificationIdRef.current,
-                        isVisible,
-                    });
-
-                    if (latestUnread) {
-                        console.log("✅ Showing heads-up notification:", {
-                            id: latestUnread.id,
-                            type: latestUnread.type,
-                            title: latestUnread.title,
-                            body: latestUnread.body,
-                            timestamp: latestUnread.timestamp,
-                            data: latestUnread.data,
-                        });
-
-                        // Always show the latest notification, even if one is currently visible
-                        // This will replace the current notification with the new one
-                        lastNotificationIdRef.current = latestUnread.id;
-                        setCurrentNotification(latestUnread);
-                        setIsVisible(true);
-                    } else {
-                        // Debug: show all notifications to see what's wrong
-                        const allNotifications = notificationsList.map(n => ({
-                            id: n.id,
-                            type: n.type,
-                            read: n.read,
-                            title: n.title,
-                            body: n.body,
-                            timestamp: n.timestamp,
-                        }));
-                        console.log("📋 All notifications:", allNotifications);
-                        console.log("⚠️ No new unread notification to show");
-                    }
+                    // Mark as shown
+                    lastNotificationIdRef.current = notif.id;
+                    setCurrentNotification(notif);
+                    setIsVisible(true);
                 } else {
-                    // No notifications, reset state
-                    console.log("ℹ️ No notifications in Firebase");
-                    if (isVisible) {
-                        setIsVisible(false);
-                        setCurrentNotification(null);
-                    }
-                    lastNotificationIdRef.current = null;
+                    console.log("⏭️ Skipping notification (not relevant type or already read):", {
+                        id: notif.id,
+                        type: notif.type,
+                        hasRelevantType,
+                        isUnread,
+                    });
                 }
             },
             (error) => {
-                console.error("Error listening to notifications:", error);
+                console.error("❌ Error listening to notifications:", error);
             }
         );
 
         listenerRef.current = () => {
+            console.log("🧹 Cleaning up notification listener for user:", user.id);
             off(notificationsRef);
         };
 
         return () => {
+            console.log("🔄 Cleanup: Removing notification listener for user:", user.id);
             if (listenerRef.current) {
                 listenerRef.current();
+                listenerRef.current = null;
             }
+            // Reset state on cleanup
+            lastNotificationIdRef.current = null;
+            setCurrentNotification(null);
+            setIsVisible(false);
         };
     }, [user?.id, db]);
 

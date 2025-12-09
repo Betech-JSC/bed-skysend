@@ -24,6 +24,7 @@ import * as FileSystem from 'expo-file-system';
 import api from '@/api/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import BackButton from './BackButton';
 
 interface Message {
     id: string;
@@ -584,6 +585,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
 
         return (
             <View style={styles.orderContextContainer}>
+
                 <Text style={styles.orderContextTitle}>
                     Đơn hàng liên quan ({relatedOrders.length})
                 </Text>
@@ -613,6 +615,13 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
+            <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                <View className="w-10" />
+                <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
+                    Tin nhắn với {otherUserName}
+                </Text>
+            </View>
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -656,13 +665,13 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
                     </View>
                 )}
                 <View style={styles.inputContainer}>
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         style={styles.attachButton}
                         onPress={showAttachOptions}
                         disabled={uploading}
                     >
                         <MaterialIcons name="attach-file" size={24} color="#2563EB" />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                     <TextInput
                         style={styles.input}
                         value={text}

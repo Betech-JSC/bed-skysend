@@ -216,7 +216,8 @@ export default function ProfileScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Avatar + Info */}
                 <View className="items-center px-4 pt-8">
-                    <View className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-xl">
+                    {/* Avatar temporarily hidden */}
+                    {/* <View className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-xl">
                         <Image
                             source={{
                                 uri: getAvatarUri(),
@@ -225,7 +226,7 @@ export default function ProfileScreen() {
                             resizeMode="cover"
                             defaultSource={require("@assets/images/avatar.webp")}
                         />
-                    </View>
+                    </View> */}
 
                     <Text className="mt-4 text-2xl font-bold text-text-primary dark:text-white">
                         {displayProfile.name}
@@ -269,7 +270,10 @@ export default function ProfileScreen() {
 
                     {/* Group 2 */}
                     <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
-                        <TouchableOpacity className="flex-row items-center justify-between px-4 py-4">
+                        <TouchableOpacity
+                            onPress={() => router.push('/terms-and-conditions')}
+                            className="flex-row items-center justify-between px-4 py-4"
+                        >
                             <View className="flex-row items-center gap-4">
                                 <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                                     <MaterialIcons name="gavel" size={24} color="#2563EB" />
@@ -283,7 +287,10 @@ export default function ProfileScreen() {
 
                         <View className="mx-4 border-t border-slate-100 dark:border-slate-700" />
 
-                        <TouchableOpacity className="flex-row items-center justify-between px-4 py-4">
+                        <TouchableOpacity
+                            onPress={() => router.push('/support-center')}
+                            className="flex-row items-center justify-between px-4 py-4"
+                        >
                             <View className="flex-row items-center gap-4">
                                 <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                                     <Ionicons name="help-circle" size={24} color="#2563EB" />

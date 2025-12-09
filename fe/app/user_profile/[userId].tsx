@@ -15,6 +15,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import api from "@/api/api";
 import { getAvatarUrl } from "@/constants/avatars";
+import BackButton from "app/components/BackButton";
 
 interface UserProfile {
     id: number;
@@ -92,8 +93,7 @@ export default function UserProfileScreen() {
             <>
                 <Stack.Screen
                     options={{
-                        title: "Hồ sơ đối tác",
-                        headerShown: true,
+                        headerShown: false,
                     }}
                 />
                 <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
@@ -113,8 +113,7 @@ export default function UserProfileScreen() {
             <>
                 <Stack.Screen
                     options={{
-                        title: "Hồ sơ đối tác",
-                        headerShown: true,
+                        headerShown: false,
                     }}
                 />
                 <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
@@ -142,17 +141,25 @@ export default function UserProfileScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: `Hồ sơ ${isSender ? "Người gửi" : isCustomer ? "Hành khách" : "Đối tác"}`,
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Header with Back Button */}
+                <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
+                        {isSender ? "Hồ sơ Người gửi" : isCustomer ? "Hồ sơ Hành khách" : "Hồ sơ Đối tác"}
+                    </Text>
+                    <View className="w-10" />
+                </View>
 
                 <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
                     <View className="px-4 pt-4 pb-32 gap-y-4">
                         {/* Avatar + Info */}
                         <View className="items-center rounded-xl bg-card-light dark:bg-card-dark p-6 shadow-sm">
-                            <View className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-xl">
+                            {/* Avatar temporarily hidden */}
+                            {/* <View className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-xl">
                                 <Image
                                     source={{
                                         uri: getAvatarUrl(profile.avatar),
@@ -160,7 +167,7 @@ export default function UserProfileScreen() {
                                     className="h-full w-full"
                                     resizeMode="cover"
                                 />
-                            </View>
+                            </View> */}
 
                             <Text className="mt-4 text-xl font-bold text-text-primary-light dark:text-text-primary-dark">
                                 {profile.name || "Người dùng"}

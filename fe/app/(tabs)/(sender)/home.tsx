@@ -363,11 +363,11 @@ const Home = () => {
               <View className="flex-row items-center gap-2 mb-1">
                 <MaterialIcons name="attach-money" size={20} color="#8B5CF6" />
                 <Text className="text-xs text-text-secondary dark:text-gray-400">
-                  Tổng thu nhập
+                  Đơn mới
                 </Text>
               </View>
               <Text className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                {stats.totalEarnings.toLocaleString('vi-VN')} đ
+                {stats.pendingOrders}
               </Text>
             </View>
           </View>

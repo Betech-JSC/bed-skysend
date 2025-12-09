@@ -18,6 +18,7 @@ import { Stack, useRouter } from "expo-router";
 import { Swipeable } from "react-native-gesture-handler";
 import { getDatabase, ref, onValue, off, set, remove } from "firebase/database";
 import { app } from "@/firebaseConfig";
+import BackButton from "./components/BackButton";
 
 interface Notification {
     id: string;
@@ -383,8 +384,7 @@ export default function NotificationScreen() {
             <>
                 <Stack.Screen
                     options={{
-                        title: "Thông báo",
-                        headerShown: true,
+                        headerShown: false,
                     }}
                 />
                 <SafeAreaView style={styles.container}>
@@ -404,29 +404,16 @@ export default function NotificationScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: "Thông báo",
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
                 {/* Top App Bar - Compact */}
                 <View className="flex-row items-center justify-between px-4 pt-3 pb-2 bg-background-light/80 dark:bg-background-dark/80">
-                    <Text className="flex-1 text-center text-base font-bold text-text-primary-light dark:text-text-primary-dark -ml-6">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <Text className="flex-1 text-center text-base font-bold text-text-primary-light dark:text-text-primary-dark -ml-10">
                         Thông báo
                     </Text>
-                    <TouchableOpacity
-                        onPress={handleMarkAllAsRead}
-                        disabled={markingAllAsRead || filteredNotifications.filter((n) => !n.read).length === 0}
-                    >
-                        <Text
-                            className={`text-xs font-semibold ${markingAllAsRead || filteredNotifications.filter((n) => !n.read).length === 0
-                                ? "text-gray-400"
-                                : "text-primary"
-                                }`}
-                        >
-                            {markingAllAsRead ? "Đang xử lý..." : "Đánh dấu đã đọc"}
-                        </Text>
-                    </TouchableOpacity>
                 </View>
 
                 {/* Tab Filter - Compact */}

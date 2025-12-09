@@ -49,11 +49,12 @@ export default function UserProfileInfo({
 
     return (
         <View className={`flex-row items-center gap-3 ${className}`}>
-            <Image
+            {/* Avatar temporarily hidden */}
+            {/* <Image
                 source={avatarSource}
                 className={`${config.avatar} rounded-full`}
                 resizeMode="cover"
-            />
+            /> */}
             <View className="flex-1">
                 <View className="flex-row items-center gap-2">
                     <Text className={`${config.name} font-bold text-text-dark-gray dark:text-white`} numberOfLines={1}>

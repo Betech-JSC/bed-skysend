@@ -28,41 +28,54 @@ function ListOrdersCustomer() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Map order status to Vietnamese
+    // Map order status to Vietnamese - Rút gọn còn 4 trạng thái
     const getStatusLabel = (status: string) => {
+        // Map các trạng thái cũ về trạng thái mới
+        const normalizedStatus = normalizeStatus(status);
+
         const statusMap: { [key: string]: { label: string; color: string } } = {
-            'confirmed': { label: 'Đã xác nhận', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-            'picked_up': { label: 'Đã lấy hàng', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' },
+            'new': { label: 'Đơn mới', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
             'in_transit': { label: 'Đang vận chuyển', color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' },
-            'arrived': { label: 'Đã đến nơi', color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400' },
-            'delivered': { label: 'Đã giao hàng', color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
             'completed': { label: 'Hoàn thành', color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
             'cancelled': { label: 'Đã hủy', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
         };
-        return statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' };
+        return statusMap[normalizedStatus] || { label: normalizedStatus, color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' };
     };
 
-    // Danh sách các filter tabs với status tương ứng
+    // Normalize status từ backend về 4 trạng thái mới
+    const normalizeStatus = (status: string): string => {
+        // Đơn mới: pending, confirmed
+        if (status === 'pending' || status === 'confirmed') {
+            return 'new';
+        }
+        // Đang vận chuyển: picked_up, in_transit, arrived, delivered
+        if (status === 'picked_up' || status === 'in_transit' || status === 'arrived' || status === 'delivered') {
+            return 'in_transit';
+        }
+        // Hoàn thành và Đã hủy giữ nguyên
+        if (status === 'completed' || status === 'cancelled') {
+            return status;
+        }
+        return status;
+    };
+
+    // Danh sách các filter tabs với status tương ứng - Rút gọn còn 4 trạng thái
     const filterTabs = [
         { label: 'Tất cả', status: '' },
-        { label: 'Đã xác nhận', status: 'confirmed' },
-        { label: 'Đã lấy hàng', status: 'picked_up' },
+        { label: 'Đơn mới', status: 'new' },
         { label: 'Đang vận chuyển', status: 'in_transit' },
-        { label: 'Đã đến nơi', status: 'arrived' },
-        { label: 'Đã giao hàng', status: 'delivered' },
         { label: 'Hoàn thành', status: 'completed' },
         { label: 'Đã hủy', status: 'cancelled' },
     ];
 
-    // Get next available status for customer
+    // Get next available status for customer - Flow mới: new -> in_transit -> completed
     const getNextStatus = (currentStatus: string): string | null => {
+        const normalized = normalizeStatus(currentStatus);
         const statusFlow: { [key: string]: string } = {
-            'confirmed': 'picked_up',    // Customer nhận hàng từ sender
-            'picked_up': 'in_transit',   // Đang trên máy bay
-            'in_transit': 'arrived',     // Đã đến sân bay đích
-            'arrived': 'delivered',      // Đã giao hàng cho sender
+            'new': 'in_transit',           // Đơn mới -> Đang vận chuyển
+            'in_transit': 'completed',     // Đang vận chuyển -> Hoàn thành
         };
-        return statusFlow[currentStatus] || null;
+        return statusFlow[normalized] || null;
     };
 
     useEffect(() => {
@@ -76,7 +89,9 @@ function ListOrdersCustomer() {
 
             const params: any = {};
             if (orderStatusFilter) {
-                params.status = orderStatusFilter;
+                // Backend vẫn dùng status cũ, nên cần filter ở frontend sau khi nhận data
+                // Hoặc có thể gửi multiple status nếu backend hỗ trợ
+                // Tạm thời để backend trả về tất cả, filter ở frontend
             }
 
             const response = await api.get("orders/getList", { params });
@@ -96,6 +111,14 @@ function ListOrdersCustomer() {
                 }
             }
 
+            // Filter theo status mới nếu có filter
+            if (orderStatusFilter) {
+                ordersData = ordersData.filter((order: any) => {
+                    const normalized = normalizeStatus(order.status);
+                    return normalized === orderStatusFilter;
+                });
+            }
+
             setOrders(ordersData);
         } catch (err: any) {
             console.error('Error fetching orders:', err);
@@ -112,17 +135,50 @@ function ListOrdersCustomer() {
     };
 
     const handleUpdateStatus = async (orderId: string, orderUuid: string, currentStatus: string) => {
-        const nextStatus = getNextStatus(currentStatus);
+        const normalizedCurrent = normalizeStatus(currentStatus);
+        const nextStatus = getNextStatus(normalizedCurrent);
         if (!nextStatus) {
             Alert.alert('Thông báo', 'Không thể cập nhật trạng thái này');
             return;
         }
 
+        // Map status frontend về status backend theo flow backend
+        // Flow backend: confirmed -> picked_up -> in_transit -> arrived -> delivered -> completed
+        const mapToBackendStatus = (frontendStatus: string, currentBackendStatus: string): string => {
+            if (frontendStatus === 'in_transit') {
+                // Từ 'new' (confirmed/pending) -> 'in_transit': gửi 'picked_up' (bước đầu)
+                if (currentBackendStatus === 'confirmed' || currentBackendStatus === 'pending') {
+                    return 'picked_up';
+                }
+                // Nếu đã ở trong flow vận chuyển, chuyển sang bước tiếp theo
+                if (currentBackendStatus === 'picked_up') {
+                    return 'in_transit';
+                }
+                if (currentBackendStatus === 'in_transit') {
+                    return 'arrived';
+                }
+                if (currentBackendStatus === 'arrived') {
+                    return 'delivered';
+                }
+                // Nếu đã delivered, không thể chuyển sang in_transit nữa
+                return 'picked_up'; // Default fallback
+            }
+            if (frontendStatus === 'completed') {
+                // Chỉ có thể complete từ delivered
+                if (currentBackendStatus === 'delivered') {
+                    return 'completed';
+                }
+                // Nếu chưa delivered, không thể complete
+                Alert.alert('Lỗi', 'Chỉ có thể hoàn thành đơn hàng khi đã giao hàng');
+                return currentBackendStatus;
+            }
+            return frontendStatus; // cancelled giữ nguyên
+        };
+
+        const backendStatus = mapToBackendStatus(nextStatus, currentStatus);
         const statusLabels: { [key: string]: string } = {
-            'picked_up': 'Đã lấy hàng',
             'in_transit': 'Đang vận chuyển',
-            'arrived': 'Đã đến nơi',
-            'delivered': 'Đã giao hàng',
+            'completed': 'Hoàn thành',
         };
 
         Alert.alert(
@@ -136,7 +192,7 @@ function ListOrdersCustomer() {
                         try {
                             const orderIdentifier = orderUuid || orderId;
                             await api.put(`orders/${orderIdentifier}/status`, {
-                                status: nextStatus,
+                                status: backendStatus,
                             });
                             Alert.alert('Thành công', 'Đã cập nhật trạng thái đơn hàng');
                             fetchOrders();
@@ -161,18 +217,20 @@ function ListOrdersCustomer() {
 
     return (
         <>
+            <Stack.Screen
+                options={{
+                    headerShown: true,
+                    title: 'Đơn hàng',
+                    headerTitle: 'Đơn hàng của tôi',
+                    headerTitleStyle: {
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        color: '#111318',
+                        textAlign: 'center',
+                    },
+                }}
+            />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-                {/* Top App Bar */}
-                <View className="h-16 flex-row items-center justify-between px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <MaterialIcons name="arrow-back-ios-new" size={24} color="#1F2937" className="dark:text-white" />
-                    </TouchableOpacity>
-                    <Text className="text-lg font-bold text-text-primary dark:text-white absolute left-1/2 -translate-x-1/2">
-                        Đơn hàng của tôi
-                    </Text>
-                    <View className="w-10" />
-                </View>
-
                 {/* Status Filter Tabs */}
                 <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <ScrollView
@@ -242,7 +300,8 @@ function ListOrdersCustomer() {
                             const sender = order.sender || order.partner || {};
                             const request = order.request || {};
                             const statusInfo = getStatusLabel(order.status || 'pending');
-                            const nextStatus = getNextStatus(order.status);
+                            const normalizedStatus = normalizeStatus(order.status || 'pending');
+                            const nextStatus = getNextStatus(normalizedStatus);
 
                             return (
                                 <View
@@ -365,7 +424,7 @@ function ListOrdersCustomer() {
                                                 className="bg-green-600 h-11 rounded-lg items-center justify-center"
                                             >
                                                 <Text className="text-white font-bold text-sm">
-                                                    Cập nhật: {getStatusLabel(nextStatus).label}
+                                                    Cập nhật: {getStatusLabel(nextStatus === 'in_transit' ? 'in_transit' : nextStatus).label}
                                                 </Text>
                                             </TouchableOpacity>
                                         )}

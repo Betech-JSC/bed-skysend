@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import api from '@/api/api';
 
 interface Flight {
@@ -216,151 +216,149 @@ export default function FlightHistoryScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background-light dark:bg-background-dark">
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-
-      {/* Header */}
-      <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light/80 px-4 py-4 backdrop-blur-sm dark:bg-background-dark/80">
-        <View className="w-10" />
-        <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
-          Lịch sử Chuyến bay
-        </Text>
-        <TouchableOpacity className="p-2">
-          <MaterialIcons
-            name="filter-list"
-            size={28}
-            color={colorScheme === 'dark' ? '#F5F7FB' : '#1F2937'}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* List */}
-      <ScrollView
-        className="flex-1 px-4 pb-32"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => fetchFlights(true)} />
-        }
-      >
-        {flights.length === 0 ? (
-          <View className="mt-20 items-center justify-center px-6">
-            <MaterialIcons name="flight" size={64} color="#9CA3AF" />
-            <Text className="mt-4 text-center text-lg font-semibold text-gray-700 dark:text-gray-300">
-              Chưa có chuyến bay nào
-            </Text>
-            <Text className="mt-2 text-center text-sm text-gray-500">
-              Thêm chuyến bay đầu tiên của bạn
-            </Text>
-          </View>
-        ) : (
-          <View className="gap-4 py-2">
-            {flights.map((flight) => (
-              <TouchableOpacity
-                key={flight.id}
-                onPress={() =>
-                  router.push({
-                    pathname: '/detail-flight-customer',
-                    params: { id: flight.id.toString() },
-                  })
-                }
-              >
-                <View className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
-                  {/* Header */}
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center gap-3">
-                      <View
-                        className={`h-10 w-10 items-center justify-center rounded-full ${getFlightIconBg(
-                          flight.status
-                        )}`}
-                      >
-                        <MaterialIcons
-                          name={getFlightIcon(flight.status) as any}
-                          size={24}
-                          color="#2563EB"
-                        />
-                      </View>
-                      <View>
-                        <Text className="text-base font-bold text-text-primary-light dark:text-text-primary-dark">
-                          {flight.flight_number}
-                        </Text>
-                        <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                          {formatDateTime(flight.flight_date)}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {flight.requests && flight.requests.length > 0 && (
-                      <View className="rounded-full bg-secondary px-3 py-2">
-                        <Text className="text-sm font-bold text-white">
-                          {flight.requests.length} Yêu cầu
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Route */}
-                  <View className="my-4 flex-row items-center justify-between">
-                    <View className="items-center">
-                      <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
-                        {flight.from_airport}
-                      </Text>
-                      {/* <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                        {flight.from_airport}
-                      </Text> */}
-                    </View>
-
-                    <View className="flex-1 flex-row items-center px-4">
-                      <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
-                      <MaterialIcons name="flight" size={24} color="#9CA3AF" />
-                      <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
-                    </View>
-
-                    <View className="items-center">
-                      <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
-                        {flight.to_airport}
-                      </Text>
-                      {/* <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                        {flight.to_airport}
-                      </Text> */}
-                    </View>
-                  </View>
-
-                  {/* Badges */}
-                  <View className="flex-row gap-2">
-                    {flight.verified && (
-                      <View className="flex-row items-center gap-1.5 rounded-lg bg-green-100 px-2.5 py-1 dark:bg-green-900/50">
-                        <MaterialIcons name="verified" size={16} color="#16A34A" />
-                        <Text className="text-xs font-medium text-green-800 dark:text-green-200">
-                          Đã xác thực
-                        </Text>
-                      </View>
-                    )}
-                    {!flight.verified && flight.status === 'pending' && (
-                      <View className="flex-row items-center gap-1.5 rounded-lg bg-yellow-100 px-2.5 py-1 dark:bg-yellow-900/50">
-                        <MaterialIcons name="hourglass-empty" size={16} color="#D97706" />
-                        <Text className="text-xs font-medium text-yellow-800 dark:text-yellow-200">
-                          Chờ xác thực
-                        </Text>
-                      </View>
-                    )}
-                    {getStatusBadge(flight.status)}
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      {/* FAB */}
-      <View className="absolute bottom-6 right-6">
-        <TouchableOpacity
-          onPress={() => router.push('/home_customer')}
-          className="flex-row items-center gap-2 rounded-full bg-primary px-6 py-4 shadow-lg"
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Lịch sử Chuyến bay',
+          headerTitle: 'Lịch sử Chuyến bay',
+          headerTitleStyle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#111318',
+            textAlign: 'center',
+          },
+        }}
+      />
+      <View className="flex-1 bg-background-light dark:bg-background-dark">
+        {/* List */}
+        <ScrollView
+          className="flex-1 px-4 pb-32"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => fetchFlights(true)} />
+          }
         >
-          <MaterialIcons name="add" size={28} color="white" />
-          <Text className="text-base font-semibold text-white">Thêm chuyến bay</Text>
-        </TouchableOpacity>
+          {flights.length === 0 ? (
+            <View className="mt-20 items-center justify-center px-6">
+              <MaterialIcons name="flight" size={64} color="#9CA3AF" />
+              <Text className="mt-4 text-center text-lg font-semibold text-gray-700 dark:text-gray-300">
+                Chưa có chuyến bay nào
+              </Text>
+              <Text className="mt-2 text-center text-sm text-gray-500">
+                Thêm chuyến bay đầu tiên của bạn
+              </Text>
+            </View>
+          ) : (
+            <View className="gap-4 py-2">
+              {flights.map((flight) => (
+                <TouchableOpacity
+                  key={flight.id}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/detail-flight-customer',
+                      params: { id: flight.id.toString() },
+                    })
+                  }
+                >
+                  <View className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                    {/* Header */}
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-3">
+                        <View
+                          className={`h-10 w-10 items-center justify-center rounded-full ${getFlightIconBg(
+                            flight.status
+                          )}`}
+                        >
+                          <MaterialIcons
+                            name={getFlightIcon(flight.status) as any}
+                            size={24}
+                            color="#2563EB"
+                          />
+                        </View>
+                        <View>
+                          <Text className="text-base font-bold text-text-primary-light dark:text-text-primary-dark">
+                            {flight.flight_number}
+                          </Text>
+                          <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                            {formatDateTime(flight.flight_date)}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {flight.requests && flight.requests.length > 0 && (
+                        <View className="rounded-full bg-secondary px-3 py-2">
+                          <Text className="text-sm font-bold text-white">
+                            {flight.requests.length} Yêu cầu
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Route */}
+                    <View className="my-4 flex-row items-center justify-between">
+                      <View className="items-center">
+                        <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                          {flight.from_airport}
+                        </Text>
+                        {/* <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                        {flight.from_airport}
+                      </Text> */}
+                      </View>
+
+                      <View className="flex-1 flex-row items-center px-4">
+                        <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
+                        <MaterialIcons name="flight" size={24} color="#9CA3AF" />
+                        <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
+                      </View>
+
+                      <View className="items-center">
+                        <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                          {flight.to_airport}
+                        </Text>
+                        {/* <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                        {flight.to_airport}
+                      </Text> */}
+                      </View>
+                    </View>
+
+                    {/* Badges */}
+                    <View className="flex-row gap-2">
+                      {flight.verified && (
+                        <View className="flex-row items-center gap-1.5 rounded-lg bg-green-100 px-2.5 py-1 dark:bg-green-900/50">
+                          <MaterialIcons name="verified" size={16} color="#16A34A" />
+                          <Text className="text-xs font-medium text-green-800 dark:text-green-200">
+                            Đã xác thực
+                          </Text>
+                        </View>
+                      )}
+                      {!flight.verified && flight.status === 'pending' && (
+                        <View className="flex-row items-center gap-1.5 rounded-lg bg-yellow-100 px-2.5 py-1 dark:bg-yellow-900/50">
+                          <MaterialIcons name="hourglass-empty" size={16} color="#D97706" />
+                          <Text className="text-xs font-medium text-yellow-800 dark:text-yellow-200">
+                            Chờ xác thực
+                          </Text>
+                        </View>
+                      )}
+
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+
+        {/* FAB */}
+        <View className="absolute bottom-6 right-6">
+          <TouchableOpacity
+            onPress={() => router.push('/home_customer')}
+            className="flex-row items-center gap-2 rounded-full bg-primary px-6 py-4 shadow-lg"
+          >
+            <MaterialIcons name="add" size={28} color="white" />
+            <Text className="text-base font-semibold text-white">Thêm chuyến bay</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </>
   );
 }

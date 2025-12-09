@@ -31,30 +31,46 @@ function ListOrder() {
 
 
 
-    // Map order status to Vietnamese
+    // Normalize status từ backend về 4 trạng thái mới
+    const normalizeStatus = (status: string): string => {
+        // Đơn mới: pending, confirmed
+        if (status === 'pending' || status === 'confirmed') {
+            return 'new';
+        }
+        // Đang vận chuyển: picked_up, in_transit, arrived, delivered
+        if (status === 'picked_up' || status === 'in_transit' || status === 'arrived' || status === 'delivered') {
+            return 'in_transit';
+        }
+        // Hoàn thành và Đã hủy giữ nguyên
+        if (status === 'completed' || status === 'cancelled') {
+            return status;
+        }
+        return status;
+    };
+
+    // Map order status to Vietnamese - Rút gọn còn 4 trạng thái
     const getStatusLabel = (status: string) => {
+        const normalizedStatus = normalizeStatus(status);
+
         const statusMap: { [key: string]: { label: string; color: string } } = {
-            'confirmed': { label: 'Đã xác nhận', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-            'picked_up': { label: 'Đã lấy hàng', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' },
+            'new': { label: 'Đơn mới', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
             'in_transit': { label: 'Đang vận chuyển', color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' },
-            'delivered': { label: 'Đã giao hàng', color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
             'completed': { label: 'Hoàn thành', color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
             'cancelled': { label: 'Đã hủy', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+            // Giữ các status cho requests
             'pending': { label: 'Chờ xác nhận', color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
             'accepted': { label: 'Đã chấp nhận', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
             'declined': { label: 'Đã từ chối', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
             'expired': { label: 'Hết hạn', color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' },
         };
-        return statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' };
+        return statusMap[normalizedStatus] || statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' };
     };
 
-    // Danh sách các filter tabs cho orders
+    // Danh sách các filter tabs cho orders - Rút gọn còn 4 trạng thái
     const orderFilterTabs = [
         { label: 'Tất cả', status: '' },
-        { label: 'Đã xác nhận', status: 'confirmed' },
-        { label: 'Đã lấy hàng', status: 'picked_up' },
+        { label: 'Đơn mới', status: 'new' },
         { label: 'Đang vận chuyển', status: 'in_transit' },
-        { label: 'Đã giao hàng', status: 'delivered' },
         { label: 'Hoàn thành', status: 'completed' },
         { label: 'Đã hủy', status: 'cancelled' },
     ];
@@ -86,19 +102,26 @@ function ListOrder() {
             setError(null);
 
             const params: any = {};
-            if (orderStatusFilter) {
-                params.status = orderStatusFilter;
-            }
+            // Backend vẫn dùng status cũ, filter ở frontend sau khi nhận data
 
             const response = await api.get("orders/getList", { params });
 
+            let ordersData = [];
             if (response.data?.success) {
-                const ordersData = response.data.data?.data || response.data.data || [];
-                setOrders(ordersData);
+                ordersData = response.data.data?.data || response.data.data || [];
             } else if (response.data?.success) {
-                const ordersData = response.data.data?.orders?.data || response.data.data || [];
-                setOrders(ordersData);
+                ordersData = response.data.data?.orders?.data || response.data.data || [];
             }
+
+            // Filter theo status mới nếu có filter
+            if (orderStatusFilter) {
+                ordersData = ordersData.filter((order: any) => {
+                    const normalized = normalizeStatus(order.status);
+                    return normalized === orderStatusFilter;
+                });
+            }
+
+            setOrders(ordersData);
         } catch (err: any) {
             console.error('Error fetching orders:', err);
             setError(err.response?.data?.message || "Không thể tải danh sách đơn hàng");
@@ -151,6 +174,19 @@ function ListOrder() {
 
     return (
         <>
+            <Stack.Screen
+                options={{
+                    headerShown: true,
+                    title: 'Đơn hàng',
+                    headerTitle: 'Đơn hàng của tôi',
+                    headerTitleStyle: {
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        color: '#111318',
+                        textAlign: 'center',
+                    },
+                }}
+            />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
                 {/* Main Tabs: Orders vs Requests */}
                 <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -319,10 +355,11 @@ function ListOrder() {
                                         {/* Customer Info + Price */}
                                         <View className="flex-row items-center justify-between px-4 py-4 gap-3">
                                             <View className="flex-row items-center gap-3 flex-1">
-                                                <Image
+                                                {/* Avatar temporarily hidden */}
+                                                {/* <Image
                                                     source={{ uri: getAvatarUrl(customer.avatar) }}
                                                     className="w-10 h-10 rounded-full"
-                                                />
+                                                /> */}
                                                 <View>
                                                     <Text className="font-semibold text-text-primary dark:text-white text-sm">
                                                         {customer.name || 'Hành khách'}
@@ -446,10 +483,11 @@ function ListOrder() {
                                         {/* Customer Info + Reward */}
                                         <View className="flex-row items-center justify-between px-4 py-4 gap-3">
                                             <View className="flex-row items-center gap-3 flex-1">
-                                                <Image
+                                                {/* Avatar temporarily hidden */}
+                                                {/* <Image
                                                     source={{ uri: getAvatarUrl(customer.avatar) }}
                                                     className="w-10 h-10 rounded-full"
-                                                />
+                                                /> */}
                                                 <View>
                                                     <Text className="font-semibold text-text-primary dark:text-white text-sm">
                                                         {customer.name || 'Hành khách'}

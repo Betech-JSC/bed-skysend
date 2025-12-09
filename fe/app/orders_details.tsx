@@ -10,6 +10,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import api from "@/api/api";
 import OrderDetailContent from "../app/components/OrderDetailContent";
+import BackButton from "./components/BackButton";
 
 /**
  * Màn hình chi tiết đơn hàng - Sử dụng chung cho cả sender và customer
@@ -62,11 +63,19 @@ export default function OrderDetailScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: order ? `Đơn hàng #${order.uuid || order.id}` : 'Chi tiết đơn hàng',
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Header with Back Button */}
+                <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
+                        {order ? `Đơn hàng #${order.uuid || order.id}` : 'Chi tiết đơn hàng'}
+                    </Text>
+                    <View className="w-10" />
+                </View>
+
                 {/* Order Detail Content - Component chung cho cả sender và customer */}
                 <OrderDetailContent
                     order={order}

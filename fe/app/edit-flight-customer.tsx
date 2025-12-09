@@ -149,23 +149,39 @@ export default function EditFlightScreen() {
             return;
         }
 
-        Alert.alert('Hủy chuyến bay', 'Bạn có chắc chắn muốn hủy?', [
-            { text: 'Không', style: 'cancel' },
-            {
-                text: 'Hủy chuyến bay',
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await api.delete(`flights/${flightId}`);
-                        Alert.alert('Thành công', 'Đã hủy chuyến bay', [
-                            { text: 'OK', onPress: () => router.replace('/(tabs)/(customer)/home_customer') }
-                        ]);
-                    } catch (err: any) {
-                        Alert.alert('Lỗi', err.response?.data?.message || 'Không thể hủy');
+        Alert.alert(
+            'Hủy chuyến bay',
+            'Bạn có chắc chắn muốn hủy chuyến bay này? Hành động này không thể hoàn tác.',
+            [
+                { text: 'Không', style: 'cancel' },
+                {
+                    text: 'Hủy chuyến bay',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const response = await api.delete(`flights/${flightId}/destroy`);
+
+                            if (response.data?.success) {
+                                Alert.alert('Thành công', response.data?.message || 'Đã hủy chuyến bay', [
+                                    {
+                                        text: 'OK',
+                                        onPress: () => router.replace('/(tabs)/(customer)/flight-history-customer')
+                                    }
+                                ]);
+                            } else {
+                                Alert.alert('Lỗi', response.data?.message || 'Không thể hủy chuyến bay');
+                            }
+                        } catch (err: any) {
+                            console.error('Error canceling flight:', err);
+                            const errorMessage = err.response?.data?.message ||
+                                err.response?.data?.errors?.message?.[0] ||
+                                'Không thể hủy chuyến bay. Vui lòng thử lại.';
+                            Alert.alert('Lỗi', errorMessage);
+                        }
                     }
                 }
-            }
-        ]);
+            ]
+        );
     };
 
     if (loading) {

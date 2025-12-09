@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\FirebaseService;
 use App\Services\ExpoPushService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
@@ -327,5 +328,97 @@ class FlightController extends Controller
                 'has_more' => $flights->hasMorePages(),
             ],
         ]);
+    }
+
+    /**
+     * Push notification vào Firebase khi flight status thay đổi
+     */
+    private function pushFlightStatusNotification(Flight $flight, string $oldStatus, string $newStatus): void
+    {
+        try {
+            // Reload customer relationship để đảm bảo có dữ liệu
+            $flight->load('customer');
+            $customer = $flight->customer;
+
+            if (!$customer) {
+                Log::warning('Cannot send flight notification: customer not found', [
+                    'flight_id' => $flight->id,
+                    'customer_id' => $flight->customer_id,
+                ]);
+                return;
+            }
+
+            // Tạo title và body dựa trên status
+            $statusMessages = [
+                'pending' => 'Chuyến bay của bạn đang chờ xác thực',
+                'verified' => 'Chuyến bay của bạn đã được xác thực thành công!',
+                'rejected' => 'Chuyến bay của bạn đã bị từ chối',
+                'cancelled' => 'Chuyến bay của bạn đã bị hủy',
+                'completed' => 'Chuyến bay của bạn đã hoàn tất',
+            ];
+
+            $title = 'Cập nhật chuyến bay';
+            $body = $statusMessages[$newStatus] ?? "Trạng thái chuyến bay đã được cập nhật thành: {$newStatus}";
+
+            if ($flight->flight_number) {
+                $body .= " - Chuyến bay: {$flight->flight_number}";
+            }
+            if ($flight->from_airport && $flight->to_airport) {
+                $body .= " ({$flight->from_airport} → {$flight->to_airport})";
+            }
+
+            $notificationData = [
+                'type' => 'flight_status',
+                'flight_id' => $flight->id,
+                'flight_uuid' => $flight->uuid,
+                'flight_number' => $flight->flight_number,
+                'status' => $newStatus,
+                'old_status' => $oldStatus,
+            ];
+
+            Log::info('Pushing flight status notification', [
+                'customer_id' => $customer->id,
+                'title' => $title,
+                'body' => $body,
+                'data' => $notificationData,
+            ]);
+
+            // Push vào Firebase
+            $result = $this->firebaseService->pushNotification($customer->id, $title, $body, $notificationData);
+
+            if ($result) {
+                Log::info('Firebase notification pushed successfully', [
+                    'customer_id' => $customer->id,
+                ]);
+            } else {
+                Log::error('Failed to push Firebase notification', [
+                    'customer_id' => $customer->id,
+                ]);
+            }
+
+            // Gửi push notification qua Expo (cho background/killed state)
+            if ($customer->fcm_token) {
+                ExpoPushService::sendNotification(
+                    $customer->fcm_token,
+                    $title,
+                    $body,
+                    $notificationData
+                );
+                Log::info('Expo push notification sent', [
+                    'customer_id' => $customer->id,
+                    'fcm_token' => $customer->fcm_token,
+                ]);
+            } else {
+                Log::warning('Customer has no FCM token', [
+                    'customer_id' => $customer->id,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error pushing flight status notification', [
+                'flight_id' => $flight->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
     }
 }

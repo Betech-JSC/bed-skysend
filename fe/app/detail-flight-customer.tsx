@@ -19,6 +19,7 @@ import { router, useLocalSearchParams, useFocusEffect } from 'expo-router'; // �
 import api from '@/api/api';
 import { getAvatarUrl } from '@/constants/avatars';
 import { getAirlineLogo } from '@/constants/airlines';
+import BackButton from './components/BackButton';
 
 interface FlightDetail {
   id: number;
@@ -222,9 +223,7 @@ export default function FlightDetailScreen() {
       <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
         <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light/80 px-4 py-4 backdrop-blur-sm dark:bg-background-dark/80">
-          <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm dark:bg-gray-800">
-            <MaterialIcons name="arrow-back" size={24} color="#1F2937" />
-          </TouchableOpacity>
+          <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
           <Text className="text-lg font-bold text-text-dark-gray -ml-10 flex-1 text-center dark:text-white">
             Chi tiết chuyến bay
           </Text>
@@ -248,9 +247,7 @@ export default function FlightDetailScreen() {
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
       <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light/80 px-4 py-4 backdrop-blur-sm dark:bg-background-dark/80">
-        <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm dark:bg-gray-800">
-          <MaterialIcons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
+        <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
         <Text className="text-lg font-bold text-text-dark-gray -ml-10 flex-1 text-center dark:text-white">
           Chuyến bay #{flightDetail.id}
         </Text>
@@ -266,10 +263,10 @@ export default function FlightDetailScreen() {
           <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
             <View className="flex-row items-center justify-between pb-4">
               <View className="flex-row items-center gap-3">
-                <Image 
-                  source={{ uri: getAirlineLogo(flightDetail.airline) }} 
-                  className="h-10 w-10" 
-                  resizeMode="contain" 
+                <Image
+                  source={{ uri: getAirlineLogo(flightDetail.airline) }}
+                  className="h-10 w-10"
+                  resizeMode="contain"
                 />
                 <View>
                   <Text className="text-base font-bold text-text-dark-gray dark:text-white">{flightDetail.airline}</Text>
@@ -376,10 +373,11 @@ export default function FlightDetailScreen() {
                         {/* Header: Sender info + Status */}
                         <View className="flex-row items-center justify-between mb-3">
                           <View className="flex-row items-center gap-3 flex-1">
-                            <Image
+                            {/* Avatar temporarily hidden */}
+                            {/* <Image
                               source={{ uri: getAvatarUrl(sender.avatar) }}
                               className="w-10 h-10 rounded-full"
-                            />
+                            /> */}
                             <View className="flex-1">
                               <Text className="font-bold text-text-dark-gray dark:text-white">
                                 {sender.name || 'Người gửi'}
@@ -465,36 +463,77 @@ export default function FlightDetailScreen() {
 
       {/* Footer */}
       <View className="absolute bottom-0 left-0 right-0 bg-white px-4 py-4 shadow-2xl dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-        <TouchableOpacity
-          onPress={() => router.push({ pathname: '/edit-flight-customer', params: { id: flightDetail.id.toString() } })}
-          className="mb-3 h-14 w-full items-center justify-center rounded-lg bg-primary"
-        >
-          <Text className="text-base font-bold text-white">Chỉnh sửa chuyến bay</Text>
-        </TouchableOpacity>
+        {/* Chỉ hiển thị nút chỉnh sửa khi chuyến bay chưa được xác thực */}
+        {!(flightDetail.verified || flightDetail.status === 'verified') && (
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/edit-flight-customer', params: { id: flightDetail.id.toString() } })}
+            className="mb-3 h-14 w-full items-center justify-center rounded-lg bg-primary"
+          >
+            <Text className="text-base font-bold text-white">Chỉnh sửa chuyến bay</Text>
+          </TouchableOpacity>
+        )}
 
-        <TouchableOpacity
-          onPress={() => {
-            Alert.alert('Xác nhận hủy', 'Bạn có chắc chắn muốn hủy chuyến bay này?', [
-              { text: 'Không', style: 'cancel' },
-              {
-                text: 'Hủy chuyến bay',
-                style: 'destructive',
-                onPress: async () => {
-                  try {
-                    await api.delete(`flights/${flightDetail.id}/destroy`);
-                    Alert.alert('Thành công', 'Chuyến bay đã được hủy');
-                    router.push('/home_customer');
-                  } catch (err: any) {
-                    Alert.alert('Lỗi', err.response?.data?.message || 'Không thể hủy');
-                  }
-                },
-              },
-            ]);
-          }}
-          className="h-14 w-full items-center justify-center rounded-lg border-2 border-red-600"
-        >
-          <Text className="text-base font-bold text-red-600">Hủy chuyến bay</Text>
-        </TouchableOpacity>
+        {/* Chỉ hiển thị nút hủy khi chuyến bay chưa được xác thực và chưa bị hủy */}
+        {!(flightDetail.verified || flightDetail.status === 'verified') && flightDetail.status !== 'cancelled' && (
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert(
+                'Xác nhận hủy',
+                'Bạn có chắc chắn muốn hủy chuyến bay này? Hành động này không thể hoàn tác.',
+                [
+                  { text: 'Không', style: 'cancel' },
+                  {
+                    text: 'Hủy chuyến bay',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        const response = await api.delete(`flights/${flightDetail.id}/destroy`);
+
+                        if (response.data?.success) {
+                          Alert.alert('Thành công', response.data?.message || 'Chuyến bay đã được hủy', [
+                            {
+                              text: 'OK',
+                              onPress: () => router.replace('/(tabs)/(customer)/flight-history-customer')
+                            }
+                          ]);
+                        } else {
+                          Alert.alert('Lỗi', response.data?.message || 'Không thể hủy chuyến bay');
+                        }
+                      } catch (err: any) {
+                        console.error('Error canceling flight:', err);
+                        const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.errors?.message?.[0] ||
+                          'Không thể hủy chuyến bay. Vui lòng thử lại.';
+                        Alert.alert('Lỗi', errorMessage);
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+            className="h-14 w-full items-center justify-center rounded-lg border-2 border-red-600"
+          >
+            <Text className="text-base font-bold text-red-600">Hủy chuyến bay</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Hiển thị thông báo khi chuyến bay đã được xác thực */}
+        {(flightDetail.verified || flightDetail.status === 'verified') && (
+          <View className="h-14 w-full items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+            <Text className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              Chuyến bay đã được xác thực, không thể chỉnh sửa hoặc hủy
+            </Text>
+          </View>
+        )}
+
+        {/* Hiển thị thông báo khi chuyến bay đã bị hủy */}
+        {flightDetail.status === 'cancelled' && (
+          <View className="h-14 w-full items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+            <Text className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              Chuyến bay đã được hủy
+            </Text>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );

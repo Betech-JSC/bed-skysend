@@ -16,6 +16,7 @@ import { RootState } from "@/store";
 import api from "@/api/api";
 import { getAvatarUrl } from "@/constants/avatars";
 import UserProfileInfo from "../components/UserProfileInfo";
+import BackButton from "../components/BackButton";
 
 interface RequestDetail {
     id: number;
@@ -238,11 +239,18 @@ export default function PrivateRequestDetailScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: `Yêu cầu #${request.uuid}`,
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Header with Back Button */}
+                <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
+                        {request ? `Yêu cầu #${request.uuid}` : 'Chi tiết yêu cầu'}
+                    </Text>
+                    <View className="w-10" />
+                </View>
 
                 <ScrollView className="flex-1 px-4 pb-32">
                     <View className="gap-y-4">
@@ -483,12 +491,13 @@ export default function PrivateRequestDetailScreen() {
 
                                 {/* Avatar và tên */}
                                 <View className="flex-row items-center gap-4 mb-4">
-                                    <Image
+                                    {/* Avatar temporarily hidden */}
+                                    {/* <Image
                                         source={{
                                             uri: getAvatarUrl(customer.avatar),
                                         }}
                                         className="h-16 w-16 rounded-full border-2 border-primary/20"
-                                    />
+                                    /> */}
                                     <View className="flex-1">
                                         <Text className="text-lg font-bold text-text-primary dark:text-white">
                                             {formatName(customer.name) || "Chưa có thông tin"}

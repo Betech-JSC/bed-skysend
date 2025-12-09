@@ -12,9 +12,10 @@ function ItemOrderHome({ item }: any) {
                     <View className="flex-row items-start justify-between ">
                         {item.matched_order ?
                             <View className="gap-x-[12px] flex-row items-center">
-                                <View>
+                                {/* Avatar temporarily hidden */}
+                                {/* <View>
                                     <Image source={item.matched_order?.avatar?.url} className="w-[48px] h-[48px]" />
-                                </View>
+                                </View> */}
                                 <View className="flex-row">
                                     <View>
                                         <View className="flex-row items-center gap-x-2">

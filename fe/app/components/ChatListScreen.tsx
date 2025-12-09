@@ -11,7 +11,7 @@ import {
     RefreshControl,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { getDatabase, ref, onValue, get, set } from "firebase/database";
@@ -403,78 +403,84 @@ export default function ChatListScreen() {
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Top App Bar */}
-            <View className="bg-background-light dark:bg-background-dark pt-4 pb-2">
-                <View className="flex-row items-center justify-between px-4 pb-2">
-                    <Text className="text-2xl font-bold text-[#111318] dark:text-white">
-                        Trò chuyện
-                    </Text>
-                </View>
+        <>
+            <Stack.Screen
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Top App Bar */}
+                <View className="bg-background-light dark:bg-background-dark pt-4 pb-2">
+                    <View className="flex-row items-center justify-between px-4 pb-2">
+                        <Text className="text-2xl font-bold text-[#111318] dark:text-white">
+                            Trò chuyện
+                        </Text>
+                    </View>
 
-                {/* Search Bar */}
-                <View className="px-4">
-                    <View className="flex-row items-center bg-white dark:bg-slate-800 rounded-xl shadow-sm h-14">
-                        <MaterialIcons
-                            name="search"
-                            size={24}
-                            color="#616e89"
-                            style={{ marginLeft: 16 }}
-                        />
-                        <TextInput
-                            placeholder="Tìm kiếm theo tên người dùng..."
-                            placeholderTextColor="#616e89"
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                            className="flex-1 px-4 text-base text-[#111318] dark:text-white"
-                        />
+                    {/* Search Bar */}
+                    <View className="px-4">
+                        <View className="flex-row items-center bg-white dark:bg-slate-800 rounded-xl shadow-sm h-14">
+                            <MaterialIcons
+                                name="search"
+                                size={24}
+                                color="#616e89"
+                                style={{ marginLeft: 16 }}
+                            />
+                            <TextInput
+                                placeholder="Tìm kiếm theo tên người dùng..."
+                                placeholderTextColor="#616e89"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                className="flex-1 px-4 text-base text-[#111318] dark:text-white"
+                            />
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            {/* Chat List */}
-            {loading ? (
-                <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator size="large" color="#2563EB" />
-                </View>
-            ) : filteredChats.length === 0 ? (
-                <View className="flex-1 justify-center items-center px-8">
-                    <MaterialIcons name="chat-bubble-outline" size={80} color="#D1D5DB" />
-                    <Text className="text-lg font-semibold text-[#111318] dark:text-white mt-4">
-                        {searchQuery ? "Không tìm thấy" : "Chưa có cuộc trò chuyện nào"}
-                    </Text>
-                    <Text className="text-sm text-[#616e89] dark:text-gray-400 text-center mt-2">
-                        {searchQuery
-                            ? "Thử tìm kiếm với từ khóa khác"
-                            : "Bắt đầu một cuộc hội thoại mới từ đơn hàng của bạn"}
-                    </Text>
-                </View>
-            ) : (
-                <ScrollView
-                    className="flex-1"
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                    }
-                >
-                    <View className="px-4 pb-4 pt-2 gap-y-2">
-                        {filteredChats.map((chat) => (
-                            <TouchableOpacity
-                                key={chat.chatId}
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                    router.push({
-                                        pathname: "/chat/[chatId]",
-                                        params: {
-                                            chatId: chat.chatId,
-                                            partnerName: chat.otherUserName,
-                                            partnerAvatar: chat.otherUserAvatar,
-                                        },
-                                    });
-                                }}
-                                className="flex-row items-center bg-white dark:bg-slate-800 rounded-xl px-4 py-3 min-h-[88px] shadow-sm"
-                            >
-                                {/* Avatar với online indicator */}
-                                <View className="relative mr-4">
+                {/* Chat List */}
+                {loading ? (
+                    <View className="flex-1 justify-center items-center">
+                        <ActivityIndicator size="large" color="#2563EB" />
+                    </View>
+                ) : filteredChats.length === 0 ? (
+                    <View className="flex-1 justify-center items-center px-8">
+                        <MaterialIcons name="chat-bubble-outline" size={80} color="#D1D5DB" />
+                        <Text className="text-lg font-semibold text-[#111318] dark:text-white mt-4">
+                            {searchQuery ? "Không tìm thấy" : "Chưa có cuộc trò chuyện nào"}
+                        </Text>
+                        <Text className="text-sm text-[#616e89] dark:text-gray-400 text-center mt-2">
+                            {searchQuery
+                                ? "Thử tìm kiếm với từ khóa khác"
+                                : "Bắt đầu một cuộc hội thoại mới từ đơn hàng của bạn"}
+                        </Text>
+                    </View>
+                ) : (
+                    <ScrollView
+                        className="flex-1"
+                        refreshControl={
+                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                        }
+                    >
+                        <View className="px-4 pb-4 pt-2 gap-y-2">
+                            {filteredChats.map((chat) => (
+                                <TouchableOpacity
+                                    key={chat.chatId}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        router.push({
+                                            pathname: "/chat/[chatId]",
+                                            params: {
+                                                chatId: chat.chatId,
+                                                partnerName: chat.otherUserName,
+                                                partnerAvatar: chat.otherUserAvatar,
+                                            },
+                                        });
+                                    }}
+                                    className="flex-row items-center bg-white dark:bg-slate-800 rounded-xl px-4 py-3 min-h-[88px] shadow-sm"
+                                >
+                                    {/* Avatar với online indicator - temporarily hidden */}
+                                    {/* <View className="relative mr-4">
                                     <Image
                                         source={{ uri: chat.otherUserAvatar }}
                                         className="w-14 h-14 rounded-full"
@@ -483,72 +489,73 @@ export default function ChatListScreen() {
                                     {chat.isOnline && (
                                         <View className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-slate-800" />
                                     )}
-                                </View>
+                                </View> */}
 
-                                {/* Nội dung tin nhắn */}
-                                <View className="flex-1 overflow-hidden">
-                                    <View className="flex-row items-center justify-between mb-1">
+                                    {/* Nội dung tin nhắn */}
+                                    <View className="flex-1 overflow-hidden">
+                                        <View className="flex-row items-center justify-between mb-1">
+                                            <Text
+                                                className={`text-base font-bold text-[#111318] dark:text-white ${chat.unreadCount > 0 ? "font-extrabold" : ""
+                                                    }`}
+                                                numberOfLines={1}
+                                            >
+                                                {chat.otherUserName}
+                                            </Text>
+                                        </View>
+                                        {/* Hiển thị thông tin bổ sung: phone hoặc role */}
+                                        {(chat.otherUserPhone || chat.otherUserRole) && (
+                                            <Text
+                                                className="text-xs text-[#616e89] dark:text-gray-400 mb-0.5"
+                                                numberOfLines={1}
+                                            >
+                                                {chat.otherUserPhone && `📱 ${chat.otherUserPhone}`}
+                                                {chat.otherUserPhone && chat.otherUserRole && " • "}
+                                                {chat.otherUserRole && (
+                                                    <Text className="capitalize">
+                                                        {chat.otherUserRole === 'sender' ? 'Người gửi' :
+                                                            chat.otherUserRole === 'customer' ? 'Hành khách' :
+                                                                chat.otherUserRole}
+                                                    </Text>
+                                                )}
+                                            </Text>
+                                        )}
                                         <Text
-                                            className={`text-base font-bold text-[#111318] dark:text-white ${chat.unreadCount > 0 ? "font-extrabold" : ""
+                                            className={`text-sm mt-0.5 ${chat.unreadCount > 0
+                                                ? "text-primary font-semibold"
+                                                : "text-[#616e89] dark:text-gray-400"
                                                 }`}
                                             numberOfLines={1}
                                         >
-                                            {chat.otherUserName}
-                                        </Text>
-                                    </View>
-                                    {/* Hiển thị thông tin bổ sung: phone hoặc role */}
-                                    {(chat.otherUserPhone || chat.otherUserRole) && (
-                                        <Text
-                                            className="text-xs text-[#616e89] dark:text-gray-400 mb-0.5"
-                                            numberOfLines={1}
-                                        >
-                                            {chat.otherUserPhone && `📱 ${chat.otherUserPhone}`}
-                                            {chat.otherUserPhone && chat.otherUserRole && " • "}
-                                            {chat.otherUserRole && (
-                                                <Text className="capitalize">
-                                                    {chat.otherUserRole === 'sender' ? 'Người gửi' :
-                                                        chat.otherUserRole === 'customer' ? 'Hành khách' :
-                                                            chat.otherUserRole}
+                                            {chat.isTyping ? (
+                                                <Text className="italic text-primary">
+                                                    Đang soạn tin...
                                                 </Text>
+                                            ) : (
+                                                chat.lastMessage
                                             )}
                                         </Text>
-                                    )}
-                                    <Text
-                                        className={`text-sm mt-0.5 ${chat.unreadCount > 0
-                                            ? "text-primary font-semibold"
-                                            : "text-[#616e89] dark:text-gray-400"
-                                            }`}
-                                        numberOfLines={1}
-                                    >
-                                        {chat.isTyping ? (
-                                            <Text className="italic text-primary">
-                                                Đang soạn tin...
-                                            </Text>
-                                        ) : (
-                                            chat.lastMessage
-                                        )}
-                                    </Text>
-                                </View>
+                                    </View>
 
-                                {/* Thời gian + badge */}
-                                <View className="items-end ml-4">
-                                    <Text className="text-xs text-[#616e89] dark:text-gray-400 mb-1">
-                                        {formatTime(chat.lastMessageTime)}
-                                    </Text>
-                                    {chat.unreadCount > 0 && (
-                                        <View className="w-6 h-6 rounded-full bg-primary justify-center items-center">
-                                            <Text className="text-white text-xs font-bold">
-                                                {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </ScrollView>
-            )}
-        </SafeAreaView>
+                                    {/* Thời gian + badge */}
+                                    <View className="items-end ml-4">
+                                        <Text className="text-xs text-[#616e89] dark:text-gray-400 mb-1">
+                                            {formatTime(chat.lastMessageTime)}
+                                        </Text>
+                                        {chat.unreadCount > 0 && (
+                                            <View className="w-6 h-6 rounded-full bg-primary justify-center items-center">
+                                                <Text className="text-white text-xs font-bold">
+                                                    {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </ScrollView>
+                )}
+            </SafeAreaView>
+        </>
     );
 }
 

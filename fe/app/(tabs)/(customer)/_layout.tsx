@@ -47,6 +47,7 @@ export default function CustomerLayout() {
         <Tabs
             screenOptions={{
                 headerShown: false,
+                title: undefined,
                 tabBarActiveTintColor: '#2563EB',
                 tabBarInactiveTintColor: '#6B7280',
                 tabBarStyle: {
@@ -65,6 +66,7 @@ export default function CustomerLayout() {
             <Tabs.Screen
                 name="home_customer"
                 options={{
+                    title: undefined,
                     tabBarLabel: ({ focused }) => (
                         <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
                             Trang chủ
@@ -80,6 +82,7 @@ export default function CustomerLayout() {
             <Tabs.Screen
                 name="flight-history-customer"
                 options={{
+                    title: undefined,
                     tabBarLabel: ({ focused }) => (
                         <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
                             Chuyến bay
@@ -95,6 +98,7 @@ export default function CustomerLayout() {
             <Tabs.Screen
                 name="list_orders_customer"
                 options={{
+                    title: undefined,
                     tabBarLabel: ({ focused }) => (
                         <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
                             Đơn hàng
@@ -109,7 +113,7 @@ export default function CustomerLayout() {
             <Tabs.Screen
                 name="chat"
                 options={{
-                    title: "Chat",
+                    title: undefined,
                     tabBarIcon: ({ color }) => <ChatIconWithBadge color={color} />
                 }}
             />
@@ -126,6 +130,7 @@ export default function CustomerLayout() {
             <Tabs.Screen
                 name="profile"
                 options={{
+                    title: undefined,
                     tabBarLabel: ({ focused }) => (
                         <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
                             Tài khoản

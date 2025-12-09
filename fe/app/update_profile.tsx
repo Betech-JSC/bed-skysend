@@ -21,6 +21,7 @@ import { setUser } from "@/reducers/userSlice";
 import { useRouter, Stack } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { DEMO_AVATAR, getAvatarUrl } from "@/constants/avatars";
+import BackButton from "./components/BackButton";
 
 type TabType = 'profile' | 'kyc';
 
@@ -206,9 +207,7 @@ export default function ProfileUpdate() {
                 } as any);
             }
 
-            const response = await api.put("user/profile", data, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            const response = await api.put("user/profile", data);
 
             if (response.status === 200 && response.data?.success) {
                 if (response.data?.data?.user) {
@@ -348,11 +347,18 @@ export default function ProfileUpdate() {
         <>
             <Stack.Screen
                 options={{
-                    title: 'Hồ sơ & Xác minh',
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Header with Back Button */}
+                <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
+                        Hồ sơ & Xác minh
+                    </Text>
+                    <View className="w-10" />
+                </View>
 
                 {/* Tabs */}
                 <View className="flex-row bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -398,8 +404,8 @@ export default function ProfileUpdate() {
                                 Cập nhật thông tin
                             </Text>
 
-                            {/* Avatar */}
-                            <Pressable onPress={pickImage} className="mb-6 items-center">
+                            {/* Avatar - temporarily hidden */}
+                            {/* <Pressable onPress={pickImage} className="mb-6 items-center">
                                 <View className="relative">
                                     <Image
                                         source={
@@ -416,7 +422,7 @@ export default function ProfileUpdate() {
                                     </View>
                                 </View>
                                 <Text className="text-primary mt-2 font-medium">Đổi ảnh đại diện</Text>
-                            </Pressable>
+                            </Pressable> */}
 
                             {/* Họ tên */}
                             <View className="mb-4">

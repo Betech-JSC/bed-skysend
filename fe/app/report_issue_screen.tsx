@@ -16,6 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 // import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import BackButton from './components/BackButton';
 
 export default function ReportIssueScreen() {
     const router = useRouter();
@@ -57,12 +58,20 @@ export default function ReportIssueScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: 'Báo cáo sự cố',
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
                 <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+
+                {/* Header with Back Button */}
+                <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
+                        Báo cáo sự cố
+                    </Text>
+                    <View className="w-10" />
+                </View>
 
                 <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
                     <View className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm space-y-6">
@@ -112,14 +121,14 @@ export default function ReportIssueScreen() {
                                                         setShowPicker(false);
                                                     }}
                                                     className={`px-4 py-4 rounded-lg mb-2 ${issueType === type.value
-                                                            ? 'bg-primary/10 border-2 border-primary'
-                                                            : 'bg-gray-50 dark:bg-gray-700'
+                                                        ? 'bg-primary/10 border-2 border-primary'
+                                                        : 'bg-gray-50 dark:bg-gray-700'
                                                         }`}
                                                 >
                                                     <Text
                                                         className={`text-base ${issueType === type.value
-                                                                ? 'font-bold text-primary'
-                                                                : 'text-text-primary dark:text-white'
+                                                            ? 'font-bold text-primary'
+                                                            : 'text-text-primary dark:text-white'
                                                             }`}
                                                     >
                                                         {type.label}

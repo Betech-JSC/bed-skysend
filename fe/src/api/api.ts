@@ -5,12 +5,12 @@ import { clearUser } from "@/reducers/userSlice";
 import { router } from "expo-router";
 
 // Tạo instance axios
-// const api = axios.create({
-//     baseURL: "http://localhost:8000/api",
-//     headers: {
-//         "Content-Type": "application/json",
-//     },
-// });
+const api = axios.create({
+    baseURL: "http://localhost:8000/api",
+    headers: {
+        "Content-Type": "application/json",
+    },
+});
 
 // const api = axios.create({
 //     baseURL: "http://192.168.1.90:8000/api", // dùng IP LAN thay vì localhost
@@ -19,12 +19,12 @@ import { router } from "expo-router";
 //     },
 // });
 
-const api = axios.create({
-    baseURL: "https://skysend.betech-digital.com/api", // dùng IP LAN thay vì localhost
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
+// const api = axios.create({
+//     baseURL: "https://skysend.betech-digital.com/api", // dùng IP LAN thay vì localhost
+//     headers: {
+//         "Content-Type": "application/json",
+//     },
+// });
 
 // Interceptor để gắn token vào header
 api.interceptors.request.use(
@@ -34,6 +34,11 @@ api.interceptors.request.use(
 
         if (user?.token) {
             config.headers['Authorization'] = `Bearer ${user.token}`;
+        }
+
+        // Nếu là FormData, không set Content-Type để axios tự động set với boundary
+        if (config.data instanceof FormData) {
+            delete config.headers['Content-Type'];
         }
 
         return config;

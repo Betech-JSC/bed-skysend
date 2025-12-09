@@ -28,16 +28,29 @@ export default function OrderDetailContent({
 }: OrderDetailContentProps) {
     const router = useRouter();
 
+    // Normalize status từ backend về 4 trạng thái mới
+    const normalizeStatus = (status: string): string => {
+        if (status === 'pending' || status === 'confirmed') {
+            return 'new';
+        }
+        if (status === 'picked_up' || status === 'in_transit' || status === 'arrived' || status === 'delivered') {
+            return 'in_transit';
+        }
+        if (status === 'completed' || status === 'cancelled') {
+            return status;
+        }
+        return status;
+    };
+
     const getStatusLabel = (status: string) => {
+        const normalized = normalizeStatus(status);
         const statusMap: { [key: string]: { label: string; step: number } } = {
-            'confirmed': { label: 'Đã xác nhận', step: 1 },
-            'picked_up': { label: 'Đã lấy hàng', step: 2 },
-            'in_transit': { label: 'Đang vận chuyển', step: 3 },
-            'delivered': { label: 'Đã giao hàng', step: 3 },
-            'completed': { label: 'Hoàn thành', step: 4 },
+            'new': { label: 'Đơn mới', step: 1 },
+            'in_transit': { label: 'Đang vận chuyển', step: 2 },
+            'completed': { label: 'Hoàn thành', step: 3 },
             'cancelled': { label: 'Đã hủy', step: 0 },
         };
-        return statusMap[status] || { label: status, step: 0 };
+        return statusMap[normalized] || { label: normalized, step: 0 };
     };
 
     const formatDate = (dateString: string | null | undefined): string | null => {
@@ -110,22 +123,21 @@ export default function OrderDetailContent({
                     <View className="flex-row justify-between mb-3">
                         <Text className="font-bold text-base">{statusInfo.label}</Text>
                         <Text className="text-sm font-medium text-secondary-light dark:text-secondary-dark">
-                            {statusInfo.step}/4 bước
+                            {statusInfo.step}/3 bước
                         </Text>
                     </View>
 
                     <View className="h-2 bg-border-light dark:bg-border-dark rounded-full overflow-hidden">
                         <View
                             className="h-full bg-primary rounded-full"
-                            style={{ width: `${(statusInfo.step / 4) * 100}%` }}
+                            style={{ width: `${(statusInfo.step / 3) * 100}%` }}
                         />
                     </View>
 
                     <View className="flex-row justify-between mt-2 text-xs text-secondary-light dark:text-secondary-dark">
-                        <Text className={statusInfo.step >= 1 ? 'font-bold text-primary' : ''}>Tìm đối tác</Text>
-                        <Text className={statusInfo.step >= 2 ? 'font-bold text-primary' : ''}>Ghép nối</Text>
-                        <Text className={statusInfo.step >= 3 ? 'font-bold text-primary' : ''}>Vận chuyển</Text>
-                        <Text className={statusInfo.step >= 4 ? 'font-bold text-primary' : ''}>Hoàn thành</Text>
+                        <Text className={statusInfo.step >= 1 ? 'font-bold text-primary' : ''}>Đơn mới</Text>
+                        <Text className={statusInfo.step >= 2 ? 'font-bold text-primary' : ''}>Đang vận chuyển</Text>
+                        <Text className={statusInfo.step >= 3 ? 'font-bold text-primary' : ''}>Hoàn thành</Text>
                     </View>
                 </View>
 
@@ -258,13 +270,14 @@ export default function OrderDetailContent({
                         </TouchableOpacity>
                     </View>
 
-                    <ImageBackground
+                    {/* Avatar temporarily hidden */}
+                    {/* <ImageBackground
                         source={{
                             uri: getAvatarUrl(partner.avatar),
                         }}
                         className="w-20 h-20 rounded-full overflow-hidden"
                         resizeMode="cover"
-                    />
+                    /> */}
                 </View>
 
                 {/* Thông tin chuyến bay */}

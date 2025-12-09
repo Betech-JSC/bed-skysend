@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
-
 import { useRouter, Stack } from 'expo-router';
+import BackButton from './components/BackButton';
 
 export default function NotificationSettingsScreen() {
     const router = useRouter();
@@ -42,12 +42,20 @@ export default function NotificationSettingsScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: 'Cài đặt thông báo',
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
                 <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+
+                {/* Header with Back Button */}
+                <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
+                        Cài đặt thông báo
+                    </Text>
+                    <View className="w-10" />
+                </View>
 
                 {/* Danh sách cài đặt */}
                 <View className="flex-1 px-4 py-6">

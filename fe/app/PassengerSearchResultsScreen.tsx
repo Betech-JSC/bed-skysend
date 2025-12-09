@@ -18,6 +18,7 @@ import UserProfileInfo from "./components/UserProfileInfo";
 import CitySelectModal from "./components/CitySelectModal";
 import DatePickerInput from "./components/DatePickerInput";
 import ItemTypeSelect from "./components/ItemTypeSelect";
+import BackButton from "./components/BackButton";
 
 export default function PassengerSearchResultsScreen() {
     const router = useRouter();
@@ -209,11 +210,18 @@ export default function PassengerSearchResultsScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: 'Kết quả tìm kiếm',
-                    headerShown: true,
+                    headerShown: false,
                 }}
             />
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+                {/* Header with Back Button */}
+                <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
+                        Kết quả tìm kiếm
+                    </Text>
+                    <View className="w-10" />
+                </View>
 
                 {/* Filter Summary Bar */}
                 <View className="px-4 py-3 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-700">
