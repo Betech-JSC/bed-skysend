@@ -263,11 +263,12 @@ export default function FlightDetailScreen() {
           <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
             <View className="flex-row items-center justify-between pb-4">
               <View className="flex-row items-center gap-3">
-                <Image
+                {/* Tạm ẩn hình ảnh thông tin chuyến bay */}
+                {/* <Image
                   source={{ uri: getAirlineLogo(flightDetail.airline) }}
                   className="h-10 w-10"
                   resizeMode="contain"
-                />
+                /> */}
                 <View>
                   <Text className="text-base font-bold text-text-dark-gray dark:text-white">{flightDetail.airline}</Text>
                   <Text className="text-sm text-gray-500">{flightDetail.flight_number}</Text>

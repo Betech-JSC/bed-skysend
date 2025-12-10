@@ -9,6 +9,7 @@ interface UserState {
     password: string | null;
     phone: string | null;
     token: string | null;
+    avatar?: string | null;
 }
 
 const initialState: UserState = {

@@ -206,11 +206,11 @@ export default function TermsAndConditionsScreen() {
                             Nếu bạn có câu hỏi về các điều khoản này, vui lòng liên hệ với chúng tôi:
                         </Text>
                         <TouchableOpacity
-                            onPress={() => openLink('mailto:legal@skysend.app')}
+                            onPress={() => openLink('mailto:support@skysend.app')}
                             className="mt-2"
                         >
                             <Text className="text-sm text-primary font-medium">
-                                Email: legal@skysend.app
+                                Email: support@skysend.app
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -218,7 +218,7 @@ export default function TermsAndConditionsScreen() {
                             className="mt-2"
                         >
                             <Text className="text-sm text-primary font-medium">
-                                Hotline: 1900 0000
+                                Hotline: (+84) 0775600351
                             </Text>
                         </TouchableOpacity>
                     </View>

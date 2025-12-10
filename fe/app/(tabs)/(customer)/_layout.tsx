@@ -3,6 +3,7 @@ import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity, View, Text } from 'react-native';
 import { useUnreadChatCount } from '@/hooks/useUnreadChatCount';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function ChatIconWithBadge({ color }: { color: string }) {
     const unreadCount = useUnreadChatCount();
@@ -43,6 +44,8 @@ function ChatIconWithBadge({ color }: { color: string }) {
 }
 
 export default function CustomerLayout() {
+    const insets = useSafeAreaInsets();
+
     return (
         <Tabs
             screenOptions={{
@@ -51,11 +54,15 @@ export default function CustomerLayout() {
                 tabBarActiveTintColor: '#2563EB',
                 tabBarInactiveTintColor: '#6B7280',
                 tabBarStyle: {
-                    height: 70,
-                    paddingBottom: 20,
+                    height: 49 + insets.bottom, // HIG standard: 49pt + safe area
+                    paddingBottom: insets.bottom,
                     paddingTop: 8,
                     // Quan trọng: tạo khoảng trống giữa cho FAB
                     paddingHorizontal: 20,
+                },
+                tabBarLabelStyle: {
+                    fontSize: 10, // HIG caption2
+                    marginTop: 4, // 4pt spacing from icon
                 },
                 tabBarItemStyle: {
                     // Giúp các icon đều nhau, không bị lệch do FAB

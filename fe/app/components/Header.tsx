@@ -1,9 +1,12 @@
 // Reusable Header Component for consistent navigation
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Typography } from 'constants/typography';
+import { useColors } from 'constants/colors';
 
 interface HeaderProps {
     title: string;
@@ -23,7 +26,8 @@ export default function Header({
     const router = useRouter();
     const pathname = usePathname();
     const colorScheme = useColorScheme();
-    const isDark = colorScheme === 'dark';
+    const colors = useColors();
+    const insets = useSafeAreaInsets();
 
     const handleBack = () => {
         if (onBackPress) {
@@ -42,8 +46,12 @@ export default function Header({
         <View
             style={[
                 styles.container,
+                {
+                    backgroundColor: transparent ? 'transparent' : colors.background,
+                    borderBottomColor: colors.border,
+                    paddingTop: insets.top,
+                },
                 transparent && styles.transparent,
-                isDark && styles.darkContainer,
             ]}
         >
             <View style={styles.content}>
@@ -52,18 +60,29 @@ export default function Header({
                         onPress={handleBack}
                         style={styles.backButton}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityLabel="Quay lại"
+                        accessibilityHint="Nhấn để quay lại màn hình trước"
+                        accessibilityRole="button"
                     >
                         <MaterialIcons
                             name="arrow-back"
                             size={24}
-                            color={isDark ? '#F3F4F6' : '#1F2937'}
+                            color={colors.text}
                         />
                     </TouchableOpacity>
                 )}
                 {!showBack && <View style={styles.backButton} />}
 
                 <Text
-                    style={[styles.title, isDark && styles.darkTitle]}
+                    style={[
+                        Typography.headline,
+                        {
+                            flex: 1,
+                            textAlign: 'center',
+                            color: colors.text,
+                            marginHorizontal: 8,
+                        },
+                    ]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                 >
@@ -82,16 +101,8 @@ export default function Header({
 
 const styles = StyleSheet.create({
     container: {
-        height: 56,
-        backgroundColor: '#FFFFFF',
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#E5E7EB',
-        justifyContent: 'center',
-        paddingHorizontal: 4,
-    },
-    darkContainer: {
-        backgroundColor: '#1F2937',
-        borderBottomColor: '#374151',
+        justifyContent: 'flex-end',
     },
     transparent: {
         backgroundColor: 'transparent',
@@ -102,27 +113,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 12,
+        height: 44, // HIG standard navigation bar height
     },
     backButton: {
-        width: 40,
-        height: 40,
+        minWidth: 44, // HIG minimum tap target
+        minHeight: 44,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    title: {
-        flex: 1,
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#1F2937',
-        textAlign: 'center',
-        marginHorizontal: 8,
-    },
-    darkTitle: {
-        color: '#F3F4F6',
-    },
     rightComponent: {
-        width: 40,
-        height: 40,
+        minWidth: 44, // HIG minimum tap target
+        minHeight: 44,
         alignItems: 'center',
         justifyContent: 'center',
     },

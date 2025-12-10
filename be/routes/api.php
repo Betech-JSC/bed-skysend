@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionsController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AdminFlightController;
 use App\Http\Controllers\Api\AdminOrderController;
@@ -52,6 +53,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Public user profile (lấy thông tin user khác)
     Route::get('users/{id}', [UserController::class, 'showById']);
+
+    // Reports
+    Route::post('reports/user', [ReportController::class, 'reportUser']);
 
     // KYC Verification
     Route::post('kyc/submit', [\App\Http\Controllers\Api\KycController::class, 'submit']);

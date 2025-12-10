@@ -331,7 +331,18 @@ export default function UserProfileScreen() {
                         {/* Báo cáo */}
                         {currentUser?.id !== profile.id && (
                             <View className="justify-center pt-2">
-                                <TouchableOpacity className="flex-row items-center justify-center rounded-lg border border-red-300 dark:border-red-800 px-6 py-3">
+                                <TouchableOpacity
+                                    onPress={() =>
+                                        router.push({
+                                            pathname: '/report_user',
+                                            params: {
+                                                userId: String(profile.id),
+                                                userName: profile.name || 'Người dùng',
+                                            },
+                                        })
+                                    }
+                                    className="flex-row items-center justify-center rounded-lg border border-red-300 dark:border-red-800 px-6 py-3"
+                                >
                                     <MaterialIcons
                                         name="flag"
                                         size={20}

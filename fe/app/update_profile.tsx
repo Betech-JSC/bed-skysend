@@ -211,9 +211,35 @@ export default function ProfileUpdate() {
 
             if (response.status === 200 && response.data?.success) {
                 if (response.data?.data?.user) {
-                    dispatch(setUser(response.data.data.user));
+                    // Lấy user data từ response
+                    const updatedUser = response.data.data.user;
+
+                    // Giữ lại token từ user hiện tại (API không trả về token)
+                    const userWithToken = {
+                        ...updatedUser,
+                        token: user?.token || null, // Giữ token cũ
+                    };
+
+                    // Cập nhật avatar URL nếu có
+                    if (response.data?.data?.avatar_url) {
+                        userWithToken.avatar = response.data.data.avatar_url;
+                    }
+
+                    // Dispatch để cập nhật Redux store
+                    dispatch(setUser(userWithToken));
+
+                    Alert.alert("Thành công", response.data?.message || "Cập nhật thông tin thành công!", [
+                        {
+                            text: "OK",
+                            onPress: () => {
+                                // Quay lại màn hình trước hoặc refresh
+                                router.back();
+                            },
+                        },
+                    ]);
+                } else {
+                    Alert.alert("Lỗi", "Không nhận được dữ liệu người dùng từ server.");
                 }
-                Alert.alert("Thành công", response.data?.message || "Cập nhật thông tin thành công!");
             } else {
                 const message =
                     response.data?.message ||

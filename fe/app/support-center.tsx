@@ -65,7 +65,7 @@ export default function SupportCenterScreen() {
         },
         {
             question: 'Tôi có thể liên hệ hỗ trợ như thế nào?',
-            answer: 'Bạn có thể liên hệ hỗ trợ qua: Email (support@skysend.app), Hotline (1900 0000), Chat trong ứng dụng, hoặc gửi yêu cầu hỗ trợ trong mục "Trung tâm hỗ trợ".',
+            answer: 'Bạn có thể liên hệ hỗ trợ qua: Email (support@skysend.app), Hotline ((+84) 0775600351), Chat trong ứng dụng, hoặc gửi yêu cầu hỗ trợ trong mục "Trung tâm hỗ trợ".',
         },
     ];
 
@@ -270,7 +270,7 @@ export default function SupportCenterScreen() {
                                             Hotline
                                         </Text>
                                         <Text className="text-base font-semibold text-text-primary dark:text-white">
-                                            1900 0000
+                                            (+84) 0775600351
                                         </Text>
                                     </View>
                                     <MaterialIcons name="chevron-right" size={24} color="#6B7280" />

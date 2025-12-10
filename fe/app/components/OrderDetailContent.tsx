@@ -285,11 +285,12 @@ export default function OrderDetailContent({
                     <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
                         <Text className="text-lg font-bold mb-3">Thông tin chuyến bay</Text>
                         <View className="flex-row items-center gap-3 mb-3">
-                            <Image
+                            {/* Tạm ẩn hình ảnh thông tin chuyến bay */}
+                            {/* <Image
                                 source={{ uri: getAirlineLogo(flight.airline) }}
                                 className="h-12 w-12"
                                 resizeMode="contain"
-                            />
+                            /> */}
                             <View className="flex-1">
                                 <Text className="text-sm text-secondary-light dark:text-secondary-dark mb-1">
                                     Hãng bay:
