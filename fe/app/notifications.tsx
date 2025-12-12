@@ -569,7 +569,7 @@ export default function NotificationScreen() {
         [handleMarkAsRead, handleNavigate]
     );
 
-    // Mark all notifications in group as read
+    // Mark all notifications in group as read (xóa các notifications)
     const handleMarkGroupAsRead = useCallback(
         async (group: NotificationGroup) => {
             if (!user?.id || !user?.token) {
@@ -578,31 +578,28 @@ export default function NotificationScreen() {
             }
 
             const unreadInGroup = group.notifications.filter((n) => !n.read);
-            if (unreadInGroup.length === 0) return;
+            if (unreadInGroup.length === 0) {
+                // Nếu không có unread, đóng modal
+                setSelectedGroup(null);
+                return;
+            }
 
             try {
-                // Optimistic update
-                setNotifications((prev) =>
-                    prev.map((n) =>
-                        unreadInGroup.some((unread) => unread.id === n.id)
-                            ? { ...n, read: true }
-                            : n
-                    )
-                );
-
-                // Update Firebase
+                // Xóa tất cả notifications trong group
                 await Promise.all(
                     unreadInGroup.map((notif) => {
-                        const notificationRef = ref(db, `notifications/${user.id}/${notif.id}`);
-                        return set(notificationRef, { ...notif, read: true });
+                        return handleDeleteNotification(notif);
                     })
                 );
+
+                // Đóng modal sau khi xóa
+                setSelectedGroup(null);
             } catch (error) {
-                console.error("Error marking group as read:", error);
-                Alert.alert("Lỗi", "Không thể đánh dấu thông báo là đã đọc.");
+                console.error("Error deleting group notifications:", error);
+                Alert.alert("Lỗi", "Không thể xóa thông báo.");
             }
         },
-        [user?.id, user?.token, db]
+        [user?.id, user?.token, handleDeleteNotification]
     );
 
     if (loading) {
@@ -899,17 +896,28 @@ export default function NotificationScreen() {
                                 />
                             )}
 
-                            {/* Footer - Mark all as read button */}
+                            {/* Footer - Delete all unread button */}
                             {selectedGroup && selectedGroup.unreadCount > 0 && (
                                 <View className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
                                     <TouchableOpacity
                                         onPress={() => {
-                                            handleMarkGroupAsRead(selectedGroup);
+                                            Alert.alert(
+                                                "Xóa thông báo",
+                                                `Bạn có chắc chắn muốn xóa ${selectedGroup.unreadCount} thông báo chưa đọc này?`,
+                                                [
+                                                    { text: "Hủy", style: "cancel" },
+                                                    {
+                                                        text: "Xóa",
+                                                        style: "destructive",
+                                                        onPress: () => handleMarkGroupAsRead(selectedGroup),
+                                                    },
+                                                ]
+                                            );
                                         }}
                                         className="bg-primary py-3 rounded-lg items-center"
                                     >
                                         <Text className="text-white font-semibold">
-                                            Đánh dấu tất cả đã đọc ({selectedGroup.unreadCount})
+                                            Xóa tất cả ({selectedGroup.unreadCount})
                                         </Text>
                                     </TouchableOpacity>
                                 </View>
