@@ -240,7 +240,7 @@ export default function RequestOrderScreen() {
                                 value={itemDescription}
                                 onChangeText={setItemDescription}
                                 placeholder="Mô tả chi tiết về tài liệu cần gửi (tối thiểu 10 ký tự)..."
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor="#D1D5DB"
                                 multiline
                                 numberOfLines={4}
                                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-text-primary dark:text-white min-h-24"
@@ -256,7 +256,7 @@ export default function RequestOrderScreen() {
                                 value={note}
                                 onChangeText={setNote}
                                 placeholder="Thêm ghi chú hoặc yêu cầu đặc biệt..."
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor="#D1D5DB"
                                 multiline
                                 numberOfLines={3}
                                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-text-primary dark:text-white min-h-20"

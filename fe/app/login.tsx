@@ -213,23 +213,30 @@ export default function LoginScreen() {
           <View className="flex-1 px-6 py-4">
             <View className="gap-5">
               {/* Email */}
-              <EnhancedTextInput
-                label={
-                  <>
-                    Email <Text className="text-red-500">*</Text>
-                  </>
-                }
-                placeholder="example@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={formData.email}
-                onChangeText={(value) => {
-                  setFormData({ ...formData, email: value });
-                  if (errors.email) setErrors({ ...errors, email: "" });
-                }}
-                editable={!loading}
-                error={errors.email}
-              />
+              <View>
+                <Text className="text-sm font-semibold text-text-primary dark:text-white mb-2">
+                  Email <Text className="text-red-500">*</Text>
+                </Text>
+                <TextInput
+                  className={`border rounded-2xl px-4 py-4 text-base bg-white dark:bg-slate-800 text-text-primary dark:text-white ${errors.email
+                    ? "border-red-500"
+                    : "border-gray-300 dark:border-gray-600"
+                    }`}
+                  placeholder="example@email.com"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={formData.email}
+                  onChangeText={(value) => {
+                    setFormData({ ...formData, email: value });
+                    if (errors.email) setErrors({ ...errors, email: "" });
+                  }}
+                  editable={!loading}
+                />
+                {errors.email && (
+                  <Text className="text-red-500 text-xs mt-1">{errors.email}</Text>
+                )}
+              </View>
 
               {/* Password */}
               <View>
@@ -237,8 +244,13 @@ export default function LoginScreen() {
                   Mật khẩu <Text className="text-red-500">*</Text>
                 </Text>
                 <View className="relative">
-                  <EnhancedTextInput
+                  <TextInput
+                    className={`border rounded-2xl px-4 py-4 pr-12 text-base bg-white dark:bg-slate-800 text-text-primary dark:text-white ${errors.password
+                      ? "border-red-500"
+                      : "border-gray-300 dark:border-gray-600"
+                      }`}
                     placeholder="Nhập mật khẩu"
+                    placeholderTextColor="#9CA3AF"
                     secureTextEntry={!showPassword}
                     value={formData.password}
                     onChangeText={(value) => {
@@ -246,8 +258,6 @@ export default function LoginScreen() {
                       if (errors.password) setErrors({ ...errors, password: "" });
                     }}
                     editable={!loading}
-                    error={errors.password}
-                    className="border rounded-2xl px-4 py-4 pr-12 text-base bg-white dark:bg-slate-800 text-text-primary dark:text-white"
                   />
                   <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
@@ -260,6 +270,9 @@ export default function LoginScreen() {
                     />
                   </TouchableOpacity>
                 </View>
+                {errors.password && (
+                  <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>
+                )}
               </View>
 
               {/* Submit Button */}

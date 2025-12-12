@@ -75,10 +75,10 @@ const CitySelectModal = ({
         }
       } catch (err: any) {
         console.error('Error fetching airports:', err);
-        const errorMessage = 
-          err.response?.data?.message || 
-          err.response?.data?.error || 
-          err.message || 
+        const errorMessage =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
           'Không thể tải danh sách sân bay';
         if (mounted) {
           setError(errorMessage);
@@ -124,7 +124,12 @@ const CitySelectModal = ({
         <View
           className={`h-14 border bg-background-light pl-10 pr-4 dark:bg-gray-700 ${isDark ? 'border-gray-600' : 'border-gray-200'
             } justify-center rounded-lg`}>
-          <Text style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>
+          <Text
+            style={{
+              color: selectedLabel
+                ? (isDark ? '#e5e7eb' : '#1f2937')
+                : (isDark ? '#4B5563' : '#D1D5DB') // Mờ hơn khi chưa chọn
+            }}>
             {selectedLabel || placeholder}
           </Text>
         </View>

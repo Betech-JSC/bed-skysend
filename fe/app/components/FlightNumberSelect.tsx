@@ -156,7 +156,11 @@ const FlightNumberSelect = ({
                         />
                         <Text
                             className="ml-2 flex-1"
-                            style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>
+                            style={{
+                                color: selectedAirline
+                                    ? (isDark ? '#e5e7eb' : '#1f2937')
+                                    : (isDark ? '#4B5563' : '#D1D5DB') // Mờ hơn khi chưa chọn
+                            }}>
                             {selectedAirline ? selectedAirline.name_vi : 'Chọn hãng bay'}
                         </Text>
                         <MaterialIcons
@@ -201,10 +205,10 @@ const FlightNumberSelect = ({
                                         onPress={() => handleSelectAirline(item)}
                                         className={`flex-row items-center gap-3 border-b border-gray-100 py-3 dark:border-gray-700 ${selectedAirline?.id === item.id ? 'bg-primary/10' : ''
                                             }`}>
-                                        <Image 
-                                            source={{ uri: getAirlineLogo(item.name_vi, item.logo_url) }} 
-                                            className="h-8 w-8" 
-                                            resizeMode="contain" 
+                                        <Image
+                                            source={{ uri: getAirlineLogo(item.name_vi, item.logo_url) }}
+                                            className="h-8 w-8"
+                                            resizeMode="contain"
                                         />
                                         <View className="flex-1">
                                             <Text className="text-text-primary text-base font-medium dark:text-white">

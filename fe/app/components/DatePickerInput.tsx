@@ -23,7 +23,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
   disabled = false,
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
-  
+
   // Parse string date to Date object
   const getDateFromString = (dateStr: string): Date => {
     if (!dateStr) return new Date();
@@ -82,18 +82,19 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
           style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
         />
         <View
-          className={`h-14 w-full rounded-lg border pl-10 pr-4 ${
-            disabled
-              ? 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800'
-              : 'border-gray-200 bg-background-light dark:border-gray-600 dark:bg-gray-700'
-          }`}
+          className={`h-14 w-full rounded-lg border pl-10 pr-4 ${disabled
+            ? 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800'
+            : 'border-gray-200 bg-background-light dark:border-gray-600 dark:bg-gray-700'
+            }`}
           style={{ justifyContent: 'center' }}>
           <Text
-            className={`text-base ${
-              value
-                ? 'text-text-primary dark:text-white'
-                : 'text-gray-400 dark:text-gray-500'
-            } ${disabled ? 'opacity-50' : ''}`}>
+            className={`text-base ${value
+              ? 'text-text-primary dark:text-white'
+              : 'text-gray-400 dark:text-gray-500' // Mờ hơn khi chưa chọn
+              } ${disabled ? 'opacity-50' : ''}`}
+            style={{
+              opacity: value ? 1 : 0.6 // Làm mờ placeholder khi chưa có value
+            }}>
             {value || placeholder}
           </Text>
         </View>

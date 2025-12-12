@@ -57,12 +57,15 @@ const ItemTypeSelect = ({ placeholder, value: externalValue, onValueChange }: It
 
       <Pressable onPress={() => setOpen(true)}>
         <View
-          className={`h-14 border bg-background-light pl-10 pr-4 dark:bg-gray-700 ${
-            isDark ? 'border-gray-600' : 'border-gray-200'
-          } justify-center rounded-lg`}>
+          className={`h-14 border bg-background-light pl-10 pr-4 dark:bg-gray-700 ${isDark ? 'border-gray-600' : 'border-gray-200'
+            } justify-center rounded-lg`}>
           <Text
             className={value ? 'text-text-primary dark:text-white' : 'text-gray-400'}
-            style={{ color: value ? (isDark ? '#e5e7eb' : '#1f2937') : '#9ca3af' }}>
+            style={{
+              color: value
+                ? (isDark ? '#e5e7eb' : '#1f2937')
+                : (isDark ? '#4B5563' : '#D1D5DB') // Mờ hơn khi chưa chọn
+            }}>
             {selectedLabel || placeholder}
           </Text>
         </View>
