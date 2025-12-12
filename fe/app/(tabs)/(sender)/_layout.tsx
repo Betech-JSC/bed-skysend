@@ -92,6 +92,12 @@ export default function SenderLayout() {
             <Tabs.Screen name="wallet" options={{
                 href: null, // Ẩn tab khỏi tab bar
             }} />
+            <Tabs.Screen name="create_request_waiting" options={{
+                href: null, // Ẩn tab khỏi tab bar
+            }} />
+            <Tabs.Screen name="request_matches" options={{
+                href: null, // Ẩn tab khỏi tab bar
+            }} />
             <Tabs.Screen
                 name="profile"
                 options={{

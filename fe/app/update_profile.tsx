@@ -404,7 +404,8 @@ export default function ProfileUpdate() {
                             Thông tin cá nhân
                         </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
+                    {/* Tab Xác minh KYC - Tạm thời ẩn */}
+                    {/* <TouchableOpacity
                         onPress={() => setActiveTab('kyc')}
                         className={`flex-1 py-4 items-center border-b-2 ${activeTab === 'kyc'
                             ? 'border-primary'
@@ -419,7 +420,7 @@ export default function ProfileUpdate() {
                         >
                             Xác minh KYC
                         </Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
 
                 <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>

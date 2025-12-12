@@ -1,5 +1,8 @@
 // app/request_order.tsx
 import React, { useState } from 'react';
+import CurrencyInput from './components/CurrencyInput';
+import { parseVND } from '@/utils/currencyFormatter';
+
 import {
     View,
     Text,
@@ -40,11 +43,14 @@ export default function RequestOrderScreen() {
 
     const handleSubmit = async () => {
         // Validation
-        if (!reward || Number(reward) < 300000) {
+        const rewardNum = parseVND(reward);
+        const itemValueNum = parseVND(itemValue);
+
+        if (!rewardNum || rewardNum < 300000) {
             Alert.alert('Lỗi', 'Vui lòng nhập phần thưởng tối thiểu 300.000đ');
             return;
         }
-        if (!itemValue || Number(itemValue) < 100000) {
+        if (!itemValueNum || itemValueNum < 100000) {
             Alert.alert('Lỗi', 'Vui lòng nhập giá trị tài liệu tối thiểu 100,000đ');
             return;
         }
@@ -63,8 +69,8 @@ export default function RequestOrderScreen() {
 
             const requestData = {
                 flight_id: Number(flightId),
-                reward: Number(reward),
-                item_value: Number(itemValue),
+                reward: rewardNum,
+                item_value: itemValueNum,
                 item_description: itemDescription.trim(),
                 note: note.trim() || undefined,
             };
@@ -175,24 +181,19 @@ export default function RequestOrderScreen() {
                     <View className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm gap-y-5">
                         {/* Phần thưởng */}
                         <View>
-                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                                Phần thưởng cho hành khách (VND) <Text className="text-red-500">*</Text>
-                            </Text>
-                            <View className="relative">
-                                <MaterialIcons
-                                    name="payments"
-                                    size={20}
-                                    color="#6b7280"
-                                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                                />
-                                <TextInput
-                                    value={reward}
-                                    onChangeText={setReward}
-                                    placeholder="Ví dụ: 300.000đ"
-                                    keyboardType="numeric"
-                                    className="h-14 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-10 pr-4 text-sm text-text-primary dark:text-white"
-                                />
-                            </View>
+                            <CurrencyInput
+                                label={
+                                    <Text className="text-sm font-medium text-text-primary dark:text-white">
+                                        Phần thưởng cho hành khách (VND) <Text className="text-red-500">*</Text>
+                                    </Text>
+                                }
+                                value={reward}
+                                onChangeText={setReward}
+                                placeholder="Ví dụ: 300,000"
+                                showUnit={true}
+                                leftIcon="payments"
+                                className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                            />
                             <Text className="mt-1 text-xs text-text-secondary dark:text-gray-400">
                                 Tối thiểu: 300.000đ
                             </Text>
@@ -200,24 +201,19 @@ export default function RequestOrderScreen() {
 
                         {/* Giá trị tài liệu */}
                         <View>
-                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                                Giá trị ước tính tài liệu (VND) <Text className="text-red-500">*</Text>
-                            </Text>
-                            <View className="relative">
-                                <MaterialIcons
-                                    name="attach-money"
-                                    size={20}
-                                    color="#6b7280"
-                                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                                />
-                                <TextInput
-                                    value={itemValue}
-                                    onChangeText={setItemValue}
-                                    placeholder="Ví dụ: 10,000,000"
-                                    keyboardType="numeric"
-                                    className="h-14 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-10 pr-4 text-sm text-text-primary dark:text-white"
-                                />
-                            </View>
+                            <CurrencyInput
+                                label={
+                                    <Text className="text-sm font-medium text-text-primary dark:text-white">
+                                        Giá trị ước tính tài liệu (VND) <Text className="text-red-500">*</Text>
+                                    </Text>
+                                }
+                                value={itemValue}
+                                onChangeText={setItemValue}
+                                placeholder="Ví dụ: 10,000,000"
+                                showUnit={true}
+                                leftIcon="attach-money"
+                                className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                            />
                             <Text className="mt-1 text-xs text-text-secondary dark:text-gray-400">
                                 Tối thiểu: 100,000đ
                             </Text>
@@ -311,7 +307,7 @@ export default function RequestOrderScreen() {
                             <View className="flex-row justify-between">
                                 <Text className="text-text-secondary dark:text-gray-400">Phần thưởng:</Text>
                                 <Text className="font-semibold text-text-primary dark:text-white">
-                                    {Number(reward).toLocaleString('vi-VN')}đ
+                                    {parseVND(reward).toLocaleString('vi-VN')}đ
                                 </Text>
                             </View>
                         </View>

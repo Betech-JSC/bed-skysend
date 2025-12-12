@@ -10,6 +10,7 @@ use App\Models\Flight;
 use App\Models\User;
 use App\Services\FirebaseService;
 use App\Services\ExpoPushService;
+use App\Services\RequestMatchingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -18,7 +19,8 @@ use Illuminate\Support\Facades\Auth;
 class FlightController extends Controller
 {
     public function __construct(
-        private FirebaseService $firebaseService
+        private FirebaseService $firebaseService,
+        private RequestMatchingService $matchingService
     ) {}
     /**
      * Lấy danh sách chuyến bay đã đăng của user hiện tại
@@ -100,6 +102,11 @@ class FlightController extends Controller
             // Load attachments để trả về
             $flight->load('attachments');
 
+            // Trigger matching với requests đang chờ (nếu flight được verify ngay)
+            if ($flight->verified) {
+                $this->matchingService->matchFlight($flight);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Đăng chuyến bay thành công!',
@@ -146,6 +153,11 @@ class FlightController extends Controller
             // Nếu status thay đổi, gửi notification
             if ($request->filled('status') && $oldStatus !== $flight->status) {
                 $this->pushFlightStatusNotification($flight, $oldStatus, $flight->status);
+            }
+
+            // Trigger matching nếu flight được verify hoặc thông tin thay đổi
+            if ($flight->verified) {
+                $this->matchingService->matchFlight($flight);
             }
 
             return response()->json([
@@ -230,6 +242,9 @@ class FlightController extends Controller
 
             // Gửi notification cho customer khi flight được verify
             $this->pushFlightStatusNotification($flight, $oldStatus, 'verified');
+
+            // Trigger matching với requests đang chờ khi flight được verify
+            $this->matchingService->matchFlight($flight->refresh());
 
             return response()->json([
                 'success' => true,

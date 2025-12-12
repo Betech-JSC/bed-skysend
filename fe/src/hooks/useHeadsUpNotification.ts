@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 
 interface Notification {
     id: string;
-    type: "chat_message" | "order_status" | "flight_status" | "new_request" | "request_accepted" | "request_declined" | "system";
+    type: "chat_message" | "order_status" | "flight_status" | "new_request" | "request_accepted" | "request_declined" | "request_match" | "system";
     title: string;
     body: string;
     timestamp: number;
@@ -86,6 +86,12 @@ export function useHeadsUpNotification() {
                                 pathname: "/private-requests/[id]",
                                 params: { id: String(data.request_id) },
                             });
+                        }
+                        break;
+                    case "request_match":
+                        // Navigate to matches detail
+                        if (data?.request_id) {
+                            router.push(`/request_matches/${data.request_id}`);
                         }
                         break;
                     case "system":
@@ -170,7 +176,7 @@ export function useHeadsUpNotification() {
                 }
 
                 // Filter for relevant notification types
-                const relevantTypes = ['chat_message', 'order_status', 'flight_status', 'new_request', 'request_accepted', 'request_declined'];
+                const relevantTypes = ['chat_message', 'order_status', 'flight_status', 'new_request', 'request_accepted', 'request_declined', 'request_match'];
                 const hasRelevantType = notif.type && relevantTypes.includes(notif.type);
                 const isUnread = notif.read === false || (typeof notif.read === 'string' && notif.read === 'false') || notif.read === undefined;
 

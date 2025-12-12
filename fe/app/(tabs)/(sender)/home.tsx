@@ -290,31 +290,51 @@ const Home = () => {
                 id: '1',
                 title: 'Gửi hàng nhanh chóng',
                 description: 'Tìm hành khách phù hợp trong vài phút',
-                icon: 'local-shipping',
-                color: '#2563EB',
-                action: () => {
-                  // Scroll to search form
-                },
+                image: require('../../../assets/sky-banner.webp'),
+                action: () => { },
               },
               {
                 id: '2',
-                title: 'An toàn & Bảo đảm',
-                description: 'Hệ thống bảo vệ giao dịch của bạn',
-                icon: 'verified',
-                color: '#10B981',
-                action: () => router.push('/upload_guide_screen'),
-              },
-              {
-                id: '3',
-                title: 'Kiếm thêm thu nhập',
-                description: `Đã kiếm được ${stats.totalEarnings.toLocaleString('vi-VN')} VND`,
-                icon: 'attach-money',
-                color: '#F59E0B',
-                action: () => router.push('/(tabs)/(sender)/list_orders'),
+                title: 'Gửi hàng nhanh chóng',
+                description: 'Tìm hành khách phù hợp trong vài phút',
+                image: require('../../../assets/sky-banner.webp'),
+                action: () => { },
               },
             ]}
             height={140}
           />
+        </View>
+
+        {/* Quick Actions */}
+        <View className="mb-4 flex-row gap-3">
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/(sender)/create_request_waiting')}
+            className="flex-1 rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20"
+          >
+            <View className="mb-2 flex-row items-center gap-2">
+              <MaterialIcons name="add-circle" size={24} color="#2563EB" />
+              <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                Tạo request chờ match
+              </Text>
+            </View>
+            <Text className="text-xs text-blue-500 dark:text-blue-300">
+              Hệ thống tự động tìm customer phù hợp
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/(sender)/request_matches')}
+            className="flex-1 rounded-xl bg-green-50 p-4 dark:bg-green-900/20"
+          >
+            <View className="mb-2 flex-row items-center gap-2">
+              <MaterialIcons name="people" size={24} color="#10B981" />
+              <Text className="text-sm font-semibold text-green-600 dark:text-green-400">
+                Xem matches
+              </Text>
+            </View>
+            <Text className="text-xs text-green-500 dark:text-green-300">
+              Danh sách requests đang chờ
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Quick Stats */}

@@ -96,6 +96,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // Tạo request cho chuyến bay
     Route::post('private-requests/store', [RequestController::class, 'store']);
 
+    // Tạo request chờ match (không cần flight_id)
+    Route::post('requests/create-waiting', [RequestController::class, 'createWaiting']);
+
+    // Cập nhật request chờ match
+    Route::put('requests/{id}/update-waiting', [RequestController::class, 'updateWaiting']);
+
+    // Lấy danh sách matches của request
+    Route::get('requests/{id}/matches', [RequestController::class, 'getMatches']);
+
+    // Gửi request tới customer đã match
+    Route::post('requests/{id}/send-to-match/{matchId}', [RequestController::class, 'sendToMatch']);
+
     // Hủy request
     Route::post('private-requests/{id}/cancel', [RequestController::class, 'cancel']);
 

@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
             AirportSeeder::class,
             AirlineSeeder::class,
             PaymentMethodSeeder::class,
+            RequestMatchingSeeder::class, // Seeder cho test Request Matching
         ]);
     }
 }

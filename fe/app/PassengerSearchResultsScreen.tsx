@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -12,13 +12,15 @@ import {
     Platform,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams, Stack } from "expo-router";
+import { useRouter, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
 import api from "@/api/api";
 import UserProfileInfo from "./components/UserProfileInfo";
 import CitySelectModal from "./components/CitySelectModal";
 import DatePickerInput from "./components/DatePickerInput";
 import ItemTypeSelect from "./components/ItemTypeSelect";
 import BackButton from "./components/BackButton";
+import CurrencyInput from "./components/CurrencyInput";
+import { parseVND } from "@/utils/currencyFormatter";
 
 export default function PassengerSearchResultsScreen() {
     const router = useRouter();
@@ -28,6 +30,7 @@ export default function PassengerSearchResultsScreen() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filterModalOpen, setFilterModalOpen] = useState(false);
+    const [sentRequestFlightIds, setSentRequestFlightIds] = useState<Set<number>>(new Set());
 
     // Filter states
     const [filterDepartureCity, setFilterDepartureCity] = useState({
@@ -87,7 +90,44 @@ export default function PassengerSearchResultsScreen() {
 
     useEffect(() => {
         fetchSearchResults();
+        fetchSentRequests();
     }, []);
+
+    // Refresh danh sách requests đã gửi khi màn hình được focus lại
+    useFocusEffect(
+        useCallback(() => {
+            fetchSentRequests();
+        }, [])
+    );
+
+    // Fetch danh sách requests đã gửi để kiểm tra flight nào đã có request
+    const fetchSentRequests = async () => {
+        try {
+            const response = await api.get('/private-requests?status=pending');
+            let requestsData = [];
+            if (response.data?.data) {
+                if (response.data.data?.data) {
+                    requestsData = response.data.data.data;
+                } else if (Array.isArray(response.data.data)) {
+                    requestsData = response.data.data;
+                }
+            } else if (Array.isArray(response.data)) {
+                requestsData = response.data;
+            }
+
+            // Lọc các request đã gửi (có flight_id) và tạo Set các flight_id
+            const flightIds = new Set<number>();
+            requestsData.forEach((request: any) => {
+                if (request.flight_id && request.status === 'pending') {
+                    flightIds.add(request.flight_id);
+                }
+            });
+            setSentRequestFlightIds(flightIds);
+        } catch (err: any) {
+            console.error('Error fetching sent requests:', err);
+            // Không hiển thị lỗi nếu không fetch được, chỉ log
+        }
+    };
 
     const fetchSearchResults = async (useFilter = false) => {
         try {
@@ -104,7 +144,7 @@ export default function PassengerSearchResultsScreen() {
                 if (filterDate) searchParams.date = filterDate;
                 if (filterTimeSlot) searchParams.time_slot = filterTimeSlot;
                 if (filterItemType) searchParams.item_type = filterItemType;
-                if (filterItemValue) searchParams.item_value = filterItemValue;
+                if (filterItemValue) searchParams.item_value = parseVND(filterItemValue);
             } else {
                 // Use initial params or filter values
                 if (filterDepartureCity.value || params.departureCode) {
@@ -123,7 +163,7 @@ export default function PassengerSearchResultsScreen() {
                     searchParams.item_type = filterItemType || params.item_type;
                 }
                 if (filterItemValue || params.item_value) {
-                    searchParams.item_value = filterItemValue || params.item_value;
+                    searchParams.item_value = filterItemValue ? parseVND(filterItemValue) : (params.item_value as string);
                 }
             }
 
@@ -317,6 +357,8 @@ export default function PassengerSearchResultsScreen() {
                                     ? `${flight.from_airport} → ${flight.to_airport}`
                                     : '';
 
+                                const hasSentRequest = sentRequestFlightIds.has(flight.id);
+
                                 return (
                                     <View
                                         key={flight.id || flight.uuid || index}
@@ -332,11 +374,22 @@ export default function PassengerSearchResultsScreen() {
                                                     showVerified={true}
                                                 />
                                             </View>
-                                            <View className="flex-row items-center gap-1">
-                                                <MaterialIcons name="star" size={16} color="#F97316" />
-                                                <Text className="text-sm font-semibold text-secondary">
-                                                    5.0
-                                                </Text>
+                                            <View className="flex-row items-center gap-2">
+                                                {/* Badge "Đã gửi yêu cầu" */}
+                                                {hasSentRequest && (
+                                                    <View className="rounded-full bg-green-100 dark:bg-green-900/30 px-3 py-1 flex-row items-center gap-1">
+                                                        <MaterialIcons name="check-circle" size={14} color="#10B981" />
+                                                        <Text className="text-xs font-semibold text-green-700 dark:text-green-400">
+                                                            Đã gửi yêu cầu
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                                <View className="flex-row items-center gap-1">
+                                                    <MaterialIcons name="star" size={16} color="#F97316" />
+                                                    <Text className="text-sm font-semibold text-secondary">
+                                                        5.0
+                                                    </Text>
+                                                </View>
                                             </View>
                                         </View>
 
@@ -504,24 +557,15 @@ export default function PassengerSearchResultsScreen() {
 
                                 {/* Giá trị ước tính */}
                                 <View>
-                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                                        Giá trị ước tính tài liệu (VND)
-                                    </Text>
-                                    <View className="relative">
-                                        <MaterialIcons
-                                            name="payments"
-                                            size={20}
-                                            color="#6b7280"
-                                            style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                                        />
-                                        <TextInput
-                                            placeholder="Ví dụ: 5,000,000"
-                                            keyboardType="numeric"
-                                            value={filterItemValue}
-                                            onChangeText={setFilterItemValue}
-                                            className="h-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-10 pr-4 text-text-dark-gray dark:text-white"
-                                        />
-                                    </View>
+                                    <CurrencyInput
+                                        label="Giá trị ước tính tài liệu (VND)"
+                                        value={filterItemValue}
+                                        onChangeText={setFilterItemValue}
+                                        placeholder="Ví dụ: 5,000,000"
+                                        showUnit={true}
+                                        leftIcon="payments"
+                                        className="border-gray-200 dark:border-gray-600 bg-background-light dark:bg-gray-700 text-base"
+                                    />
                                 </View>
                             </View>
                         </ScrollView>

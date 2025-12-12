@@ -7,6 +7,7 @@ import {
   Dimensions,
   FlatList,
   StyleSheet,
+  ImageSourcePropType,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -17,7 +18,7 @@ interface BannerItem {
   id: string;
   title: string;
   description?: string;
-  image?: string;
+  image?: string | ImageSourcePropType;
   icon?: string;
   color?: string;
   action?: () => void;
@@ -71,7 +72,7 @@ export default function BannerSlider({
       >
         {item.image ? (
           <Image
-            source={{ uri: item.image }}
+            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
             style={styles.bannerImage}
             resizeMode="cover"
           />
@@ -149,9 +150,8 @@ export default function BannerSlider({
           {items.map((_, index) => (
             <View
               key={index}
-              className={`h-2 rounded-full ${
-                index === currentIndex ? 'bg-primary w-6' : 'bg-gray-300 w-2'
-              }`}
+              className={`h-2 rounded-full ${index === currentIndex ? 'bg-primary w-6' : 'bg-gray-300 w-2'
+                }`}
             />
           ))}
         </View>

@@ -24,16 +24,26 @@ import FlightNumberSelect from '../../components/FlightNumberSelect';
 import UserProfileInfo from '../../components/UserProfileInfo';
 import api from '@/api/api';
 import { getAvatarUrl } from '@/constants/avatars';
+import BannerSlider from "app/components/BannerSlider";
 
 export default function HomeScreen() {
     const router = useRouter();
     const user = useSelector((state: RootState) => state.user);
     const unreadNotificationCount = useUnreadNotificationCount();
 
+    // Helper function để format ngày hiện tại thành yyyy-mm-dd
+    const getTodayDateString = (): string => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // State cho form đăng chuyến bay
     const [departureAirport, setDepartureAirport] = useState({ value: '', label: '' });
     const [arrivalAirport, setArrivalAirport] = useState({ value: '', label: '' });
-    const [flightDateTime, setFlightDateTime] = useState('');
+    const [flightDateTime, setFlightDateTime] = useState(getTodayDateString()); // Mặc định là ngày hiện tại
     const [airline, setAirline] = useState('');
     const [flightCode, setFlightCode] = useState('');
     const [allowedWeight, setAllowedWeight] = useState('');
@@ -245,6 +255,28 @@ export default function HomeScreen() {
                     Chia sẻ chuyến bay, kiếm thêm thu nhập.
                 </Text>
 
+                {/* Banner Slider */}
+                <View >
+                    <BannerSlider
+                        items={[
+                            {
+                                id: '1',
+                                title: 'Gửi hàng nhanh chóng',
+                                description: 'Tìm hành khách phù hợp trong vài phút',
+                                image: require('../../../assets/sky-banner.webp'),
+                                action: () => { },
+                            },
+                            {
+                                id: '2',
+                                title: 'Gửi hàng nhanh chóng',
+                                description: 'Tìm hành khách phù hợp trong vài phút',
+                                image: require('../../../assets/sky-banner.webp'),
+                                action: () => { },
+                            },
+                        ]}
+                        height={140}
+                    />
+                </View>
                 {/* Form đăng chuyến bay */}
                 <View className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
                     <Text className="text-lg font-bold text-text-dark-gray dark:text-white mb-4">

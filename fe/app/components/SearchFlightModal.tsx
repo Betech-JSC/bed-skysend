@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import CurrencyInput from './CurrencyInput';
+import { parseVND } from '@/utils/currencyFormatter';
 import {
   View,
   Text,
@@ -25,6 +27,15 @@ interface SearchFlightModalProps {
   searchLoading?: boolean;
 }
 
+// Helper function để format ngày hiện tại thành yyyy-mm-dd
+const getTodayDateString = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function SearchFlightModal({
   visible,
   onClose,
@@ -33,7 +44,7 @@ export default function SearchFlightModal({
 }: SearchFlightModalProps) {
   const [departureCity, setDepartureCity] = useState({ value: '', label: '' });
   const [arrivalCity, setArrivalCity] = useState({ value: '', label: '' });
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(getTodayDateString()); // Mặc định là ngày hiện tại
   const [timeSlot, setTimeSlot] = useState('');
   const [itemType, setItemType] = useState('');
   const [itemValue, setItemValue] = useState('');
@@ -59,7 +70,7 @@ export default function SearchFlightModal({
       date: date,
       time_slot: timeSlot,
       item_type: itemType,
-      item_value: itemValue,
+      item_value: itemValue ? parseVND(itemValue) : null,
       departureLabel: departureCity.label,
       arrivalLabel: arrivalCity.label,
     };
@@ -70,7 +81,7 @@ export default function SearchFlightModal({
   const handleReset = () => {
     setDepartureCity({ value: '', label: '' });
     setArrivalCity({ value: '', label: '' });
-    setDate('');
+    setDate(getTodayDateString()); // Reset về ngày hiện tại
     setTimeSlot('');
     setItemType('');
     setItemValue('');
@@ -160,24 +171,15 @@ export default function SearchFlightModal({
 
               {/* Giá trị ước tính */}
               <View>
-                <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                  Giá trị ước tính tài liệu (VND)
-                </Text>
-                <View className="relative">
-                  <MaterialIcons
-                    name="payments"
-                    size={20}
-                    color="#6b7280"
-                    style={{ position: 'absolute', left: 12, top: 17, zIndex: 10 }}
-                  />
-                  <TextInput
-                    placeholder="Ví dụ: 5,000,000"
-                    keyboardType="numeric"
-                    value={itemValue}
-                    onChangeText={setItemValue}
-                    className="text-text-primary h-14 rounded-lg border border-gray-200 bg-background-light pl-10 pr-4 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  />
-                </View>
+                <CurrencyInput
+                  label="Giá trị ước tính tài liệu (VND)"
+                  value={itemValue}
+                  onChangeText={setItemValue}
+                  placeholder="Ví dụ: 5,000,000"
+                  showUnit={true}
+                  leftIcon="payments"
+                  className="border-gray-200 dark:border-gray-600 bg-background-light dark:bg-gray-700 text-base"
+                />
               </View>
             </View>
           </ScrollView>

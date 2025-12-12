@@ -11,6 +11,7 @@ import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import api from "@/api/api";
 import { useRouter } from "expo-router";
@@ -198,7 +199,7 @@ export default function LoginScreen() {
           <View className="px-6 pt-6 pb-4">
             <View className="items-center mb-8">
               <View className="h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4">
-                <MaterialIcons name="flight" size={40} color="#2563EB" />
+                <Image source={require("../assets/icon.png")} className="w-16 h-16" />
               </View>
               <Text className="text-3xl font-bold text-primary mb-2">SkySend</Text>
               <Text className="text-base text-center text-text-secondary dark:text-gray-400">
@@ -273,9 +274,15 @@ export default function LoginScreen() {
                 )}
               </View>
 
-              {/* Forgot Password */}
+              {/* Forgot Password - Tạm thời ẩn, thay bằng thông báo liên hệ */}
               <TouchableOpacity
-                onPress={() => router.push("/forgot-password")}
+                onPress={() => {
+                  Alert.alert(
+                    'Quên mật khẩu?',
+                    'Vui lòng liên hệ SkySend để được hỗ trợ lấy lại mật khẩu.\n\nEmail: support@skysend.com\nHotline: (+84) 0775600351',
+                    [{ text: 'Đã hiểu' }]
+                  );
+                }}
                 className="self-end"
               >
                 <Text className="text-primary text-sm font-medium">

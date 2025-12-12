@@ -50,6 +50,8 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
     const [otherUserId, setOtherUserId] = useState<number | string | null>(null);
     const [otherUserPushToken, setOtherUserPushToken] = useState<string | null>(null);
     const [otherUserName, setOtherUserName] = useState<string | null>(null);
+    const [otherUserPhone, setOtherUserPhone] = useState<string | null>(null);
+    const [otherUserOnline, setOtherUserOnline] = useState<boolean>(false);
     const [uploading, setUploading] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isTyping, setIsTyping] = useState(false);
@@ -103,6 +105,8 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
                     const otherUserData = userSnap.val() || {};
                     setOtherUserPushToken(otherUserData.expo_push_token ?? null);
                     setOtherUserName(otherUserData.name ?? null);
+                    setOtherUserPhone(otherUserData.phone ?? null);
+                    setOtherUserOnline(otherUserData.online ?? false);
                 }
             }
         });
@@ -119,6 +123,18 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
 
         return () => unsubscribe();
     }, [chatId, otherUserId, db]);
+
+    // Listen online status của đối phương
+    useEffect(() => {
+        if (!otherUserId) return;
+
+        const onlineRef = ref(db, `users/${otherUserId}/online`);
+        const unsubscribe = onValue(onlineRef, (snapshot) => {
+            setOtherUserOnline(snapshot.val() === true);
+        });
+
+        return () => unsubscribe();
+    }, [otherUserId, db]);
 
     // Realtime listener
     useEffect(() => {
@@ -615,12 +631,25 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
-            <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
-                <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
-                <View className="w-10" />
-                <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
-                    Tin nhắn với {otherUserName}
-                </Text>
+            <View className="px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
+                <View className="flex-row items-center justify-between mb-2">
+                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <View className="flex-1 ml-3">
+                        <View className="flex-row items-center">
+                            <Text className="text-lg font-bold text-text-primary dark:text-white">
+                                {otherUserName || 'Người dùng'}
+                            </Text>
+                            {otherUserOnline && (
+                                <View className="ml-2 w-2 h-2 bg-green-500 rounded-full" />
+                            )}
+                        </View>
+                        {otherUserPhone && (
+                            <Text className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                📱 {otherUserPhone}
+                            </Text>
+                        )}
+                    </View>
+                </View>
             </View>
             <KeyboardAvoidingView
                 style={{ flex: 1 }}

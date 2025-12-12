@@ -54,6 +54,21 @@ export default function ForgotPasswordScreen() {
     };
 
     const handleSubmit = async () => {
+        // Tạm thời ẩn chức năng quên mật khẩu, hiển thị thông báo liên hệ
+        Alert.alert(
+            'Liên hệ SkySend',
+            'Vui lòng liên hệ SkySend để được hỗ trợ lấy lại mật khẩu.\n\nEmail: support@skysend.com\nHotline: (+84) 0775600351',
+            [
+                {
+                    text: 'Đã hiểu',
+                    onPress: () => router.back(),
+                },
+            ]
+        );
+        return;
+
+        // Code cũ - đã bị disable
+        /*
         setError("");
 
         if (!email.trim()) {
@@ -113,6 +128,7 @@ export default function ForgotPasswordScreen() {
         } finally {
             setLoading(false);
         }
+        */
     };
 
     return (
@@ -139,7 +155,7 @@ export default function ForgotPasswordScreen() {
                                 Quên mật khẩu?
                             </Text>
                             <Text className="text-base text-center text-text-secondary dark:text-gray-400 max-w-xs">
-                                Nhập email của bạn và chúng tôi sẽ gửi link đặt lại mật khẩu
+                                Vui lòng liên hệ SkySend để được hỗ trợ lấy lại mật khẩu
                             </Text>
                         </View>
                     </View>
@@ -166,48 +182,43 @@ export default function ForgotPasswordScreen() {
                             </View>
                         ) : (
                             <View className="gap-5">
-                                {/* Email Input */}
-                                <View>
-                                    <Text className="text-sm font-semibold text-text-primary dark:text-white mb-2">
-                                        Email <Text className="text-red-500">*</Text>
-                                    </Text>
-                                    <TextInput
-                                        className={`border rounded-2xl px-4 py-4 text-base bg-white dark:bg-slate-800 text-text-primary dark:text-white ${
-                                            error
-                                                ? "border-red-500"
-                                                : "border-gray-300 dark:border-gray-600"
-                                        }`}
-                                        placeholder="example@email.com"
-                                        placeholderTextColor="#9CA3AF"
-                                        keyboardType="email-address"
-                                        autoCapitalize="none"
-                                        value={email}
-                                        onChangeText={(value) => {
-                                            setEmail(value);
-                                            if (error) setError("");
-                                        }}
-                                        editable={!loading}
-                                    />
-                                    {error && (
-                                        <Text className="text-red-500 text-xs mt-1">{error}</Text>
-                                    )}
+                                {/* Thông tin liên hệ */}
+                                <View className="items-center justify-center py-8">
+                                    <View className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-6 w-full">
+                                        <View className="items-center mb-4">
+                                            <MaterialIcons name="support-agent" size={48} color="#2563EB" />
+                                        </View>
+                                        <Text className="text-lg font-bold text-text-primary dark:text-white mb-3 text-center">
+                                            Liên hệ SkySend
+                                        </Text>
+                                        <Text className="text-base text-text-secondary dark:text-gray-400 mb-4 text-center">
+                                            Để lấy lại mật khẩu, vui lòng liên hệ với chúng tôi qua:
+                                        </Text>
+                                        <View className="gap-3">
+                                            <View className="flex-row items-center gap-3">
+                                                <MaterialIcons name="email" size={20} color="#2563EB" />
+                                                <Text className="text-base text-text-primary dark:text-white">
+                                                    support@skysend.com
+                                                </Text>
+                                            </View>
+                                            <View className="flex-row items-center gap-3">
+                                                <MaterialIcons name="phone" size={20} color="#2563EB" />
+                                                <Text className="text-base text-text-primary dark:text-white">
+                                                    (+84) 0775600351
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
                                 </View>
 
-                                {/* Submit Button */}
+                                {/* Submit Button - Hiển thị thông báo */}
                                 <TouchableOpacity
                                     onPress={handleSubmit}
-                                    disabled={loading}
-                                    className={`mt-4 py-4 rounded-2xl ${
-                                        loading ? "bg-gray-400" : "bg-primary"
-                                    } shadow-lg`}
+                                    className="mt-4 py-4 rounded-2xl bg-primary shadow-lg"
                                 >
-                                    {loading ? (
-                                        <ActivityIndicator color="#FFFFFF" />
-                                    ) : (
-                                        <Text className="text-white text-center text-lg font-bold">
-                                            Gửi link đặt lại mật khẩu
-                                        </Text>
-                                    )}
+                                    <Text className="text-white text-center text-lg font-bold">
+                                        Đã hiểu
+                                    </Text>
                                 </TouchableOpacity>
 
                                 {/* Back to Login */}

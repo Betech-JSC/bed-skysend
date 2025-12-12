@@ -7,10 +7,12 @@ use App\Http\Requests\StorePrivateRequestRequest;
 use App\Models\Flight;
 use App\Models\Order;
 use App\Models\Request as ModelsRequest;
+use App\Models\RequestMatch;
 use App\Models\User;
 use App\Services\WalletService;
 use App\Services\FirebaseService;
 use App\Services\ExpoPushService;
+use App\Services\RequestMatchingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +21,8 @@ class RequestController extends Controller
 {
     public function __construct(
         private WalletService $walletService,
-        private FirebaseService $firebaseService
+        private FirebaseService $firebaseService,
+        private RequestMatchingService $matchingService
     ) {}
     public function index(Request $request)
     {
@@ -577,7 +580,7 @@ class RequestController extends Controller
 
         // === KIỂM TRA QUYỀN TRUY CẬP ===
         $isSender   = $request->sender_id === $user->id;
-        $isCustomer = $request->flight->customer_id === $user->id;
+        $isCustomer = $request->flight && $request->flight->customer_id === $user->id;
 
         if (!$isSender && !$isCustomer) {
             return response()->json([
@@ -592,6 +595,14 @@ class RequestController extends Controller
                 'success' => false,
                 'message' => 'Yêu cầu này không còn tồn tại hoặc đã hết hạn.'
             ], 404);
+        }
+
+        // Nếu request đang chờ match (chưa có flight), chỉ sender mới xem được
+        if (!$request->flight_id && !$isSender) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Request này đang chờ match, chỉ sender mới xem được.'
+            ], 403);
         }
 
         // Transform dữ liệu đẹp cho frontend
@@ -615,8 +626,8 @@ class RequestController extends Controller
                 'rating'  =>  0,
             ],
 
-            // Thông tin chuyến bay
-            'flight' => [
+            // Thông tin chuyến bay (có thể null nếu đang chờ match)
+            'flight' => $request->flight ? [
                 'id'            => $request->flight->id,
                 'uuid'          => $request->flight->uuid,
                 'flight_number' => $request->flight->flight_number,
@@ -633,13 +644,22 @@ class RequestController extends Controller
                     'avatar'    => $request->flight->customer->avatar,
                     'kyc_status' => $request->flight->customer->kyc_status,
                 ] : null,
-            ],
+            ] : null,
 
             // Nội dung yêu cầu
             'reward'            => (int) $request->reward,
             'item_value'        => (int) $request->item_value,
             'item_description'  => $request->item_description,
             'note'              => $request->note,
+
+            // Thông tin matching (nếu đang chờ match)
+            'from_airport'      => $request->from_airport,
+            'to_airport'        => $request->to_airport,
+            'desired_date'      => $request->desired_date?->format('Y-m-d'),
+            'desired_time_slot' => $request->desired_time_slot,
+            'desired_weight'    => $request->desired_weight ? (float) $request->desired_weight : null,
+            'item_type'         => $request->item_type,
+            'priority_level'    => $request->priority_level,
 
             // Nếu đã được chấp nhận → có đơn hàng
             'order' => $request->order ? [
@@ -663,7 +683,7 @@ class RequestController extends Controller
     {
         $user = auth()->user();
 
-        $request = ModelsRequest::with('flight.customer')
+        $request = ModelsRequest::with(['flight.customer', 'matches'])
             ->where('id', $id)
             ->firstOrFail();
 
@@ -692,18 +712,455 @@ class RequestController extends Controller
             ]);
         }
 
-        // 4. HỦY THÀNH CÔNG → cập nhật trạng thái
-        $request->update([
-            'status'       => 'cancelled',
+        try {
+            // Lưu flight_id trước khi thay đổi
+            $hadFlightId = $request->flight_id !== null;
+            $flightIdBeforeCancel = $request->flight_id;
+
+            DB::transaction(function () use ($request, $flightIdBeforeCancel) {
+                // 4. Nếu request đã gửi tới customer (có flight_id)
+                if ($request->flight_id !== null) {
+                    $flight = $request->flight;
+                    $customer = $flight?->customer;
+
+                    // Tìm RequestMatch tương ứng và đánh dấu là rejected
+                    $match = RequestMatch::where('request_id', $request->id)
+                        ->where('flight_id', $request->flight_id)
+                        ->where('status', 'sent')
+                        ->first();
+
+                    if ($match) {
+                        $match->status = 'rejected';
+                        $match->save();
+                    }
+
+                    // Set flight_id = null để request quay lại trạng thái chờ match
+                    $request->flight_id = null;
+                    $request->status = 'pending'; // Quay lại pending để có thể match lại
+
+                    // Gửi notification cho customer
+                    if ($customer) {
+                        $sender = auth()->user();
+
+                        // Push notification vào Firebase
+                        $this->firebaseService->pushNotification(
+                            $customer->id,
+                            'Yêu cầu đã bị hủy',
+                            "Yêu cầu từ {$sender->name} đã bị hủy.",
+                            [
+                                'type' => 'request_cancelled',
+                                'request_id' => $request->id,
+                                'request_uuid' => $request->uuid,
+                                'flight_id' => $flightIdBeforeCancel,
+                                'sender_id' => $sender->id,
+                                'sender_name' => $sender->name,
+                            ]
+                        );
+
+                        // Gửi push notification qua Expo
+                        if ($customer->fcm_token) {
+                            ExpoPushService::sendNotification(
+                                $customer->fcm_token,
+                                'Yêu cầu đã bị hủy',
+                                "Yêu cầu từ {$sender->name} đã bị hủy.",
+                                [
+                                    'type' => 'request_cancelled',
+                                    'request_id' => $request->id,
+                                    'flight_id' => $flightIdBeforeCancel,
+                                ]
+                            );
+                        }
+                    }
+                } else {
+                    // Request chưa gửi (đang chờ match), chỉ đổi status
+                    $request->status = 'cancelled';
+                }
+
+                $request->save();
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => $hadFlightId
+                    ? 'Đã hủy yêu cầu và gỡ khỏi customer. Request sẽ quay lại trạng thái chờ match.'
+                    : 'Đã hủy yêu cầu thành công!',
+                'data'    => $request->fresh(['flight.customer'])
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi hủy yêu cầu: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Cập nhật request đang chờ match (chỉ được cập nhật khi chưa có flight_id)
+     */
+    public function updateWaiting(Request $request, string $id)
+    {
+        $user = auth()->user();
+
+        $existingRequest = ModelsRequest::where('id', $id)
+            ->where('sender_id', $user->id)
+            ->firstOrFail();
+
+        // Chỉ được cập nhật khi request đang chờ match (chưa có flight_id)
+        if ($existingRequest->flight_id !== null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể chỉnh sửa request đã được gửi tới customer.'
+            ], 400);
+        }
+
+        // Chỉ được cập nhật khi status = pending
+        if ($existingRequest->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ có thể chỉnh sửa request đang ở trạng thái pending.'
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            'from_airport' => 'required|string|size:3',
+            'to_airport' => 'required|string|size:3',
+            'desired_date' => 'required|date|after_or_equal:today',
+            'desired_time_slot' => 'nullable|string|in:morning,afternoon,evening,any',
+            'desired_weight' => 'nullable|numeric|min:0.5|max:50',
+            'item_type' => 'required|string|in:document,contract,package,gift,other',
+            'item_description' => 'required|string|max:1000',
+            'item_value' => 'required|numeric|min:100000',
+            'reward' => 'required|numeric|min:50000|max:10000000',
+            'note' => 'nullable|string|max:500',
+            'priority_level' => 'nullable|string|in:normal,priority,urgent',
         ]);
 
-        // 5. (Tùy chọn) Gửi thông báo cho Customer (nếu bạn có notification system)
-        // Notification::send($request->flight->customer, new RequestCancelled($request));
+        $priorityLevel = $validated['priority_level'] ?? $existingRequest->priority_level ?? 'normal';
+        $expiresInHours = match ($priorityLevel) {
+            'urgent' => 12,
+            'priority' => 24,
+            default => 48,
+        };
+
+        try {
+            DB::transaction(function () use ($existingRequest, $validated, $priorityLevel, $expiresInHours) {
+                // Cập nhật thông tin request
+                $existingRequest->update([
+                    'from_airport' => $validated['from_airport'],
+                    'to_airport' => $validated['to_airport'],
+                    'desired_date' => $validated['desired_date'],
+                    'desired_time_slot' => $validated['desired_time_slot'] ?? 'any',
+                    'desired_weight' => $validated['desired_weight'] ?? null,
+                    'item_type' => $validated['item_type'],
+                    'item_description' => $validated['item_description'],
+                    'item_value' => $validated['item_value'],
+                    'reward' => $validated['reward'],
+                    'note' => $validated['note'] ?? null,
+                    'priority_level' => $priorityLevel,
+                    'expires_at' => now()->addHours($expiresInHours),
+                ]);
+
+                // Xóa các matches cũ và match lại
+                $existingRequest->matches()->delete();
+            });
+
+            // Match lại request với các flights mới
+            $matches = $this->matchingService->matchRequest($existingRequest->fresh());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã cập nhật request thành công! ' . (count($matches) > 0
+                    ? "Tìm thấy " . count($matches) . " customer phù hợp."
+                    : 'Hệ thống sẽ thông báo khi có khách hàng phù hợp.'),
+                'data' => [
+                    'request' => $existingRequest->fresh(),
+                    'match_count' => count($matches),
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật request: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Tạo request không cần flight_id (chờ hệ thống match)
+     */
+    public function createWaiting(Request $request)
+    {
+        $validated = $request->validate([
+            'from_airport' => 'required|string|size:3',
+            'to_airport' => 'required|string|size:3',
+            'desired_date' => 'required|date|after_or_equal:today',
+            'desired_time_slot' => 'nullable|string|in:morning,afternoon,evening,any',
+            'desired_weight' => 'nullable|numeric|min:0.5|max:50',
+            'item_type' => 'required|string|in:document,contract,package,gift,other',
+            'item_description' => 'required|string|max:1000',
+            'item_value' => 'required|numeric|min:100000',
+            'reward' => 'required|numeric|min:50000|max:10000000',
+            'note' => 'nullable|string|max:500',
+            'priority_level' => 'nullable|string|in:normal,priority,urgent',
+        ]);
+
+        $priorityLevel = $validated['priority_level'] ?? 'normal';
+        $expiresInHours = match ($priorityLevel) {
+            'urgent' => 12,
+            'priority' => 24,
+            default => 48,
+        };
+
+        $waitingRequest = ModelsRequest::create([
+            'uuid' => ModelsRequest::generateRequestUuid(),
+            'sender_id' => auth()->id(),
+            'flight_id' => null, // Chưa có flight
+            'from_airport' => $validated['from_airport'],
+            'to_airport' => $validated['to_airport'],
+            'desired_date' => $validated['desired_date'],
+            'desired_time_slot' => $validated['desired_time_slot'] ?? 'any',
+            'desired_weight' => $validated['desired_weight'] ?? null,
+            'item_type' => $validated['item_type'],
+            'item_description' => $validated['item_description'],
+            'item_value' => $validated['item_value'],
+            'reward' => $validated['reward'],
+            'note' => $validated['note'] ?? null,
+            'priority_level' => $priorityLevel,
+            'status' => 'pending',
+            'expires_at' => now()->addHours($expiresInHours),
+        ]);
+
+        // Match ngay với flights hiện có
+        $matches = $this->matchingService->matchRequest($waitingRequest);
 
         return response()->json([
             'success' => true,
-            'message' => 'Đã hủy yêu cầu thành công!',
-            'data'    => $request
-        ], 200);
+            'message' => count($matches) > 0
+                ? "Đã tạo request thành công! Tìm thấy " . count($matches) . " customer phù hợp."
+                : 'Đã tạo request thành công! Hệ thống sẽ thông báo khi có khách hàng phù hợp.',
+            'data' => [
+                'request' => $waitingRequest->load('matches'),
+                'match_count' => count($matches),
+            ]
+        ], 201);
+    }
+
+    /**
+     * Lấy danh sách matches của một request
+     */
+    public function getMatches(string $id)
+    {
+        $request = ModelsRequest::with(['matches.flight.customer', 'matches.customer'])
+            ->where('id', $id)
+            ->firstOrFail();
+
+        // Chỉ sender của request mới xem được
+        if ($request->sender_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xem matches của request này.'
+            ], 403);
+        }
+
+        $matches = $request->matches()
+            ->with(['flight.customer', 'customer'])
+            ->orderByDesc('match_score')
+            ->get()
+            ->map(function ($match) {
+                $flight = $match->flight;
+                $customer = $match->customer;
+
+                return [
+                    'id' => $match->id,
+                    'match_score' => (float) $match->match_score,
+                    'status' => $match->status,
+                    'matched_at' => $match->matched_at?->toIso8601String(),
+                    'customer' => [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                        'phone' => $customer->phone,
+                        'avatar' => $customer->avatar,
+                    ],
+                    'flight' => [
+                        'id' => $flight->id,
+                        'uuid' => $flight->uuid,
+                        'airline' => $flight->airline,
+                        'flight_number' => $flight->flight_number,
+                        'from_airport' => $flight->from_airport,
+                        'to_airport' => $flight->to_airport,
+                        'flight_date' => $flight->flight_date->format('Y-m-d'),
+                        'available_weight' => round($flight->available_weight, 2),
+                        'verified' => $flight->verified,
+                    ],
+                ];
+            });
+
+        // Nếu request đã gửi (có flight_id), lấy thông tin flight và customer đã gửi
+        $sentRequestInfo = null;
+        if ($request->flight_id) {
+            $sentFlight = $request->flight;
+            $sentCustomer = $sentFlight->customer;
+            $sentMatch = RequestMatch::where('request_id', $request->id)
+                ->where('flight_id', $request->flight_id)
+                ->where('status', 'sent')
+                ->first();
+
+            $sentRequestInfo = [
+                'flight_id' => $sentFlight->id,
+                'customer' => [
+                    'id' => $sentCustomer->id,
+                    'name' => $sentCustomer->name,
+                    'phone' => $sentCustomer->phone,
+                    'avatar' => $sentCustomer->avatar,
+                ],
+                'flight' => [
+                    'id' => $sentFlight->id,
+                    'uuid' => $sentFlight->uuid,
+                    'airline' => $sentFlight->airline,
+                    'flight_number' => $sentFlight->flight_number,
+                    'from_airport' => $sentFlight->from_airport,
+                    'to_airport' => $sentFlight->to_airport,
+                    'flight_date' => $sentFlight->flight_date->format('Y-m-d'),
+                    'available_weight' => round($sentFlight->available_weight, 2),
+                ],
+                'match_id' => $sentMatch?->id,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'request' => [
+                    'id' => $request->id,
+                    'uuid' => $request->uuid,
+                    'from_airport' => $request->from_airport,
+                    'to_airport' => $request->to_airport,
+                    'desired_date' => $request->desired_date?->format('Y-m-d'),
+                    'flight_id' => $request->flight_id,
+                    'status' => $request->status,
+                ],
+                'sent_request' => $sentRequestInfo, // Thông tin request đã gửi (nếu có)
+                'matches' => $matches,
+                'total_matches' => $matches->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Gửi request tới customer đã match
+     */
+    public function sendToMatch(string $id, string $matchId)
+    {
+        $request = ModelsRequest::findOrFail($id);
+
+        // Chỉ sender của request mới được gửi
+        if ($request->sender_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền gửi request này.'
+            ], 403);
+        }
+
+        // Request phải đang chờ match (chưa có flight_id)
+        if ($request->flight_id !== null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Request này đã được gửi tới một flight rồi.'
+            ], 400);
+        }
+
+        $match = RequestMatch::where('id', $matchId)
+            ->where('request_id', $request->id)
+            ->where('status', 'pending')
+            ->with('flight.customer')
+            ->firstOrFail();
+
+        $flight = $match->flight;
+
+        // Kiểm tra flight còn available không
+        if (!$flight->verified) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chuyến bay này chưa được xác thực.'
+            ], 400);
+        }
+
+        if ($flight->available_weight < ($request->desired_weight ?? 0.5)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chuyến bay này đã hết chỗ mang thêm.'
+            ], 400);
+        }
+
+        // Kiểm tra xem đã có request nào gửi tới flight này chưa
+        $existingRequest = ModelsRequest::where('sender_id', $request->sender_id)
+            ->where('flight_id', $flight->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($existingRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã gửi request tới chuyến bay này rồi.'
+            ], 400);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $match, $flight) {
+                // Update request với flight_id
+                $request->flight_id = $flight->id;
+                $request->save();
+
+                // Update match status
+                $match->markAsSent();
+
+                // Gửi notification cho customer
+                $customer = $flight->customer;
+                if ($customer) {
+                    $sender = auth()->user();
+
+                    // Push notification vào Firebase
+                    $this->firebaseService->pushNotification(
+                        $customer->id,
+                        'Yêu cầu mới',
+                        "Bạn có yêu cầu mới từ {$sender->name} với phần thưởng " . number_format($request->reward) . ' VNĐ',
+                        [
+                            'type' => 'new_request',
+                            'request_id' => $request->id,
+                            'request_uuid' => $request->uuid,
+                            'flight_id' => $flight->id,
+                            'sender_id' => $sender->id,
+                            'sender_name' => $sender->name,
+                            'reward' => $request->reward,
+                        ]
+                    );
+
+                    // Gửi push notification qua Expo
+                    if ($customer->fcm_token) {
+                        ExpoPushService::sendNotification(
+                            $customer->fcm_token,
+                            'Yêu cầu mới',
+                            "Bạn có yêu cầu mới từ {$sender->name} với phần thưởng " . number_format($request->reward) . ' VNĐ',
+                            [
+                                'type' => 'new_request',
+                                'request_id' => $request->id,
+                                'flight_id' => $flight->id,
+                            ]
+                        );
+                    }
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã gửi request tới customer thành công!',
+                'data' => $request->fresh(['flight.customer'])
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi gửi request: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -31,14 +31,22 @@ class Request extends Model
         'expires_at',
         'note',
 
+        // Matching fields
+        'from_airport',
+        'to_airport',
+        'desired_date',
+        'desired_time_slot',
+        'desired_weight',
     ];
 
     protected $casts = [
         'accepted_at'   => 'datetime',
         'confirmed_at'  => 'datetime',
         'expires_at'    => 'datetime',
+        'desired_date'  => 'date',
         'item_value'    => 'decimal:2',
         'reward'        => 'decimal:2',
+        'desired_weight' => 'decimal:2',
     ];
 
     protected $appends = [
@@ -80,6 +88,12 @@ class Request extends Model
     public function flight(): BelongsTo
     {
         return $this->belongsTo(Flight::class);
+    }
+
+    /** Matches với flights */
+    public function matches(): HasMany
+    {
+        return $this->hasMany(RequestMatch::class);
     }
 
 
@@ -143,6 +157,13 @@ class Request extends Model
     public function scopeMine($query)
     {
         return $query->where('sender_id', auth()->id());
+    }
+
+    /** Request đang chờ match (chưa có flight_id) */
+    public function scopeWaitingForMatch($query)
+    {
+        return $query->where('status', 'pending')
+            ->whereNull('flight_id');
     }
 
     // ==================================================================

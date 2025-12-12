@@ -12,8 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Chạy command listen chat mỗi phút
-        $schedule->command('firebase:listen-chat')->everyMinute();
+        // Re-match requests mỗi 5 phút
+        $schedule->job(\App\Jobs\ReMatchRequestsJob::class)->everyMinute();
     }
 
     /**

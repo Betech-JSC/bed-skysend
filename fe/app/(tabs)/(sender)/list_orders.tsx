@@ -9,6 +9,7 @@ import {
     ActivityIndicator,
 } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import { Alert } from "react-native";
 import api from "@/api/api";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
@@ -153,6 +154,9 @@ function ListOrder() {
             } else if (Array.isArray(response.data)) {
                 requestsData = response.data;
             }
+
+            // Chỉ lấy các request có flight_id (đã gửi tới customer)
+            requestsData = requestsData.filter((request: any) => request.flight_id !== null && request.flight_id !== undefined);
 
             setRequests(requestsData);
         } catch (err: any) {
@@ -508,8 +512,8 @@ function ListOrder() {
                                             </View>
                                         </View>
 
-                                        {/* Action Button */}
-                                        <View className="px-4 pb-4 pt-0">
+                                        {/* Action Buttons */}
+                                        <View className="px-4 pb-4 pt-0 gap-2">
                                             <TouchableOpacity
                                                 onPress={() => router.push({
                                                     pathname: '/private-requests/[id]',
@@ -519,6 +523,47 @@ function ListOrder() {
                                             >
                                                 <Text className="text-white font-bold text-sm">Xem chi tiết</Text>
                                             </TouchableOpacity>
+
+                                            {/* Button hủy request nếu đã gửi (có flight_id) và status = pending */}
+                                            {request.flight_id && request.status === 'pending' && (
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        Alert.alert(
+                                                            'Xác nhận hủy',
+                                                            'Bạn có chắc muốn hủy request đã gửi? Request sẽ quay lại trạng thái chờ match.',
+                                                            [
+                                                                { text: 'Không', style: 'cancel' },
+                                                                {
+                                                                    text: 'Hủy request',
+                                                                    style: 'destructive',
+                                                                    onPress: async () => {
+                                                                        try {
+                                                                            const response = await api.post(
+                                                                                `/private-requests/${request.id || request.uuid}/cancel`
+                                                                            );
+                                                                            if (response.data.success) {
+                                                                                Alert.alert('Thành công', response.data.message);
+                                                                                fetchRequests();
+                                                                            }
+                                                                        } catch (error: any) {
+                                                                            Alert.alert(
+                                                                                'Lỗi',
+                                                                                error.response?.data?.message || 'Không thể hủy request'
+                                                                            );
+                                                                        }
+                                                                    },
+                                                                },
+                                                            ]
+                                                        );
+                                                    }}
+                                                    className="bg-red-100 dark:bg-red-900/20 h-11 rounded-lg items-center justify-center flex-row gap-2"
+                                                >
+                                                    <MaterialIcons name="cancel" size={18} color="#EF4444" />
+                                                    <Text className="text-red-600 dark:text-red-400 font-bold text-sm">
+                                                        Hủy request
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            )}
                                         </View>
                                     </View>
                                 );

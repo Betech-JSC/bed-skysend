@@ -19,6 +19,7 @@ import { API_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { DEMO_AVATAR, getAvatarUrl } from '@/constants/avatars';
+import { formatVND } from '@/utils/currencyFormatter';
 
 interface UserProfile {
     id: string;
@@ -28,6 +29,17 @@ interface UserProfile {
     avatar?: string;
     role: string;
     kyc_status?: 'pending' | 'verified' | 'rejected' | null;
+}
+
+interface RecentActivity {
+    id: string | number;
+    type: 'order' | 'request' | 'transaction';
+    title: string;
+    description: string;
+    amount?: number;
+    status?: string;
+    createdAt: string;
+    navigateTo?: string;
 }
 
 export default function ProfileScreen() {
@@ -40,11 +52,14 @@ export default function ProfileScreen() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [kycStatus, setKycStatus] = useState<string | null>(null);
+    const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+    const [loadingActivities, setLoadingActivities] = useState(false);
 
     // Load user profile and KYC status
     useEffect(() => {
         loadUserProfile();
         // loadKycStatus();
+        fetchRecentActivities();
     }, []);
 
     const loadUserProfile = async () => {
@@ -140,6 +155,158 @@ export default function ProfileScreen() {
 
     const getAvatarUri = () => {
         return getAvatarUrl(profile?.avatar, API_URL);
+    };
+
+    // Format thời gian relative
+    const formatRelativeTime = (dateString: string): string => {
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) {
+                return 'Vừa xong';
+            } else if (diffMins < 60) {
+                return `${diffMins} phút trước`;
+            } else if (diffHours < 24) {
+                return `${diffHours} giờ trước`;
+            } else if (diffDays === 1) {
+                return 'Hôm qua';
+            } else if (diffDays < 7) {
+                return `${diffDays} ngày trước`;
+            } else {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            }
+        } catch {
+            return dateString;
+        }
+    };
+
+    // Fetch recent activities
+    const fetchRecentActivities = async () => {
+        if (!user?.token) return;
+
+        try {
+            setLoadingActivities(true);
+            const activities: RecentActivity[] = [];
+
+            // Fetch orders
+            try {
+                const ordersResponse = await api.get('orders/getList', { params: { per_page: 5 } });
+                let ordersData = [];
+                if (ordersResponse.data?.success && ordersResponse.data?.data) {
+                    if (ordersResponse.data.data?.data) {
+                        ordersData = ordersResponse.data.data.data;
+                    } else if (Array.isArray(ordersResponse.data.data)) {
+                        ordersData = ordersResponse.data.data;
+                    }
+                }
+
+                ordersData.forEach((order: any) => {
+                    activities.push({
+                        id: order.id || order.uuid,
+                        type: 'order',
+                        title: `Đơn hàng #${order.uuid || order.id}`,
+                        description: order.flight
+                            ? `${order.flight.from_airport} → ${order.flight.to_airport}`
+                            : 'Đơn hàng',
+                        amount: order.reward,
+                        status: order.status,
+                        createdAt: order.created_at || order.updated_at,
+                        navigateTo: `/(tabs)/(sender)/list_orders`,
+                    });
+                });
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            }
+
+            // Fetch requests
+            try {
+                const requestsResponse = await api.get('private-requests', { params: { per_page: 5 } });
+                let requestsData = [];
+                if (requestsResponse.data?.data) {
+                    if (requestsResponse.data.data?.data) {
+                        requestsData = requestsResponse.data.data.data;
+                    } else if (Array.isArray(requestsResponse.data.data)) {
+                        requestsData = requestsResponse.data.data;
+                    }
+                } else if (Array.isArray(requestsResponse.data)) {
+                    requestsData = requestsResponse.data;
+                }
+
+                requestsData.forEach((request: any) => {
+                    const route = request.from_airport && request.to_airport
+                        ? `${request.from_airport} → ${request.to_airport}`
+                        : 'Request';
+
+                    activities.push({
+                        id: request.id || request.uuid,
+                        type: 'request',
+                        title: request.flight_id ? 'Request đã gửi' : 'Request chờ match',
+                        description: route,
+                        amount: request.reward,
+                        status: request.status,
+                        createdAt: request.created_at || request.updated_at,
+                        navigateTo: request.flight_id
+                            ? `/(tabs)/(sender)/list_orders`
+                            : `/request_matches/${request.id}`,
+                    });
+                });
+            } catch (error) {
+                console.error('Error fetching requests:', error);
+            }
+
+            // Fetch transactions
+            try {
+                const transactionsResponse = await api.get('wallets/transactions', { params: { per_page: 5 } });
+                let transactionsData = [];
+                if (transactionsResponse.data?.success && transactionsResponse.data?.data) {
+                    if (transactionsResponse.data.data?.data) {
+                        transactionsData = transactionsResponse.data.data.data;
+                    } else if (Array.isArray(transactionsResponse.data.data)) {
+                        transactionsData = transactionsResponse.data.data;
+                    }
+                } else if (Array.isArray(transactionsResponse.data)) {
+                    transactionsData = transactionsResponse.data;
+                }
+
+                transactionsData.forEach((transaction: any) => {
+                    const isDeposit = transaction.type === 'deposit' || transaction.amount > 0;
+                    activities.push({
+                        id: transaction.id || transaction.uuid,
+                        type: 'transaction',
+                        title: isDeposit ? 'Nạp tiền' : 'Rút tiền',
+                        description: transaction.description || transaction.note || 'Giao dịch ví',
+                        amount: Math.abs(transaction.amount || 0),
+                        status: transaction.status,
+                        createdAt: transaction.created_at || transaction.updated_at,
+                        navigateTo: undefined, // Có thể thêm màn hình wallet transactions sau
+                    });
+                });
+            } catch (error) {
+                console.error('Error fetching transactions:', error);
+            }
+
+            // Sort by createdAt (newest first)
+            activities.sort((a, b) => {
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return dateB - dateA;
+            });
+
+            // Limit to 10 most recent
+            setRecentActivities(activities.slice(0, 10));
+        } catch (error) {
+            console.error('Error fetching recent activities:', error);
+        } finally {
+            setLoadingActivities(false);
+        }
     };
 
     const getKycStatusBadge = () => {
@@ -240,15 +407,139 @@ export default function ProfileScreen() {
                         </Text>
                     )}
 
-                    {/* KYC Status Badge */}
-                    {getKycStatusBadge()}
+                    {/* KYC Status Badge - Tạm thời ẩn */}
+                    {/* {getKycStatusBadge()} */}
                 </View>
+
+                {/* Recent Activities Section */}
+                {recentActivities.length > 0 && (
+                    <View className="mt-6 px-4">
+                        <View className="mb-4 flex-row items-center justify-between">
+                            <Text className="text-lg font-bold text-text-primary dark:text-white">
+                                Hoạt động gần đây
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (isSender) {
+                                        router.push('/(tabs)/(sender)/list_orders');
+                                    } else {
+                                        router.push('/(tabs)/(customer)/list_orders');
+                                    }
+                                }}>
+                                <Text className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                    Xem tất cả
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
+                            {recentActivities.slice(0, 5).map((activity, index) => {
+                                const getIcon = () => {
+                                    switch (activity.type) {
+                                        case 'order':
+                                            return { name: 'local-shipping' as const, color: '#2563EB' };
+                                        case 'request':
+                                            return { name: 'send' as const, color: '#F59E0B' };
+                                        case 'transaction':
+                                            const isDeposit = activity.amount && activity.amount > 0;
+                                            return { name: 'account-balance-wallet' as const, color: isDeposit ? '#10B981' : '#EF4444' };
+                                        default:
+                                            return { name: 'info' as const, color: '#6B7280' };
+                                    }
+                                };
+
+                                const getStatusBadge = () => {
+                                    if (!activity.status) return null;
+
+                                    const statusColors: { [key: string]: string } = {
+                                        'pending': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+                                        'completed': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                                        'cancelled': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                                        'accepted': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                    };
+
+                                    const statusLabels: { [key: string]: string } = {
+                                        'pending': 'Đang chờ',
+                                        'completed': 'Hoàn thành',
+                                        'cancelled': 'Đã hủy',
+                                        'accepted': 'Đã chấp nhận',
+                                    };
+
+                                    const colorClass = statusColors[activity.status] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+                                    const label = statusLabels[activity.status] || activity.status;
+
+                                    return (
+                                        <View className={`rounded-full px-2 py-0.5 ${colorClass}`}>
+                                            <Text className="text-xs font-medium">{label}</Text>
+                                        </View>
+                                    );
+                                };
+
+                                const icon = getIcon();
+
+                                return (
+                                    <TouchableOpacity
+                                        key={`${activity.type}-${activity.id}-${index}`}
+                                        onPress={() => {
+                                            if (activity.navigateTo) {
+                                                router.push(activity.navigateTo as any);
+                                            }
+                                        }}
+                                        className={`flex-row items-center justify-between px-4 py-3 ${index < recentActivities.slice(0, 5).length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''}`}>
+                                        <View className="flex-row items-center flex-1 gap-3">
+                                            <View
+                                                className="h-10 w-10 items-center justify-center rounded-lg"
+                                                style={{ backgroundColor: `${icon.color}20` }}>
+                                                <MaterialIcons name={icon.name} size={20} color={icon.color} />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-sm font-semibold text-text-primary dark:text-white" numberOfLines={1}>
+                                                    {activity.title}
+                                                </Text>
+                                                <Text className="mt-0.5 text-xs text-gray-600 dark:text-gray-400" numberOfLines={1}>
+                                                    {activity.description}
+                                                </Text>
+                                                <View className="mt-1 flex-row items-center gap-2">
+                                                    <Text className="text-xs text-gray-500 dark:text-gray-500">
+                                                        {formatRelativeTime(activity.createdAt)}
+                                                    </Text>
+                                                    {activity.amount && (
+                                                        <Text className="text-xs font-medium text-green-600 dark:text-green-400">
+                                                            {formatVND(activity.amount)} VNĐ
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                            </View>
+                                        </View>
+                                        <View className="ml-2 items-end">
+                                            {getStatusBadge()}
+                                            {activity.navigateTo && (
+                                                <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" style={{ marginTop: 4 }} />
+                                            )}
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
+
+                {/* Empty state for activities */}
+                {!loadingActivities && recentActivities.length === 0 && (
+                    <View className="mt-6 px-4">
+                        <View className="items-center rounded-xl bg-white py-8 dark:bg-slate-800/50">
+                            <MaterialIcons name="history" size={48} color="#9CA3AF" />
+                            <Text className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                                Chưa có hoạt động nào
+                            </Text>
+                        </View>
+                    </View>
+                )}
 
                 {/* Menu List */}
                 <View className="mt-8 px-4 gap-y-4 pb-20">
-                    {/* Group 1 */}
-                    <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
-                        {/* Hồ sơ & KYC */}
+                    {/* Group 1 - Tạm thời ẩn chức năng xác thực */}
+                    {/* <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
                         <TouchableOpacity
                             onPress={() => router.push('/update_profile')}
                             className="flex-row items-center justify-between px-4 py-4"
@@ -266,7 +557,7 @@ export default function ProfileScreen() {
 
                         <View className="mx-4 border-t border-slate-100 dark:border-slate-700" />
 
-                    </View>
+                    </View> */}
 
                     {/* Group 2 */}
                     <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">

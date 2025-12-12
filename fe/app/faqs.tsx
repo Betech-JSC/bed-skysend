@@ -5,34 +5,34 @@ import AccordionItem from './components/AccordionItem';
 export default function FaqsScreen() {
     const faqs = [
         {
-            question: 'SkySend là gì?',
+            question: 'Sky là gì?',
             answer:
-                'SkySend là ứng dụng giao hàng nhanh, giúp kết nối người gửi và tài xế gần nhất. Bạn có thể gửi hàng hóa, tài liệu hoặc đồ ăn trong thời gian ngắn nhất với chi phí hợp lý.',
+                'Sky là ứng dụng kết nối người cần gửi hàng gấp với những người nhận hàng hộ qua máy bay. Bạn có thể gửi hàng hóa, tài liệu hoặc đồ quan trọng một cách nhanh chóng và an toàn.',
         },
         {
             question: 'Làm thế nào để đặt đơn hàng?',
             answer:
-                'Chỉ cần chọn điểm gửi, điểm nhận, nhập thông tin hàng hóa và xác nhận. Hệ thống sẽ tự động tìm tài xế gần nhất cho bạn.',
+                'Chỉ cần nhập thông tin điểm gửi, điểm nhận, mô tả hàng hóa và xác nhận. Hệ thống sẽ tự động kết nối với người nhận phù hợp để vận chuyển hàng qua máy bay.',
         },
         {
             question: 'Tôi có thể theo dõi đơn hàng không?',
             answer:
-                'Có! Bạn có thể theo dõi vị trí tài xế theo thời gian thực trên bản đồ, xem trạng thái đơn hàng và thời gian dự kiến giao đến.',
+                'Có! Bạn có thể theo dõi trạng thái đơn hàng và vị trí người nhận theo thời gian thực để biết hàng hóa đang được vận chuyển tới đâu.',
         },
         {
-            question: 'Nếu đơn hàng bị hư hỏng hoặc thất lạc thì sao?',
+            question: 'Nếu hàng hóa bị hư hỏng hoặc thất lạc thì sao?',
             answer:
-                'SkySend cam kết hỗ trợ bồi thường theo quy định nếu hàng hóa bị hư hỏng hoặc thất lạc trong quá trình vận chuyển.',
+                'Sky cam kết hỗ trợ bồi thường theo quy định nếu hàng hóa bị hư hỏng hoặc thất lạc trong quá trình vận chuyển qua người nhận và máy bay.',
         },
         {
-            question: 'Phí giao hàng được tính như thế nào?',
+            question: 'Phí gửi hàng được tính như thế nào?',
             answer:
-                'Phí giao hàng được tính dựa trên khoảng cách, trọng lượng và loại hàng hóa. Bạn sẽ thấy chi phí hiển thị trước khi xác nhận đặt đơn.',
+                'Phí gửi hàng được tính dựa trên khoảng cách, trọng lượng, loại hàng hóa và mức độ gấp của đơn hàng. Chi phí sẽ hiển thị trước khi bạn xác nhận đặt đơn.',
         },
         {
-            question: 'SkySend hoạt động ở khu vực nào?',
+            question: 'Sky hoạt động ở khu vực nào?',
             answer:
-                'Hiện tại SkySend hoạt động tại TP.HCM, Hà Nội và các thành phố lớn khác. Chúng tôi sẽ mở rộng thêm trong thời gian tới.',
+                'Hiện tại Sky hoạt động tại các thành phố lớn như TP.HCM, Hà Nội và sẽ mở rộng thêm ở các địa phương khác trong thời gian tới.',
         },
     ];
 

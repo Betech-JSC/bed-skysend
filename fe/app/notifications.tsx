@@ -22,7 +22,7 @@ import BackButton from "./components/BackButton";
 
 interface Notification {
     id: string;
-    type: "chat_message" | "order_status" | "flight_status" | "new_request" | "request_accepted" | "request_declined" | "system";
+    type: "chat_message" | "order_status" | "flight_status" | "new_request" | "request_accepted" | "request_declined" | "request_match" | "system";
     title: string;
     body: string;
     timestamp: number;
@@ -79,6 +79,8 @@ function getNotificationIcon(type: Notification["type"]): { icon: string; color:
             return { icon: "check-circle", color: "#16A34A" }; // green
         case "request_declined":
             return { icon: "cancel", color: "#EF4444" }; // red
+        case "request_match":
+            return { icon: "people", color: "#10B981" }; // green
         case "system":
             return { icon: "campaign", color: "#6B7280" }; // gray
         default:
@@ -213,6 +215,12 @@ export default function NotificationScreen() {
                                 pathname: '/private-requests/[id]',
                                 params: { id: String(data.request_id) }
                             });
+                        }
+                        break;
+                    case "request_match":
+                        // Navigate to matches detail
+                        if (data?.request_id) {
+                            router.push(`/request_matches/${data.request_id}`);
                         }
                         break;
                     case "system":
