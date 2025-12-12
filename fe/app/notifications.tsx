@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
     SafeAreaView,
     FlatList,
@@ -10,6 +10,7 @@ import {
     Alert,
     StyleSheet,
     Animated,
+    Modal,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
@@ -40,6 +41,16 @@ interface Notification {
         status?: string;
         [key: string]: any;
     };
+}
+
+interface NotificationGroup {
+    key: string;
+    type: Notification["type"];
+    notifications: Notification[];
+    unreadCount: number;
+    latestTimestamp: number;
+    groupTitle: string;
+    groupBody: string;
 }
 
 // Helper function để format thời gian
@@ -88,6 +99,166 @@ function getNotificationIcon(type: Notification["type"]): { icon: string; color:
     }
 }
 
+// Helper function để tạo group key cho notification
+function getGroupKey(notification: Notification): string {
+    const { type, data } = notification;
+    
+    switch (type) {
+        case "chat_message":
+            return `chat_${data?.chat_id || 'unknown'}`;
+        case "order_status":
+            return `order_${data?.order_uuid || data?.order_id || data?.tracking_code || 'unknown'}`;
+        case "flight_status":
+            return `flight_${data?.flight_uuid || data?.flight_id || 'unknown'}`;
+        case "new_request":
+        case "request_accepted":
+        case "request_declined":
+            return `request_${data?.request_uuid || data?.request_id || 'unknown'}`;
+        case "request_match":
+            return `match_${data?.request_id || 'unknown'}`;
+        case "system":
+            // System notifications không nhóm, mỗi cái là riêng biệt
+            return `system_${notification.id}`;
+        default:
+            return `unknown_${notification.id}`;
+    }
+}
+
+// Helper function để tạo group title và body
+function getGroupTitleAndBody(group: NotificationGroup): { title: string; body: string } {
+    const { type, notifications, unreadCount } = group;
+    const count = notifications.length;
+    
+    switch (type) {
+        case "chat_message": {
+            const latest = notifications[0];
+            const senderName = latest.data?.sender_name || "Người dùng";
+            if (count === 1) {
+                return {
+                    title: latest.title,
+                    body: latest.body
+                };
+            }
+            return {
+                title: `${count} tin nhắn mới từ ${senderName}`,
+                body: unreadCount > 0 ? `${unreadCount} tin nhắn chưa đọc` : "Tất cả đã đọc"
+            };
+        }
+        case "order_status": {
+            const latest = notifications[0];
+            if (count === 1) {
+                return {
+                    title: latest.title,
+                    body: latest.body
+                };
+            }
+            return {
+                title: `Cập nhật đơn hàng (${count} thông báo)`,
+                body: latest.body
+            };
+        }
+        case "flight_status": {
+            const latest = notifications[0];
+            if (count === 1) {
+                return {
+                    title: latest.title,
+                    body: latest.body
+                };
+            }
+            return {
+                title: `Cập nhật chuyến bay (${count} thông báo)`,
+                body: latest.body
+            };
+        }
+        case "new_request":
+        case "request_accepted":
+        case "request_declined": {
+            const latest = notifications[0];
+            if (count === 1) {
+                return {
+                    title: latest.title,
+                    body: latest.body
+                };
+            }
+            return {
+                title: `Yêu cầu: ${count} cập nhật`,
+                body: latest.body
+            };
+        }
+        case "request_match": {
+            const latest = notifications[0];
+            if (count === 1) {
+                return {
+                    title: latest.title,
+                    body: latest.body
+                };
+            }
+            return {
+                title: `${count} yêu cầu khớp mới`,
+                body: "Có nhiều yêu cầu khớp với chuyến bay của bạn"
+            };
+        }
+        case "system": {
+            const latest = notifications[0];
+            return {
+                title: latest.title,
+                body: latest.body
+            };
+        }
+        default: {
+            const latest = notifications[0];
+            return {
+                title: latest.title,
+                body: latest.body
+            };
+        }
+    }
+}
+
+// Function để nhóm notifications
+function groupNotifications(notifications: Notification[]): NotificationGroup[] {
+    const groupMap = new Map<string, Notification[]>();
+    
+    // Nhóm notifications theo key
+    notifications.forEach((notif) => {
+        const key = getGroupKey(notif);
+        if (!groupMap.has(key)) {
+            groupMap.set(key, []);
+        }
+        groupMap.get(key)!.push(notif);
+    });
+    
+    // Chuyển đổi thành NotificationGroup array
+    const groups: NotificationGroup[] = Array.from(groupMap.entries()).map(([key, notifs]) => {
+        // Sort notifications trong group theo timestamp (newest first)
+        notifs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        
+        const unreadCount = notifs.filter(n => !n.read).length;
+        const latestTimestamp = notifs[0]?.timestamp || 0;
+        
+        const group: NotificationGroup = {
+            key,
+            type: notifs[0].type,
+            notifications: notifs,
+            unreadCount,
+            latestTimestamp,
+            groupTitle: "",
+            groupBody: ""
+        };
+        
+        const { title, body } = getGroupTitleAndBody(group);
+        group.groupTitle = title;
+        group.groupBody = body;
+        
+        return group;
+    });
+    
+    // Sort groups theo latest timestamp (newest first)
+    groups.sort((a, b) => b.latestTimestamp - a.latestTimestamp);
+    
+    return groups;
+}
+
 export default function NotificationScreen() {
     const user = useSelector((state: RootState) => state.user);
     const router = useRouter();
@@ -96,6 +267,7 @@ export default function NotificationScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
+    const [selectedGroup, setSelectedGroup] = useState<NotificationGroup | null>(null);
     const db = getDatabase(app);
     const listenerRef = useRef<(() => void) | null>(null);
 
@@ -148,9 +320,13 @@ export default function NotificationScreen() {
         };
     }, [user?.id, db]);
 
-    // Filter notifications
-    const filteredNotifications =
-        filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
+    // Group notifications
+    const notificationGroups = useMemo(() => {
+        const filtered = filter === "unread" 
+            ? notifications.filter((n) => !n.read) 
+            : notifications;
+        return groupNotifications(filtered);
+    }, [notifications, filter]);
 
     // Navigate based on notification type
     const handleNavigate = useCallback(
@@ -375,16 +551,58 @@ export default function NotificationScreen() {
         [handleDeleteNotification]
     );
 
-    // Handle notification click
-    const handleNotificationPress = useCallback(
-        (notification: Notification) => {
-            if (!notification.read) {
-                handleMarkAsRead(notification);
+    // Handle notification group click
+    const handleGroupPress = useCallback(
+        (group: NotificationGroup) => {
+            // Nếu chỉ có 1 notification, navigate trực tiếp
+            if (group.notifications.length === 1) {
+                const notif = group.notifications[0];
+                if (!notif.read) {
+                    handleMarkAsRead(notif);
+                }
+                handleNavigate(notif);
             } else {
-                handleNavigate(notification);
+                // Nếu có nhiều notifications, mở modal để xem chi tiết
+                setSelectedGroup(group);
             }
         },
         [handleMarkAsRead, handleNavigate]
+    );
+
+    // Mark all notifications in group as read
+    const handleMarkGroupAsRead = useCallback(
+        async (group: NotificationGroup) => {
+            if (!user?.id || !user?.token) {
+                Alert.alert("Lỗi", "Vui lòng đăng nhập lại.");
+                return;
+            }
+
+            const unreadInGroup = group.notifications.filter((n) => !n.read);
+            if (unreadInGroup.length === 0) return;
+
+            try {
+                // Optimistic update
+                setNotifications((prev) =>
+                    prev.map((n) =>
+                        unreadInGroup.some((unread) => unread.id === n.id)
+                            ? { ...n, read: true }
+                            : n
+                    )
+                );
+
+                // Update Firebase
+                await Promise.all(
+                    unreadInGroup.map((notif) => {
+                        const notificationRef = ref(db, `notifications/${user.id}/${notif.id}`);
+                        return set(notificationRef, { ...notif, read: true });
+                    })
+                );
+            } catch (error) {
+                console.error("Error marking group as read:", error);
+                Alert.alert("Lỗi", "Không thể đánh dấu thông báo là đã đọc.");
+            }
+        },
+        [user?.id, user?.token, db]
     );
 
     if (loading) {
@@ -406,7 +624,7 @@ export default function NotificationScreen() {
         );
     }
 
-    const hasNotifications = filteredNotifications.length > 0;
+    const hasNotifications = notificationGroups.length > 0;
 
     return (
         <>
@@ -458,23 +676,63 @@ export default function NotificationScreen() {
                     </View>
                 </View>
 
-                {/* Notification List */}
+                {/* Notification Groups List */}
                 <FlatList
-                    data={hasNotifications ? filteredNotifications : []}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item: notif }) => {
-                        const { icon, color } = getNotificationIcon(notif.type);
+                    data={hasNotifications ? notificationGroups : []}
+                    keyExtractor={(item) => item.key}
+                    renderItem={({ item: group }) => {
+                        const { icon, color } = getNotificationIcon(group.type);
+                        const hasUnread = group.unreadCount > 0;
+                        const isMultiple = group.notifications.length > 1;
+                        
                         return (
                             <View className="px-3 mb-2">
                                 <Swipeable
-                                    renderRightActions={(progress) => renderRightActions(notif, progress)}
+                                    renderRightActions={(progress) => {
+                                        // Swipe to delete - delete all notifications in group
+                                        const scale = progress.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: [0.8, 1],
+                                        });
+                                        return (
+                                            <View className="flex-row items-center justify-end pr-4">
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        Alert.alert(
+                                                            "Xóa thông báo",
+                                                            `Bạn có chắc chắn muốn xóa ${group.notifications.length} thông báo này?`,
+                                                            [
+                                                                { text: "Hủy", style: "cancel" },
+                                                                {
+                                                                    text: "Xóa",
+                                                                    style: "destructive",
+                                                                    onPress: async () => {
+                                                                        // Delete all notifications in group
+                                                                        for (const notif of group.notifications) {
+                                                                            await handleDeleteNotification(notif);
+                                                                        }
+                                                                    },
+                                                                },
+                                                            ]
+                                                        );
+                                                    }}
+                                                    className="bg-red-500 h-full justify-center items-center px-5 rounded-r-lg"
+                                                    style={{ minWidth: 70 }}
+                                                >
+                                                    <Animated.View style={{ transform: [{ scale }] }}>
+                                                        <MaterialIcons name="delete" size={24} color="#fff" />
+                                                    </Animated.View>
+                                                </TouchableOpacity>
+                                            </View>
+                                        );
+                                    }}
                                     overshootRight={false}
                                     friction={2}
                                 >
                                     <TouchableOpacity
-                                        onPress={() => handleNotificationPress(notif)}
+                                        onPress={() => handleGroupPress(group)}
                                         activeOpacity={0.7}
-                                        className={`flex-row items-center p-3 rounded-lg ${!notif.read
+                                        className={`flex-row items-center p-3 rounded-lg ${hasUnread
                                             ? "bg-card-light dark:bg-card-dark border-l-2 border-primary"
                                             : "bg-card-light/50 dark:bg-card-dark/50"
                                             }`}
@@ -491,30 +749,40 @@ export default function NotificationScreen() {
                                         <View className="flex-1 mr-2">
                                             <View className="flex-row items-center justify-between mb-0.5">
                                                 <Text
-                                                    className={`text-sm font-semibold flex-1 ${!notif.read
+                                                    className={`text-sm font-semibold flex-1 ${hasUnread
                                                         ? "text-text-primary-light dark:text-text-primary-dark"
                                                         : "text-text-primary-light/70 dark:text-text-primary-dark/70"
                                                         }`}
                                                     numberOfLines={1}
                                                 >
-                                                    {notif.title}
+                                                    {group.groupTitle}
                                                 </Text>
-                                                {/* Unread dot - Compact */}
-                                                {!notif.read && (
-                                                    <View className="w-2 h-2 rounded-full bg-primary ml-2" />
-                                                )}
+                                                <View className="flex-row items-center gap-1 ml-2">
+                                                    {/* Badge count nếu có nhiều notifications */}
+                                                    {isMultiple && (
+                                                        <View className="bg-primary/20 px-2 py-0.5 rounded-full">
+                                                            <Text className="text-xs font-bold text-primary">
+                                                                {group.notifications.length}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                    {/* Unread dot */}
+                                                    {hasUnread && (
+                                                        <View className="w-2 h-2 rounded-full bg-primary" />
+                                                    )}
+                                                </View>
                                             </View>
                                             <Text
-                                                className={`text-xs ${!notif.read
+                                                className={`text-xs ${hasUnread
                                                     ? "text-text-secondary-light dark:text-text-secondary-dark"
                                                     : "text-text-secondary-light/70 dark:text-text-secondary-dark/70"
                                                     }`}
                                                 numberOfLines={2}
                                             >
-                                                {notif.body}
+                                                {group.groupBody}
                                             </Text>
                                             <Text className="text-xs text-text-secondary-light/60 dark:text-text-secondary-dark/60 mt-0.5">
-                                                {formatTimeAgo(notif.timestamp)}
+                                                {formatTimeAgo(group.latestTimestamp)}
                                             </Text>
                                         </View>
                                     </TouchableOpacity>
@@ -541,6 +809,114 @@ export default function NotificationScreen() {
                     ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 />
+
+                {/* Modal hiển thị chi tiết nhóm notifications */}
+                <Modal
+                    visible={selectedGroup !== null}
+                    animationType="slide"
+                    transparent={true}
+                    onRequestClose={() => setSelectedGroup(null)}
+                >
+                    <SafeAreaView className="flex-1 bg-black/50">
+                        <View className="flex-1 bg-background-light dark:bg-background-dark mt-20 rounded-t-3xl">
+                            {/* Header */}
+                            <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                                    Chi tiết thông báo
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => setSelectedGroup(null)}
+                                    className="p-2"
+                                >
+                                    <MaterialIcons name="close" size={24} color="#6B7280" />
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* List notifications trong group */}
+                            {selectedGroup && (
+                                <FlatList
+                                    data={selectedGroup.notifications}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={({ item: notif }) => {
+                                        const { icon, color } = getNotificationIcon(notif.type);
+                                        return (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    if (!notif.read) {
+                                                        handleMarkAsRead(notif);
+                                                    }
+                                                    setSelectedGroup(null);
+                                                    handleNavigate(notif);
+                                                }}
+                                                activeOpacity={0.7}
+                                                className={`flex-row items-center p-4 border-b border-gray-100 dark:border-gray-800 ${!notif.read
+                                                    ? "bg-card-light dark:bg-card-dark"
+                                                    : "bg-transparent"
+                                                    }`}
+                                            >
+                                                <View
+                                                    style={{ backgroundColor: `${color}15` }}
+                                                    className="w-10 h-10 rounded-full justify-center items-center mr-3"
+                                                >
+                                                    <MaterialIcons name={icon as any} size={20} color={color} />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <View className="flex-row items-center justify-between mb-1">
+                                                        <Text
+                                                            className={`text-sm font-semibold flex-1 ${!notif.read
+                                                                ? "text-text-primary-light dark:text-text-primary-dark"
+                                                                : "text-text-primary-light/70 dark:text-text-primary-dark/70"
+                                                                }`}
+                                                        >
+                                                            {notif.title}
+                                                        </Text>
+                                                        {!notif.read && (
+                                                            <View className="w-2 h-2 rounded-full bg-primary ml-2" />
+                                                        )}
+                                                    </View>
+                                                    <Text
+                                                        className={`text-xs mb-1 ${!notif.read
+                                                            ? "text-text-secondary-light dark:text-text-secondary-dark"
+                                                            : "text-text-secondary-light/70 dark:text-text-secondary-dark/70"
+                                                            }`}
+                                                    >
+                                                        {notif.body}
+                                                    </Text>
+                                                    <Text className="text-xs text-text-secondary-light/60 dark:text-text-secondary-dark/60">
+                                                        {formatTimeAgo(notif.timestamp)}
+                                                    </Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                        );
+                                    }}
+                                    ListEmptyComponent={() => (
+                                        <View className="items-center py-12">
+                                            <Text className="text-text-secondary-light dark:text-text-secondary-dark">
+                                                Không có thông báo
+                                            </Text>
+                                        </View>
+                                    )}
+                                />
+                            )}
+
+                            {/* Footer - Mark all as read button */}
+                            {selectedGroup && selectedGroup.unreadCount > 0 && (
+                                <View className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            handleMarkGroupAsRead(selectedGroup);
+                                        }}
+                                        className="bg-primary py-3 rounded-lg items-center"
+                                    >
+                                        <Text className="text-white font-semibold">
+                                            Đánh dấu tất cả đã đọc ({selectedGroup.unreadCount})
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    </SafeAreaView>
+                </Modal>
             </SafeAreaView>
         </>
 

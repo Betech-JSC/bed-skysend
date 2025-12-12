@@ -3,6 +3,9 @@ import { Tabs } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { View, Text } from "react-native";
 import { useUnreadChatCount } from "@/hooks/useUnreadChatCount";
+import { useNewOrdersCount } from "@/hooks/useNewOrdersCount";
+import { useNewFlightRequestsCount } from "@/hooks/useNewFlightRequestsCount";
+import TabIconWithBadge from "@/components/TabIconWithBadge";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function ChatIconWithBadge({ color }: { color: string }) {
@@ -45,6 +48,8 @@ function ChatIconWithBadge({ color }: { color: string }) {
 
 export default function SenderLayout() {
     const insets = useSafeAreaInsets();
+    const newOrdersCount = useNewOrdersCount();
+    const newFlightRequestsCount = useNewFlightRequestsCount();
 
     return (
         <Tabs
@@ -68,10 +73,11 @@ export default function SenderLayout() {
                 options={{
                     title: "Trang chủ",
                     tabBarIcon: ({ color, focused }) => (
-                        <MaterialIcons
-                            name="home"
-                            size={focused ? 28 : 26}
+                        <TabIconWithBadge
+                            iconName="home"
                             color={color}
+                            badgeCount={newFlightRequestsCount}
+                            size={focused ? 28 : 26}
                         />
                     ),
                 }}
@@ -81,10 +87,11 @@ export default function SenderLayout() {
                 options={{
                     title: "Đơn hàng",
                     tabBarIcon: ({ color, focused }) => (
-                        <MaterialIcons
-                            name="work"
-                            size={focused ? 28 : 26}
+                        <TabIconWithBadge
+                            iconName="work"
                             color={color}
+                            badgeCount={newOrdersCount}
+                            size={focused ? 28 : 26}
                         />
                     ),
                 }}
@@ -99,6 +106,15 @@ export default function SenderLayout() {
                 href: null, // Ẩn tab khỏi tab bar
             }} />
             <Tabs.Screen
+                name="chat"
+                options={{
+                    title: "Chat",
+                    tabBarIcon: ({ color, focused }) => (
+                        <ChatIconWithBadge color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
                 name="profile"
                 options={{
                     title: "Tài khoản",
@@ -111,15 +127,7 @@ export default function SenderLayout() {
                     ),
                 }}
             />
-            <Tabs.Screen
-                name="chat"
-                options={{
-                    title: "Chat",
-                    tabBarIcon: ({ color, focused }) => (
-                        <ChatIconWithBadge color={color} />
-                    ),
-                }}
-            />
+
         </Tabs>
     );
 }

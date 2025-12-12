@@ -31,7 +31,7 @@ function AppContent() {
           animation: 'slide_from_right',
         }}
       />
-      {isVisible && notification && (
+      {notification && (
         <HeadsUpNotification
           notification={notification}
           onDismiss={onDismiss}

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "",
+    "name": "SkySend",
     "scheme": "skysend",
     "slug": "react-native-boilerplate",
     "version": "1.0.0",
@@ -22,12 +22,14 @@
           "expo-notifications",
           {
             "icon": "./assets/icon.png",
-            "color": "#ffffff",
+            "color": "#2563EB",
             "defaultChannel": "default",
             "enableBackgroundRemoteNotifications": true,
             "sounds": [
               "./assets/noti.wav"
-            ]
+            ],
+            "androidMode": "default",
+            "iosDisplayInForeground": true
           }
         ],
       [

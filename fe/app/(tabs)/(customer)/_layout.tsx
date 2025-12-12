@@ -3,6 +3,9 @@ import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity, View, Text } from 'react-native';
 import { useUnreadChatCount } from '@/hooks/useUnreadChatCount';
+import { useNewOrdersCount } from '@/hooks/useNewOrdersCount';
+import { useNewFlightRequestsCount } from '@/hooks/useNewFlightRequestsCount';
+import TabIconWithBadge from '@/components/TabIconWithBadge';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function ChatIconWithBadge({ color }: { color: string }) {
@@ -45,6 +48,8 @@ function ChatIconWithBadge({ color }: { color: string }) {
 
 export default function CustomerLayout() {
     const insets = useSafeAreaInsets();
+    const newOrdersCount = useNewOrdersCount();
+    const newFlightRequestsCount = useNewFlightRequestsCount();
 
     return (
         <Tabs
@@ -96,7 +101,12 @@ export default function CustomerLayout() {
                         </Text>
                     ),
                     tabBarIcon: ({ focused }) => (
-                        <MaterialIcons name="flight" size={28} color={focused ? '#2563EB' : '#6B7280'} />
+                        <TabIconWithBadge
+                            iconName="flight"
+                            color={focused ? '#2563EB' : '#6B7280'}
+                            badgeCount={newFlightRequestsCount}
+                            size={28}
+                        />
                     ),
                 }}
             />
@@ -112,7 +122,12 @@ export default function CustomerLayout() {
                         </Text>
                     ),
                     tabBarIcon: ({ focused }) => (
-                        <MaterialIcons name="inventory" size={28} color={focused ? '#2563EB' : '#6B7280'} />
+                        <TabIconWithBadge
+                            iconName="inventory"
+                            color={focused ? '#2563EB' : '#6B7280'}
+                            badgeCount={newOrdersCount}
+                            size={28}
+                        />
                     ),
                 }}
             />

@@ -79,7 +79,7 @@ export default function PrivateRequestDetailScreen() {
             setLoading(true);
             setError(null);
 
-            const response = await api.get(`private-requests/${id}/show`);
+            const response = await api.get(`/private-requests/${id}/show`);
 
             if (response.data?.success && response.data?.data) {
                 // Transform data từ API để match với interface
