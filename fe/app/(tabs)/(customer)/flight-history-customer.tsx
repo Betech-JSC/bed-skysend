@@ -1,5 +1,5 @@
 // app/flight-history.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -41,12 +41,23 @@ interface Flight {
   requests: any[];
 }
 
+type FlightStatusFilter = '' | 'pending' | 'verified' | 'completed' | 'cancelled';
+
 export default function FlightHistoryScreen() {
   const { colorScheme } = useColorScheme();
   const [flights, setFlights] = useState<Flight[]>([]);
+  const [filteredFlights, setFilteredFlights] = useState<Flight[]>([]);
+  const [statusFilter, setStatusFilter] = useState<FlightStatusFilter>('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const FLIGHT_FILTER_TABS: { label: string; status: FlightStatusFilter }[] = [
+    { label: 'Tất cả', status: '' },
+    { label: 'Sắp tới', status: 'verified' },
+    { label: 'Đã hoàn thành', status: 'completed' },
+    { label: 'Đã hủy', status: 'cancelled' },
+  ];
 
   const fetchFlights = async (isRefresh = false) => {
     try {
@@ -66,6 +77,7 @@ export default function FlightHistoryScreen() {
 
       if (Array.isArray(data)) {
         setFlights(data);
+        applyFilter(data, statusFilter);
       } else {
         throw new Error('Dữ liệu không hợp lệ');
       }
@@ -84,6 +96,26 @@ export default function FlightHistoryScreen() {
       setRefreshing(false);
     }
   };
+
+  // Apply filter to flights
+  const applyFilter = (flightsData: Flight[], filter: FlightStatusFilter) => {
+    if (!filter) {
+      setFilteredFlights(flightsData);
+      return;
+    }
+    const filtered = flightsData.filter((flight) => {
+      if (filter === 'verified') {
+        return flight.status === 'verified' || (flight.verified && flight.status !== 'completed' && flight.status !== 'cancelled');
+      }
+      return flight.status === filter;
+    });
+    setFilteredFlights(filtered);
+  };
+
+  // Update filtered flights when filter changes
+  useEffect(() => {
+    applyFilter(flights, statusFilter);
+  }, [statusFilter, flights]);
 
   // Tự động load khi vào màn hình
   useFocusEffect(
@@ -231,6 +263,39 @@ export default function FlightHistoryScreen() {
         }}
       />
       <View className="flex-1 bg-background-light dark:bg-background-dark">
+        {/* Status Filter Tabs */}
+        <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="flex-row"
+            contentContainerStyle={{ paddingHorizontal: 16 }}
+          >
+            {FLIGHT_FILTER_TABS.map((tab) => {
+              const isActive = statusFilter === tab.status;
+              return (
+                <TouchableOpacity
+                  key={tab.status || 'all'}
+                  onPress={() => setStatusFilter(tab.status)}
+                  className={`items-center py-3 px-4 mr-2 rounded-lg ${isActive
+                    ? "bg-primary/10"
+                    : ""
+                    }`}
+                >
+                  <Text
+                    className={`text-sm font-semibold ${isActive
+                      ? "text-primary"
+                      : "text-text-secondary dark:text-gray-400"
+                      }`}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {/* List */}
         <ScrollView
           className="flex-1 px-4 pb-32"
@@ -238,19 +303,19 @@ export default function FlightHistoryScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => fetchFlights(true)} />
           }
         >
-          {flights.length === 0 ? (
+          {filteredFlights.length === 0 ? (
             <View className="mt-20 items-center justify-center px-6">
               <MaterialIcons name="flight" size={64} color="#9CA3AF" />
               <Text className="mt-4 text-center text-lg font-semibold text-gray-700 dark:text-gray-300">
-                Chưa có chuyến bay nào
+                {statusFilter ? 'Không có chuyến bay nào phù hợp' : 'Chưa có chuyến bay nào'}
               </Text>
               <Text className="mt-2 text-center text-sm text-gray-500">
-                Thêm chuyến bay đầu tiên của bạn
+                {statusFilter ? 'Thử chọn bộ lọc khác hoặc' : ''} Thêm chuyến bay đầu tiên của bạn
               </Text>
             </View>
           ) : (
             <View className="gap-4 py-2">
-              {flights.map((flight) => (
+              {filteredFlights.map((flight) => (
                 <TouchableOpacity
                   key={flight.id}
                   onPress={() =>
@@ -285,13 +350,33 @@ export default function FlightHistoryScreen() {
                         </View>
                       </View>
 
-                      {flight.requests && flight.requests.length > 0 && (
-                        <View className="rounded-full bg-secondary px-3 py-2">
-                          <Text className="text-sm font-bold text-white">
-                            {flight.requests.length} Yêu cầu
-                          </Text>
-                        </View>
-                      )}
+                      <View className="flex-row items-center gap-2">
+                        {flight.requests && flight.requests.length > 0 && (
+                          <View className="rounded-full bg-secondary px-3 py-2">
+                            <Text className="text-sm font-bold text-white">
+                              {flight.requests.length} Yêu cầu
+                            </Text>
+                          </View>
+                        )}
+                        {/* Badge cho chuyến bay đã confirm với sender */}
+                        {(() => {
+                          const confirmedRequests = flight.requests?.filter((req: any) =>
+                            req.status === 'accepted' || req.status === 'confirmed'
+                          ) || [];
+                          if (confirmedRequests.length > 0) {
+                            const firstSender = confirmedRequests[0]?.sender || {};
+                            return (
+                              <View className="rounded-full bg-green-500 px-3 py-2 flex-row items-center gap-1.5">
+                                <MaterialIcons name="check-circle" size={14} color="white" />
+                                <Text className="text-xs font-bold text-white">
+                                  Đã xác nhận
+                                </Text>
+                              </View>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </View>
                     </View>
 
                     {/* Route */}
@@ -322,8 +407,9 @@ export default function FlightHistoryScreen() {
                     </View>
 
                     {/* Badges */}
-                    <View className="flex-row gap-2">
-                      {flight.verified && (
+                    <View className="flex-row gap-2 flex-wrap">
+                      {getStatusBadge(flight.status)}
+                      {flight.verified && flight.status !== 'completed' && flight.status !== 'cancelled' && (
                         <View className="flex-row items-center gap-1.5 rounded-lg bg-green-100 px-2.5 py-1 dark:bg-green-900/50">
                           <MaterialIcons name="verified" size={16} color="#16A34A" />
                           <Text className="text-xs font-medium text-green-800 dark:text-green-200">
@@ -331,15 +417,32 @@ export default function FlightHistoryScreen() {
                           </Text>
                         </View>
                       )}
-                      {!flight.verified && flight.status === 'pending' && (
-                        <View className="flex-row items-center gap-1.5 rounded-lg bg-yellow-100 px-2.5 py-1 dark:bg-yellow-900/50">
-                          <MaterialIcons name="hourglass-empty" size={16} color="#D97706" />
-                          <Text className="text-xs font-medium text-yellow-800 dark:text-yellow-200">
-                            Chờ xác thực
+                      {flight.available_weight !== undefined && (
+                        <View className="flex-row items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1 dark:bg-blue-900/50">
+                          <MaterialIcons name="scale" size={16} color="#2563EB" />
+                          <Text className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                            Còn {flight.available_weight}kg
                           </Text>
                         </View>
                       )}
-
+                      {/* Badge thông báo chuyến đã confirm với sender */}
+                      {(() => {
+                        const confirmedRequests = flight.requests?.filter((req: any) =>
+                          req.status === 'accepted' || req.status === 'confirmed'
+                        ) || [];
+                        if (confirmedRequests.length > 0) {
+                          const firstSender = confirmedRequests[0]?.sender || {};
+                          return (
+                            <View className="flex-row items-center gap-1.5 rounded-lg bg-emerald-100 px-2.5 py-1 dark:bg-emerald-900/50">
+                              <MaterialIcons name="check-circle" size={16} color="#10B981" />
+                              <Text className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                                Đã xác nhận với {firstSender.name || 'người gửi'}
+                              </Text>
+                            </View>
+                          );
+                        }
+                        return null;
+                      })()}
                     </View>
                   </View>
                 </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -14,73 +14,38 @@ import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import api from "@/api/api";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { router, Stack, useRouter } from "expo-router";
+import { router, Stack, useRouter, useFocusEffect } from "expo-router";
 import UserProfileInfo from "../../components/UserProfileInfo";
 import { getAvatarUrl } from "@/constants/avatars";
+import {
+    normalizeOrderStatus,
+    getOrderStatusLabel,
+    getNextOrderStatus,
+    mapToBackendStatus,
+    ORDER_FILTER_TABS,
+} from "../../utils/orderStatusUtils";
 
 function ListOrdersCustomer() {
     const router = useRouter();
     const user = useSelector((state: RootState) => state.user);
 
-    const [orderStatusFilter, setOrderStatusFilter] = useState<string>(''); // 'confirmed', 'picked_up', 'in_transit', 'delivered', 'completed', 'cancelled'
+    const [orderStatusFilter, setOrderStatusFilter] = useState<string>('');
     const [orders, setOrders] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Map order status to Vietnamese - Rút gọn còn 4 trạng thái
-    const getStatusLabel = (status: string) => {
-        // Map các trạng thái cũ về trạng thái mới
-        const normalizedStatus = normalizeStatus(status);
-
-        const statusMap: { [key: string]: { label: string; color: string } } = {
-            'new': { label: 'Đơn mới', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-            'in_transit': { label: 'Đang vận chuyển', color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' },
-            'completed': { label: 'Hoàn thành', color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
-            'cancelled': { label: 'Đã hủy', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
-        };
-        return statusMap[normalizedStatus] || { label: normalizedStatus, color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' };
-    };
-
-    // Normalize status từ backend về 4 trạng thái mới
-    const normalizeStatus = (status: string): string => {
-        // Đơn mới: pending, confirmed
-        if (status === 'pending' || status === 'confirmed') {
-            return 'new';
-        }
-        // Đang vận chuyển: picked_up, in_transit, arrived, delivered
-        if (status === 'picked_up' || status === 'in_transit' || status === 'arrived' || status === 'delivered') {
-            return 'in_transit';
-        }
-        // Hoàn thành và Đã hủy giữ nguyên
-        if (status === 'completed' || status === 'cancelled') {
-            return status;
-        }
-        return status;
-    };
-
-    // Danh sách các filter tabs với status tương ứng - Rút gọn còn 4 trạng thái
-    const filterTabs = [
-        { label: 'Tất cả', status: '' },
-        { label: 'Đơn mới', status: 'new' },
-        { label: 'Đang vận chuyển', status: 'in_transit' },
-        { label: 'Hoàn thành', status: 'completed' },
-        { label: 'Đã hủy', status: 'cancelled' },
-    ];
-
-    // Get next available status for customer - Flow mới: new -> in_transit -> completed
-    const getNextStatus = (currentStatus: string): string | null => {
-        const normalized = normalizeStatus(currentStatus);
-        const statusFlow: { [key: string]: string } = {
-            'new': 'in_transit',           // Đơn mới -> Đang vận chuyển
-            'in_transit': 'completed',     // Đang vận chuyển -> Hoàn thành
-        };
-        return statusFlow[normalized] || null;
-    };
-
+    // Fetch data khi filter thay đổi
     useEffect(() => {
         fetchOrders();
     }, [orderStatusFilter]);
+
+    // Fetch lại data khi quay lại màn hình
+    useFocusEffect(
+        useCallback(() => {
+            fetchOrders();
+        }, [orderStatusFilter])
+    );
 
     const fetchOrders = async () => {
         try {
@@ -114,7 +79,7 @@ function ListOrdersCustomer() {
             // Filter theo status mới nếu có filter
             if (orderStatusFilter) {
                 ordersData = ordersData.filter((order: any) => {
-                    const normalized = normalizeStatus(order.status);
+                    const normalized = normalizeOrderStatus(order.status);
                     return normalized === orderStatusFilter;
                 });
             }
@@ -135,55 +100,24 @@ function ListOrdersCustomer() {
     };
 
     const handleUpdateStatus = async (orderId: string, orderUuid: string, currentStatus: string) => {
-        const normalizedCurrent = normalizeStatus(currentStatus);
-        const nextStatus = getNextStatus(normalizedCurrent);
+        const normalizedCurrent = normalizeOrderStatus(currentStatus);
+        const nextStatus = getNextOrderStatus(normalizedCurrent);
         if (!nextStatus) {
             Alert.alert('Thông báo', 'Không thể cập nhật trạng thái này');
             return;
         }
 
-        // Map status frontend về status backend theo flow backend
-        // Flow backend: confirmed -> picked_up -> in_transit -> arrived -> delivered -> completed
-        const mapToBackendStatus = (frontendStatus: string, currentBackendStatus: string): string => {
-            if (frontendStatus === 'in_transit') {
-                // Từ 'new' (confirmed/pending) -> 'in_transit': gửi 'picked_up' (bước đầu)
-                if (currentBackendStatus === 'confirmed' || currentBackendStatus === 'pending') {
-                    return 'picked_up';
-                }
-                // Nếu đã ở trong flow vận chuyển, chuyển sang bước tiếp theo
-                if (currentBackendStatus === 'picked_up') {
-                    return 'in_transit';
-                }
-                if (currentBackendStatus === 'in_transit') {
-                    return 'arrived';
-                }
-                if (currentBackendStatus === 'arrived') {
-                    return 'delivered';
-                }
-                // Nếu đã delivered, không thể chuyển sang in_transit nữa
-                return 'picked_up'; // Default fallback
-            }
-            if (frontendStatus === 'completed') {
-                // Chỉ có thể complete từ delivered
-                if (currentBackendStatus === 'delivered') {
-                    return 'completed';
-                }
-                // Nếu chưa delivered, không thể complete
-                Alert.alert('Lỗi', 'Chỉ có thể hoàn thành đơn hàng khi đã giao hàng');
-                return currentBackendStatus;
-            }
-            return frontendStatus; // cancelled giữ nguyên
-        };
-
         const backendStatus = mapToBackendStatus(nextStatus, currentStatus);
+
+        const nextStatusLabel = getOrderStatusLabel(nextStatus);
         const statusLabels: { [key: string]: string } = {
             'in_transit': 'Đang vận chuyển',
             'completed': 'Hoàn thành',
         };
 
         Alert.alert(
-            'Xác nhận',
-            `Bạn có chắc chắn muốn cập nhật trạng thái thành "${statusLabels[nextStatus]}"?`,
+            'Xác nhận cập nhật trạng thái',
+            `Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng thành "${nextStatusLabel.label}"?\n\nĐiều này sẽ thay đổi trạng thái hiện tại của đơn hàng.`,
             [
                 { text: 'Hủy', style: 'cancel' },
                 {
@@ -226,7 +160,6 @@ function ListOrdersCustomer() {
                         fontSize: 16,
                         fontWeight: 'bold',
                         color: '#111318',
-                        textAlign: 'center',
                     },
                 }}
             />
@@ -239,18 +172,21 @@ function ListOrdersCustomer() {
                         className="flex-row"
                         contentContainerStyle={{ paddingHorizontal: 16 }}
                     >
-                        {filterTabs.map((tab) => {
+                        {ORDER_FILTER_TABS.map((tab) => {
                             const isActive = orderStatusFilter === tab.status;
                             return (
                                 <TouchableOpacity
                                     key={tab.status || 'all'}
                                     onPress={() => setOrderStatusFilter(tab.status)}
-                                    className="items-center py-4 px-3 mr-2"
+                                    className={`items-center py-3 px-4 mr-2 rounded-lg ${isActive
+                                        ? "bg-primary/10"
+                                        : ""
+                                        }`}
                                 >
                                     <Text
-                                        className={`text-sm font-bold pb-3 ${isActive
-                                            ? "text-primary border-b-2 border-primary"
-                                            : "text-text-secondary dark:text-gray-400 border-b-2 border-transparent"
+                                        className={`text-sm font-semibold ${isActive
+                                            ? "text-primary"
+                                            : "text-text-secondary dark:text-gray-400"
                                             }`}
                                     >
                                         {tab.label}
@@ -299,9 +235,9 @@ function ListOrdersCustomer() {
                             const flight = order.flight || {};
                             const sender = order.sender || order.partner || {};
                             const request = order.request || {};
-                            const statusInfo = getStatusLabel(order.status || 'pending');
-                            const normalizedStatus = normalizeStatus(order.status || 'pending');
-                            const nextStatus = getNextStatus(normalizedStatus);
+                            const statusInfo = getOrderStatusLabel(order.status || 'pending');
+                            const normalizedStatus = normalizeOrderStatus(order.status || 'pending');
+                            const nextStatus = getNextOrderStatus(normalizedStatus);
 
                             return (
                                 <View
@@ -421,11 +357,13 @@ function ListOrdersCustomer() {
                                         {nextStatus && (
                                             <TouchableOpacity
                                                 onPress={() => handleUpdateStatus(order.id, order.uuid, order.status)}
-                                                className="bg-green-600 h-11 rounded-lg items-center justify-center"
+                                                className="bg-green-600 dark:bg-green-700 h-11 rounded-lg items-center justify-center flex-row gap-2"
                                             >
+                                                <MaterialIcons name="update" size={18} color="white" />
                                                 <Text className="text-white font-bold text-sm">
-                                                    Cập nhật: {getStatusLabel(nextStatus === 'in_transit' ? 'in_transit' : nextStatus).label}
+                                                    Cập nhật: {getOrderStatusLabel(nextStatus).label}
                                                 </Text>
+                                                <MaterialIcons name="arrow-forward" size={16} color="white" />
                                             </TouchableOpacity>
                                         )}
                                     </View>

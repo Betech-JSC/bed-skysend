@@ -20,6 +20,7 @@ import api from '@/api/api';
 import { getAvatarUrl } from '@/constants/avatars';
 import { getAirlineLogo } from '@/constants/airlines';
 import BackButton from './components/BackButton';
+import { getRequestStatusLabel } from './utils/orderStatusUtils';
 
 interface FlightDetail {
   id: number;
@@ -91,7 +92,12 @@ export default function FlightDetailScreen() {
       let requestsData = [];
       if (response.data?.success && response.data?.data) {
         requestsData = Array.isArray(response.data.data) ? response.data.data : [];
+      } else if (Array.isArray(response.data)) {
+        requestsData = response.data;
+      } else if (Array.isArray(response.data?.data)) {
+        requestsData = response.data.data;
       }
+      // Lấy tất cả requests (pending, accepted, declined, confirmed)
       setRequests(requestsData);
     } catch (err: any) {
       console.error('Lỗi tải requests:', err);
@@ -101,7 +107,7 @@ export default function FlightDetailScreen() {
     }
   };
 
-  const handleAcceptRequest = async (requestId: number) => {
+  const handleAcceptRequest = async (requestId: number, sender: any) => {
     Alert.alert(
       'Xác nhận',
       'Bạn có chắc chắn muốn chấp nhận yêu cầu này?',
@@ -111,11 +117,30 @@ export default function FlightDetailScreen() {
           text: 'Chấp nhận',
           onPress: async () => {
             try {
-              await api.post(`requests/${requestId}/accept`);
-              Alert.alert('Thành công', 'Đã chấp nhận yêu cầu');
-              if (flightId) {
-                fetchRequests(flightId);
-                fetchFlightDetail(flightId);
+              const response = await api.post(`requests/${requestId}/accept`);
+
+              if (response.data?.success) {
+                // Lấy thông tin order và chat_id từ response
+                const order = response.data?.data?.order;
+                const chatId = order?.chat_id || order?.id || requestId;
+                const senderName = sender?.name || order?.sender?.name || 'Người gửi';
+                const senderAvatar = sender?.avatar || order?.sender?.avatar;
+
+                // Điều hướng đến màn hình chat
+                router.push({
+                  pathname: '/chat/[chatId]',
+                  params: {
+                    chatId: String(chatId),
+                    partnerName: senderName,
+                    partnerAvatar: senderAvatar ? getAvatarUrl(senderAvatar) : '',
+                  }
+                } as any);
+              } else {
+                Alert.alert('Thành công', 'Đã chấp nhận yêu cầu');
+                if (flightId) {
+                  fetchRequests(flightId);
+                  fetchFlightDetail(flightId);
+                }
               }
             } catch (err: any) {
               Alert.alert('Lỗi', err.response?.data?.message || 'Không thể chấp nhận yêu cầu');
@@ -365,20 +390,25 @@ export default function FlightDetailScreen() {
                     const sender = req.sender || {};
                     const isUrgent = req.priority_level === 'urgent';
                     const isPriority = req.priority_level === 'priority';
+                    const requestStatus = req.status || 'pending';
+                    const statusInfo = getRequestStatusLabel(requestStatus);
+                    const isPending = requestStatus === 'pending';
+                    const isAccepted = requestStatus === 'accepted' || requestStatus === 'confirmed';
+                    const isDeclined = requestStatus === 'declined';
 
                     return (
                       <View
                         key={req.id || req.uuid}
-                        className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+                        className={`rounded-lg border p-4 ${isAccepted
+                          ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-900/20'
+                          : isDeclined
+                            ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-900/20'
+                            : 'border-gray-200 dark:border-gray-700'
+                          }`}
                       >
                         {/* Header: Sender info + Status */}
                         <View className="flex-row items-center justify-between mb-3">
                           <View className="flex-row items-center gap-3 flex-1">
-                            {/* Avatar temporarily hidden */}
-                            {/* <Image
-                              source={{ uri: getAvatarUrl(sender.avatar) }}
-                              className="w-10 h-10 rounded-full"
-                            /> */}
                             <View className="flex-1">
                               <Text className="font-bold text-text-dark-gray dark:text-white">
                                 {sender.name || 'Người gửi'}
@@ -388,13 +418,18 @@ export default function FlightDetailScreen() {
                               </Text>
                             </View>
                           </View>
-                          {(isUrgent || isPriority) && (
-                            <View className={`px-2 py-1 rounded-full ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-100 dark:bg-orange-900/30'}`}>
-                              <Text className={`text-xs font-bold ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                                {isUrgent ? 'Khẩn cấp' : 'Ưu tiên'}
-                              </Text>
+                          <View className="flex-row items-center gap-2">
+                            {(isUrgent || isPriority) && (
+                              <View className={`px-2 py-1 rounded-full ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-100 dark:bg-orange-900/30'}`}>
+                                <Text className={`text-xs font-bold ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                                  {isUrgent ? 'Khẩn cấp' : 'Ưu tiên'}
+                                </Text>
+                              </View>
+                            )}
+                            <View className={`px-2.5 py-1 rounded-full ${statusInfo.color}`}>
+                              <Text className="text-xs font-bold">{statusInfo.label}</Text>
                             </View>
-                          )}
+                          </View>
                         </View>
 
                         {/* Request details */}
@@ -402,28 +437,31 @@ export default function FlightDetailScreen() {
                           <View className="flex-row justify-between">
                             <Text className="text-sm text-gray-600">Phần thưởng:</Text>
                             <Text className="font-bold text-text-dark-gray dark:text-white">
-                              {Number(req.reward).toLocaleString('vi-VN')}đ
+                              {Number(req.reward || 0).toLocaleString('vi-VN')}đ
                             </Text>
                           </View>
                           <View className="flex-row justify-between">
                             <Text className="text-sm text-gray-600">Giá trị tài liệu:</Text>
                             <Text className="font-semibold text-text-dark-gray dark:text-white">
-                              {Number(req.item?.value || 0).toLocaleString('vi-VN')}đ
+                              {Number(req.item_value || req.item?.value || 0).toLocaleString('vi-VN')}đ
                             </Text>
                           </View>
                           <View className="flex-row justify-between">
                             <Text className="text-sm text-gray-600">Khung giờ:</Text>
                             <Text className="text-sm text-text-dark-gray dark:text-white">
-                              {req.time_slot === 'morning' ? 'Buổi sáng' :
-                                req.time_slot === 'afternoon' ? 'Buổi chiều' :
-                                  req.time_slot === 'evening' ? 'Buổi tối' : 'Bất kỳ'}
+                              {req.desired_time_slot === 'morning' ? 'Buổi sáng' :
+                                req.desired_time_slot === 'afternoon' ? 'Buổi chiều' :
+                                  req.desired_time_slot === 'evening' ? 'Buổi tối' :
+                                    req.time_slot === 'morning' ? 'Buổi sáng' :
+                                      req.time_slot === 'afternoon' ? 'Buổi chiều' :
+                                        req.time_slot === 'evening' ? 'Buổi tối' : 'Bất kỳ'}
                             </Text>
                           </View>
-                          {req.item?.description && (
+                          {(req.item_description || req.item?.description) && (
                             <View className="mt-2">
                               <Text className="text-xs text-gray-500 mb-1">Mô tả:</Text>
                               <Text className="text-sm text-text-dark-gray dark:text-white">
-                                {req.item.description}
+                                {req.item_description || req.item?.description}
                               </Text>
                             </View>
                           )}
@@ -437,21 +475,43 @@ export default function FlightDetailScreen() {
                           )}
                         </View>
 
-                        {/* Action buttons */}
-                        <View className="flex-row gap-2 mt-3">
-                          <TouchableOpacity
-                            onPress={() => handleDeclineRequest(req.id)}
-                            className="flex-1 h-10 items-center justify-center rounded-lg border-2 border-red-600"
-                          >
-                            <Text className="text-sm font-bold text-red-600">Từ chối</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => handleAcceptRequest(req.id)}
-                            className="flex-1 h-10 items-center justify-center rounded-lg bg-primary"
-                          >
-                            <Text className="text-sm font-bold text-white">Chấp nhận</Text>
-                          </TouchableOpacity>
-                        </View>
+                        {/* Action buttons - chỉ hiển thị cho pending requests */}
+                        {isPending && (
+                          <View className="flex-row gap-2 mt-3">
+                            <TouchableOpacity
+                              onPress={() => handleDeclineRequest(req.id)}
+                              className="flex-1 h-10 items-center justify-center rounded-lg border-2 border-red-600"
+                            >
+                              <Text className="text-sm font-bold text-red-600">Từ chối</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleAcceptRequest(req.id, sender)}
+                              className="flex-1 h-10 items-center justify-center rounded-lg bg-primary"
+                            >
+                              <Text className="text-sm font-bold text-white">Chấp nhận</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        {/* Thông báo cho requests đã chấp nhận */}
+                        {isAccepted && (
+                          <View className="mt-3 flex-row items-center gap-2 rounded-lg bg-green-100 dark:bg-green-900/30 px-3 py-2">
+                            <MaterialIcons name="check-circle" size={18} color="#16A34A" />
+                            <Text className="text-sm font-medium text-green-800 dark:text-green-200">
+                              Bạn đã chấp nhận yêu cầu này
+                            </Text>
+                          </View>
+                        )}
+
+                        {/* Thông báo cho requests đã từ chối */}
+                        {isDeclined && (
+                          <View className="mt-3 flex-row items-center gap-2 rounded-lg bg-red-100 dark:bg-red-900/30 px-3 py-2">
+                            <MaterialIcons name="cancel" size={18} color="#DC2626" />
+                            <Text className="text-sm font-medium text-red-800 dark:text-red-200">
+                              Bạn đã từ chối yêu cầu này
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     );
                   })}

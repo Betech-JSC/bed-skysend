@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -14,8 +14,15 @@ import api from "@/api/api";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import ItemOrder from "app/components/ItemOrder";
-import { router, Stack } from "expo-router";
+import { router, Stack, useFocusEffect } from "expo-router";
 import { getAvatarUrl } from "@/constants/avatars";
+import {
+    normalizeOrderStatus,
+    getOrderStatusLabel,
+    getRequestStatusLabel,
+    ORDER_FILTER_TABS,
+    REQUEST_FILTER_TABS,
+} from "../../utils/orderStatusUtils";
 
 function ListOrder() {
     const user = useSelector((state: RootState) => state.user);
@@ -30,63 +37,7 @@ function ListOrder() {
     const [loading, setLoading] = useState(true);
     const [loadingRequests, setLoadingRequests] = useState(false);
 
-
-
-    // Normalize status từ backend về 4 trạng thái mới
-    const normalizeStatus = (status: string): string => {
-        // Đơn mới: pending, confirmed
-        if (status === 'pending' || status === 'confirmed') {
-            return 'new';
-        }
-        // Đang vận chuyển: picked_up, in_transit, arrived, delivered
-        if (status === 'picked_up' || status === 'in_transit' || status === 'arrived' || status === 'delivered') {
-            return 'in_transit';
-        }
-        // Hoàn thành và Đã hủy giữ nguyên
-        if (status === 'completed' || status === 'cancelled') {
-            return status;
-        }
-        return status;
-    };
-
-    // Map order status to Vietnamese - Rút gọn còn 4 trạng thái
-    const getStatusLabel = (status: string) => {
-        const normalizedStatus = normalizeStatus(status);
-
-        const statusMap: { [key: string]: { label: string; color: string } } = {
-            'new': { label: 'Đơn mới', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-            'in_transit': { label: 'Đang vận chuyển', color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' },
-            'completed': { label: 'Hoàn thành', color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
-            'cancelled': { label: 'Đã hủy', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
-            // Giữ các status cho requests
-            'pending': { label: 'Chờ xác nhận', color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
-            'accepted': { label: 'Đã chấp nhận', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-            'declined': { label: 'Đã từ chối', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
-            'expired': { label: 'Hết hạn', color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' },
-        };
-        return statusMap[normalizedStatus] || statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' };
-    };
-
-    // Danh sách các filter tabs cho orders - Rút gọn còn 4 trạng thái
-    const orderFilterTabs = [
-        { label: 'Tất cả', status: '' },
-        { label: 'Đơn mới', status: 'new' },
-        { label: 'Đang vận chuyển', status: 'in_transit' },
-        { label: 'Hoàn thành', status: 'completed' },
-        { label: 'Đã hủy', status: 'cancelled' },
-    ];
-
-    // Danh sách các filter tabs cho requests
-    const requestFilterTabs = [
-        { label: 'Tất cả', status: '' },
-        { label: 'Chờ xác nhận', status: 'pending' },
-        { label: 'Đã chấp nhận', status: 'accepted' },
-        { label: 'Đã xác nhận', status: 'confirmed' },
-        { label: 'Đã từ chối', status: 'declined' },
-        { label: 'Hết hạn', status: 'expired' },
-        { label: 'Đã hủy', status: 'cancelled' },
-    ];
-
+    // Fetch data khi filter thay đổi
     useEffect(() => {
         if (activeTab === 'orders') {
             fetchOrders();
@@ -94,6 +45,17 @@ function ListOrder() {
             fetchRequests();
         }
     }, [activeTab, orderStatusFilter, requestStatusFilter, role]);
+
+    // Fetch lại data khi quay lại màn hình
+    useFocusEffect(
+        useCallback(() => {
+            if (activeTab === 'orders') {
+                fetchOrders();
+            } else {
+                fetchRequests();
+            }
+        }, [activeTab, orderStatusFilter, requestStatusFilter])
+    );
 
     const fetchOrders = async () => {
         if (!role) return;
@@ -117,7 +79,7 @@ function ListOrder() {
             // Filter theo status mới nếu có filter
             if (orderStatusFilter) {
                 ordersData = ordersData.filter((order: any) => {
-                    const normalized = normalizeStatus(order.status);
+                    const normalized = normalizeOrderStatus(order.status);
                     return normalized === orderStatusFilter;
                 });
             }
@@ -187,7 +149,6 @@ function ListOrder() {
                         fontSize: 16,
                         fontWeight: 'bold',
                         color: '#111318',
-                        textAlign: 'center',
                     },
                 }}
             />
@@ -201,15 +162,25 @@ function ListOrder() {
                                 // Reset request filter khi chuyển sang tab orders
                                 setRequestStatusFilter('');
                             }}
-                            className="flex-1 items-center py-4"
+                            className={`flex-1 items-center py-4 ${activeTab === 'orders' ? 'border-b-2 border-primary' : ''}`}
                         >
-                            <Text
-                                className={`text-sm font-bold pb-3 ${activeTab === 'orders'
-                                    ? "text-primary border-b-3 border-primary"
-                                    : "text-text-secondary dark:text-gray-400 border-b-3 border-transparent"
-                                    }`}
-                            >
-                                Đơn hàng
+                            <View className="flex-row items-center gap-2">
+                                <MaterialIcons
+                                    name="inventory-2"
+                                    size={20}
+                                    color={activeTab === 'orders' ? "#2563EB" : "#6B7280"}
+                                />
+                                <Text
+                                    className={`text-sm font-bold ${activeTab === 'orders'
+                                        ? "text-primary"
+                                        : "text-text-secondary dark:text-gray-400"
+                                        }`}
+                                >
+                                    Đơn hàng
+                                </Text>
+                            </View>
+                            <Text className="text-xs text-text-secondary dark:text-gray-400 mt-1">
+                                Đơn đã xác nhận
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -218,15 +189,25 @@ function ListOrder() {
                                 // Reset order filter khi chuyển sang tab requests
                                 setOrderStatusFilter('');
                             }}
-                            className="flex-1 items-center py-4"
+                            className={`flex-1 items-center py-4 ${activeTab === 'requests' ? 'border-b-2 border-primary' : ''}`}
                         >
-                            <Text
-                                className={`text-sm font-bold pb-3 ${activeTab === 'requests'
-                                    ? "text-primary border-b-3 border-primary"
-                                    : "text-text-secondary dark:text-gray-400 border-b-3 border-transparent"
-                                    }`}
-                            >
-                                Yêu cầu đã gửi
+                            <View className="flex-row items-center gap-2">
+                                <MaterialIcons
+                                    name="send"
+                                    size={20}
+                                    color={activeTab === 'requests' ? "#2563EB" : "#6B7280"}
+                                />
+                                <Text
+                                    className={`text-sm font-bold ${activeTab === 'requests'
+                                        ? "text-primary"
+                                        : "text-text-secondary dark:text-gray-400"
+                                        }`}
+                                >
+                                    Yêu cầu đã gửi
+                                </Text>
+                            </View>
+                            <Text className="text-xs text-text-secondary dark:text-gray-400 mt-1">
+                                Yêu cầu gửi hàng
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -241,18 +222,21 @@ function ListOrder() {
                             className="flex-row"
                             contentContainerStyle={{ paddingHorizontal: 16 }}
                         >
-                            {orderFilterTabs.map((tab) => {
+                            {ORDER_FILTER_TABS.map((tab) => {
                                 const isActive = orderStatusFilter === tab.status;
                                 return (
                                     <TouchableOpacity
                                         key={tab.status || 'all'}
                                         onPress={() => setOrderStatusFilter(tab.status)}
-                                        className="items-center py-4 px-3 mr-2"
+                                        className={`items-center py-3 px-4 mr-2 rounded-lg ${isActive
+                                            ? "bg-primary/10"
+                                            : ""
+                                            }`}
                                     >
                                         <Text
-                                            className={`text-sm font-bold pb-3 ${isActive
-                                                ? "text-primary border-b-2 border-primary"
-                                                : "text-text-secondary dark:text-gray-400 border-b-2 border-transparent"
+                                            className={`text-sm font-semibold ${isActive
+                                                ? "text-primary"
+                                                : "text-text-secondary dark:text-gray-400"
                                                 }`}
                                         >
                                             {tab.label}
@@ -273,18 +257,21 @@ function ListOrder() {
                             className="flex-row"
                             contentContainerStyle={{ paddingHorizontal: 16 }}
                         >
-                            {requestFilterTabs.map((tab) => {
+                            {REQUEST_FILTER_TABS.map((tab) => {
                                 const isActive = requestStatusFilter === tab.status;
                                 return (
                                     <TouchableOpacity
                                         key={tab.status || 'all'}
                                         onPress={() => setRequestStatusFilter(tab.status)}
-                                        className="items-center py-4 px-3 mr-2"
+                                        className={`items-center py-3 px-4 mr-2 rounded-lg ${isActive
+                                            ? "bg-primary/10"
+                                            : ""
+                                            }`}
                                     >
                                         <Text
-                                            className={`text-sm font-bold pb-3 ${isActive
-                                                ? "text-primary border-b-2 border-primary"
-                                                : "text-text-secondary dark:text-gray-400 border-b-2 border-transparent"
+                                            className={`text-sm font-semibold ${isActive
+                                                ? "text-primary"
+                                                : "text-text-secondary dark:text-gray-400"
                                                 }`}
                                         >
                                             {tab.label}
@@ -320,7 +307,7 @@ function ListOrder() {
                             orders.map((order: any) => {
                                 const flight = order.flight || {};
                                 const customer = order.customer || order.partner || {};
-                                const statusInfo = getStatusLabel(order.status || 'pending');
+                                const statusInfo = getOrderStatusLabel(order.status || 'pending');
 
                                 return (
                                     <View
@@ -448,7 +435,7 @@ function ListOrder() {
                             requests.map((request: any) => {
                                 const flight = request.flight || {};
                                 const customer = flight.customer || {};
-                                const statusInfo = getStatusLabel(request.status || 'pending');
+                                const statusInfo = getRequestStatusLabel(request.status || 'pending');
 
                                 return (
                                     <View

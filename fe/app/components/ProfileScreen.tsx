@@ -423,7 +423,7 @@ export default function ProfileScreen() {
                                     if (isSender) {
                                         router.push('/(tabs)/(sender)/list_orders');
                                     } else {
-                                        router.push('/(tabs)/(customer)/list_orders');
+                                        router.push('/(tabs)/(customer)/list_orders_customer');
                                     }
                                 }}>
                                 <Text className="text-sm font-medium text-blue-600 dark:text-blue-400">

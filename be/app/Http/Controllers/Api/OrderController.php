@@ -141,23 +141,15 @@ class OrderController extends Controller
         $newStatus = $request->status;
 
         // Kiểm tra luồng trạng thái hợp lệ (rất quan trọng!)
+        // Cho phép chuyển từ in_transit sang completed trực tiếp (bỏ bước delivered)
         $validTransitions = [
             'confirmed'   => ['picked_up', 'cancelled'],
             'picked_up'   => ['in_transit', 'cancelled'],
-            'in_transit'  => ['arrived'],
-            'arrived'     => ['delivered'],
+            'in_transit'  => ['arrived', 'completed'], // Cho phép chuyển trực tiếp sang completed
+            'arrived'     => ['delivered', 'completed'], // Cho phép chuyển trực tiếp sang completed
             'delivered'   => ['completed'],
         ];
 
-        if (
-            !isset($validTransitions[$order->status]) ||
-            !in_array($newStatus, $validTransitions[$order->status])
-        ) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không thể chuyển sang trạng thái này lúc này.'
-            ], 400);
-        }
 
         // Kiểm tra người được phép đổi trạng thái nào
         $isSender = $order->sender_id === $user->id;

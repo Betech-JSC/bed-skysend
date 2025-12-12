@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { RootState } from '@/store';
 import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
 import api from '@/api/api';
 import ItemOrder from 'app/components/ItemOrder';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useOrderMatchList } from '@/hooks/useOrderMatchList';
 import BannerSlider from '../../components/BannerSlider';
@@ -46,60 +46,47 @@ const Home = () => {
     totalEarnings: 0,
   });
 
-  useEffect(() => {
-    // Chỉ fetch khi user đã đăng nhập
+  // Fetch orders
+  const fetchOrders = async () => {
     if (!user?.token) {
       setOrders([]);
-      setAvailableCustomers([]);
-      setStats({
-        totalOrders: 0,
-        completedOrders: 0,
-        pendingOrders: 0,
-        totalEarnings: 0,
-      });
       setLoading(false);
       return;
     }
 
-    const fetchOrders = async () => {
-      try {
-        const response = await api.get('orders/getList');
+    try {
+      const response = await api.get('orders/getList');
 
-        // Xử lý response structure
-        let ordersData = [];
-        if (response.data?.success && response.data?.data) {
-          // Response có structure: { success: true, data: { data: [...], current_page: ... } }
-          if (response.data.data?.data) {
-            ordersData = response.data.data.data;
-          } else if (Array.isArray(response.data.data)) {
-            ordersData = response.data.data;
-          }
-        } else if (response.data?.status === 'success' && response.data?.data) {
-          // Fallback cho structure cũ
-          if (response.data.data?.orders?.data) {
-            ordersData = response.data.data.orders.data;
-          } else if (Array.isArray(response.data.data)) {
-            ordersData = response.data.data;
-          }
+      // Xử lý response structure
+      let ordersData = [];
+      if (response.data?.success && response.data?.data) {
+        // Response có structure: { success: true, data: { data: [...], current_page: ... } }
+        if (response.data.data?.data) {
+          ordersData = response.data.data.data;
+        } else if (Array.isArray(response.data.data)) {
+          ordersData = response.data.data;
         }
-
-        setOrders(ordersData);
-      } catch (err: any) {
-        // Chỉ log error nếu không phải 401 (unauthorized)
-        if (err.response?.status !== 401) {
-          console.error('Error fetching orders:', err);
-          setError('Error fetching orders');
+      } else if (response.data?.status === 'success' && response.data?.data) {
+        // Fallback cho structure cũ
+        if (response.data.data?.orders?.data) {
+          ordersData = response.data.data.orders.data;
+        } else if (Array.isArray(response.data.data)) {
+          ordersData = response.data.data;
         }
-        setOrders([]);
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchOrders();
-    fetchAvailableCustomers();
-    fetchStats();
-  }, [user?.token]);
+      setOrders(ordersData);
+    } catch (err: any) {
+      // Chỉ log error nếu không phải 401 (unauthorized)
+      if (err.response?.status !== 401) {
+        console.error('Error fetching orders:', err);
+        setError('Error fetching orders');
+      }
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch stats
   const fetchStats = async () => {
@@ -185,6 +172,37 @@ const Home = () => {
       setLoadingCustomers(false);
     }
   };
+
+  useEffect(() => {
+    // Chỉ fetch khi user đã đăng nhập
+    if (!user?.token) {
+      setOrders([]);
+      setAvailableCustomers([]);
+      setStats({
+        totalOrders: 0,
+        completedOrders: 0,
+        pendingOrders: 0,
+        totalEarnings: 0,
+      });
+      setLoading(false);
+      return;
+    }
+
+    fetchOrders();
+    fetchAvailableCustomers();
+    fetchStats();
+  }, [user?.token]);
+
+  // Refresh data khi quay lại màn hình
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.token) {
+        fetchOrders();
+        fetchAvailableCustomers();
+        fetchStats();
+      }
+    }, [user?.token])
+  );
 
   useOrderMatchList(
     orders.map((o) => o.id),

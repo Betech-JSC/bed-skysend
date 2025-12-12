@@ -1,5 +1,5 @@
 // app/(tabs)/home.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -13,7 +13,7 @@ import {
     ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
@@ -157,6 +157,16 @@ export default function HomeScreen() {
             setMatchingRequestsAPI([]);
         }
     }, [user?.token]);
+
+    // Refresh data khi quay lại màn hình
+    useFocusEffect(
+        useCallback(() => {
+            if (user?.token) {
+                fetchPriorityRequests();
+                fetchMatchingRequests();
+            }
+        }, [user?.token])
+    );
 
     // Kết hợp data demo + API
     const allPriorityRequests = [...priorityRequestsAPI];
