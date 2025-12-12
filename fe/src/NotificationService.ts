@@ -23,9 +23,9 @@ export class NotificationService {
 
         Notifications.setNotificationHandler({
             handleNotification: async () => ({
-                shouldShowAlert: false,   // không hiển thị khi app foreground
-                shouldPlaySound: false,   // không phát âm thanh khi foreground
-                shouldSetBadge: false,
+                shouldShowAlert: true,   // Hiển thị banner khi foreground
+                shouldPlaySound: true,   // Phát âm thanh khi foreground
+                shouldSetBadge: true,    // Cập nhật badge
             }),
         });
 
