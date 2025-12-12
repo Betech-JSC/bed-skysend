@@ -250,32 +250,32 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Header */}
-            <View className="flex-row items-center justify-between px-4 pt-4 pb-2 bg-background-light dark:bg-background-dark sticky top-0 z-10">
-                <View className="w-12" />
-                <Text className="text-lg font-bold text-text-dark-gray dark:text-white">Trang chủ</Text>
-                <TouchableOpacity
-                    onPress={() => router.push('/notifications')}
-                    className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-sm justify-center items-center relative"
-                >
-                    <MaterialIcons name="notifications" size={24} color="#1F2937" />
-                    {unreadNotificationCount > 0 && (
-                        <View className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full items-center justify-center border-2 border-white">
-                            <Text className="text-white text-xs font-bold">
-                                {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                            </Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
+            {/* Header cố định */}
+            <View className="sticky top-0 z-10 border-b border-gray-200 bg-background-light px-4 pb-2 pt-4 dark:border-gray-700 dark:bg-background-dark">
+                <View className="h-12 flex-row items-center justify-between">
+                    <Text className="text-text-primary text-3xl font-bold dark:text-white">
+                        Xin chào, {user?.name || 'Bạn'}!
+                    </Text>
+                    <TouchableOpacity
+                        onPress={() => router.push('/notifications')}
+                        className="relative"
+                    >
+                        <MaterialIcons name="notifications" size={28} color="#2563EB" />
+                        {unreadNotificationCount > 0 && (
+                            <View className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full items-center justify-center border-2 border-white">
+                                <Text className="text-white text-xs font-bold">
+                                    {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
+                <Text className="text-text-secondary mt-1 dark:text-gray-400">
+                    Bạn cần gửi tài liệu đi đâu hôm nay?
+                </Text>
             </View>
 
             <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
-                <Text className="text-[32px] font-bold text-text-dark-gray dark:text-white pt-4">
-                    Xin chào, {user?.name || 'Bạn'}!
-                </Text>
-                <Text className="text-base text-text-dark-gray/80 dark:text-white/80 pb-6">
-                    Chia sẻ chuyến bay, kiếm thêm thu nhập.
-                </Text>
 
                 {/* Banner Slider */}
                 <View >

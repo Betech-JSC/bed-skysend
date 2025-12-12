@@ -1,4 +1,4 @@
-// Login Screen - Professional UI/UX
+// LoginScreen.tsx - Professional UI/UX with Expo Push Notifications
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -23,19 +23,22 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { getDatabase, ref, set } from "firebase/database";
 import { app } from "@/firebaseConfig";
-import SocialMedia from "./components/SocialMedia";
+
+// Set handler để push notification hiển thị khi app foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export default function LoginScreen() {
   const dispatch = useDispatch();
   const router = useRouter();
   const user = useSelector((state: RootState) => state.user);
 
-  // Tất cả hooks phải được gọi trước conditional return
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -60,6 +63,7 @@ export default function LoginScreen() {
     );
   }
 
+  // Validate form
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
@@ -79,30 +83,48 @@ export default function LoginScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async () => {
-    if (!validateForm()) {
-      return;
+  // Hàm lấy Expo Push Token
+  const registerForPushNotificationsAsync = async (): Promise<string | null> => {
+    if (!Constants.isDevice) {
+      Alert.alert("Lỗi", "Push notifications chỉ hoạt động trên thiết bị thật!");
+      return null;
     }
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      Alert.alert("Quyền từ chối", "Không thể nhận thông báo push.");
+      return null;
+    }
+
+    const tokenData = await Notifications.getExpoPushTokenAsync();
+    return tokenData.data;
+  };
+
+  // Xử lý login
+  const handleLogin = async () => {
+    if (!validateForm()) return;
 
     setLoading(true);
 
     try {
-      // Lấy Expo Push Token trước khi login
-      let expoPushToken = "";
+      // Lấy token push trước khi login
+      const expoPushToken = await registerForPushNotificationsAsync();
 
-      const tokenData = await Notifications.getExpoPushTokenAsync();
-      expoPushToken = tokenData.data;
-
-      // Gửi FCM token trong request login
       const loginPayload: any = {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
       };
 
-      // Chỉ gửi fcm_token nếu có giá trị
-      if (expoPushToken && expoPushToken.trim() !== "") {
+      if (expoPushToken) {
         loginPayload.fcm_token = expoPushToken;
-        console.log("Sending FCM token to backend:", expoPushToken);
+        console.log("Sending Expo push token:", expoPushToken);
       }
 
       const response = await api.post("login", loginPayload);
@@ -111,46 +133,25 @@ export default function LoginScreen() {
         const userData = response.data?.data?.user || response.data?.data;
         const token = userData?.token;
 
-        if (!token) {
-          throw new Error("Không nhận được token từ server");
-        }
+        if (!token) throw new Error("Không nhận được token từ server");
 
-        const user = { ...userData };
-        delete user.token;
+        const userRole = userData.role || "customer";
+        const userWithRole = { ...userData, role: userRole, token };
 
-        // Lấy role từ user data hoặc mặc định là customer
-        const userRole = user.role || "customer";
-        const userWithRole = {
-          ...user,
-          role: userRole,
-          token: token,
-        };
-
-        // Lưu token lên Firebase (backup)
-        if (expoPushToken && user.id) {
+        // Lưu token vào Firebase
+        if (expoPushToken && userData.id) {
           try {
             const db = getDatabase(app);
-            await set(ref(db, `users/${user.id}/expo_push_token`), expoPushToken);
-          } catch (error) {
-            console.warn("Không thể lưu push token vào Firebase:", error);
+            await set(ref(db, `users/${userData.id}/expo_push_token`), expoPushToken);
+          } catch (err) {
+            console.warn("Không thể lưu push token vào Firebase:", err);
           }
         }
 
-        // Lưu user vào Redux
+        // Lưu vào Redux và redirect
         dispatch(setUser(userWithRole));
 
-        // Redirect theo role - sử dụng replace để không thể quay lại
-        if (userWithRole.role === "sender") {
-          router.replace("/(tabs)/(sender)/home");
-        } else {
-          router.replace("/(tabs)/(customer)/home_customer");
-        }
-
-        // Lưu user vào Redux
-        dispatch(setUser(userWithRole));
-
-        // Redirect theo role
-        if (userWithRole.role === "sender") {
+        if (userRole === "sender") {
           router.replace("/(tabs)/(sender)/home");
         } else {
           router.replace("/(tabs)/(customer)/home_customer");
@@ -164,9 +165,8 @@ export default function LoginScreen() {
         error.response?.data?.message ||
         error.response?.data?.error ||
         error.message ||
-        "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.";
+        "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.";
 
-      // Xử lý validation errors từ backend
       if (error.response?.data?.errors) {
         const backendErrors = error.response.data.errors;
         const newErrors: { [key: string]: string } = {};
@@ -184,6 +184,7 @@ export default function LoginScreen() {
     }
   };
 
+  // Render form
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
       <KeyboardAvoidingView
@@ -274,55 +275,18 @@ export default function LoginScreen() {
                 )}
               </View>
 
-              {/* Forgot Password - Tạm thời ẩn, thay bằng thông báo liên hệ */}
-              <TouchableOpacity
-                onPress={() => {
-                  Alert.alert(
-                    'Quên mật khẩu?',
-                    'Vui lòng liên hệ SkySend để được hỗ trợ lấy lại mật khẩu.\n\nEmail: support@skysend.com\nHotline: (+84) 0775600351',
-                    [{ text: 'Đã hiểu' }]
-                  );
-                }}
-                className="self-end"
-              >
-                <Text className="text-primary text-sm font-medium">
-                  Quên mật khẩu?
-                </Text>
-              </TouchableOpacity>
-
               {/* Submit Button */}
               <TouchableOpacity
                 onPress={handleLogin}
                 disabled={loading}
-                className={`mt-2 py-4 rounded-2xl ${loading ? "bg-gray-400" : "bg-primary"
-                  } shadow-lg`}
+                className={`mt-2 py-4 rounded-2xl ${loading ? "bg-gray-400" : "bg-primary"} shadow-lg`}
               >
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-white text-center text-lg font-bold">
-                    Đăng nhập
-                  </Text>
+                  <Text className="text-white text-center text-lg font-bold">Đăng nhập</Text>
                 )}
               </TouchableOpacity>
-
-              {/* Divider */}
-              <View className="flex-row items-center gap-4 my-4">
-                <View className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
-                <Text className="text-text-secondary dark:text-gray-400 text-sm">Hoặc</Text>
-                <View className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
-              </View>
-
-
-              {/* Register Link */}
-              <View className="flex-row justify-center items-center gap-2 mt-4">
-                <Text className="text-text-secondary dark:text-gray-400">
-                  Chưa có tài khoản?
-                </Text>
-                <TouchableOpacity onPress={() => router.push("/role-selection")}>
-                  <Text className="text-primary font-semibold">Đăng ký ngay</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
         </ScrollView>
