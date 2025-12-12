@@ -67,10 +67,30 @@ export default function CreateRequestWaitingScreen() {
     const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
     const [showPriorityModal, setShowPriorityModal] = useState(false);
 
+    // Helper function để reset form về trạng thái ban đầu
+    const resetForm = () => {
+        setFormData({
+            from_airport: '',
+            to_airport: '',
+            desired_date: getTodayDateString(),
+            desired_time_slot: 'any',
+            desired_weight: '',
+            item_type: '',
+            item_description: '',
+            item_value: '',
+            reward: '',
+            note: '',
+            priority_level: 'normal',
+        });
+    };
+
     // Load data nếu đang ở chế độ chỉnh sửa
     useEffect(() => {
         if (isEditMode && editId) {
             loadRequestData(parseInt(editId));
+        } else {
+            // Reset form khi không phải edit mode
+            resetForm();
         }
     }, [editId]);
 
@@ -176,6 +196,11 @@ export default function CreateRequestWaitingScreen() {
             }
 
             if (response.data.success) {
+                // Reset form nếu không phải edit mode (tạo mới)
+                if (!isEditMode) {
+                    resetForm();
+                }
+
                 Alert.alert(
                     'Thành công',
                     response.data.message,
@@ -220,7 +245,7 @@ export default function CreateRequestWaitingScreen() {
 
                 <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
                     <Text className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                        Điền thông tin để hệ thống tự động tìm customer phù hợp
+                        Điền thông tin để hệ thống tự động tìm khách hàng phù hợp
                     </Text>
 
                     {/* From Airport */}

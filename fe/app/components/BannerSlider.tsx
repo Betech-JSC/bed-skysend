@@ -68,7 +68,7 @@ export default function BannerSlider({
             backgroundColor: item.color || '#2563EB',
           },
         ]}
-        className="rounded-2xl overflow-hidden"
+        className="rounded-2xl shadow-2xl overflow-hidden"
       >
         {item.image ? (
           <Image
@@ -87,16 +87,6 @@ export default function BannerSlider({
             )}
           </View>
         )}
-        <View className="absolute inset-0 bg-black/30 p-4 justify-end">
-          <Text className="text-white text-lg font-bold mb-1">
-            {item.title}
-          </Text>
-          {item.description && (
-            <Text className="text-white/90 text-sm" numberOfLines={2}>
-              {item.description}
-            </Text>
-          )}
-        </View>
       </TouchableOpacity>
     );
   };

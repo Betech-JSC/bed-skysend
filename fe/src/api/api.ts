@@ -4,19 +4,19 @@ import { API_URL } from "@env";
 import { clearUser } from "@/reducers/userSlice";
 import { router } from "expo-router";
 
-const api = axios.create({
-    baseURL: "http://localhost:8000/api",
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
-
 // const api = axios.create({
-//     baseURL: "http://192.168.1.90:8000/api",
+//     baseURL: "http://localhost:8000/api",
 //     headers: {
 //         "Content-Type": "application/json",
 //     },
 // });
+
+const api = axios.create({
+    baseURL: "http://192.168.1.90:8000/api",
+    headers: {
+        "Content-Type": "application/json",
+    },
+});
 
 // const api = axios.create({
 //     baseURL: "https://skysend.betech-digital.com/api",

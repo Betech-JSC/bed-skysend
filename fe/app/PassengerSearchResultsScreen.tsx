@@ -215,7 +215,27 @@ export default function PassengerSearchResultsScreen() {
                 itemValue: filterItemValue,
             });
             setFilterModalOpen(false);
+
+            // Fetch với filter hiện tại
             await fetchSearchResults(true);
+
+            // Sau khi fetch thành công, reset filter form về trạng thái ban đầu
+            // (kết quả tìm kiếm vẫn giữ nguyên với filter đã apply)
+            const initialDeparture = params.departureCode as string || '';
+            const initialDepartureLabel = params.departureLabel as string || '';
+            const initialArrival = params.arrivalCode as string || '';
+            const initialArrivalLabel = params.arrivalLabel as string || '';
+            const initialDate = params.date as string || '';
+            const initialTimeSlot = params.timeSlot as string || '';
+            const initialItemType = params.item_type as string || '';
+            const initialItemValue = params.item_value as string || '';
+
+            setFilterDepartureCity({ value: initialDeparture, label: initialDepartureLabel });
+            setFilterArrivalCity({ value: initialArrival, label: initialArrivalLabel });
+            setFilterDate(initialDate);
+            setFilterTimeSlot(initialTimeSlot);
+            setFilterItemType(initialItemType);
+            setFilterItemValue(initialItemValue);
         } catch (error) {
             console.error('Error applying filter:', error);
             setFilterModalOpen(false);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CurrencyInput from './CurrencyInput';
 import { parseVND } from '@/utils/currencyFormatter';
 import {
@@ -49,6 +49,22 @@ export default function SearchFlightModal({
   const [itemType, setItemType] = useState('');
   const [itemValue, setItemValue] = useState('');
 
+  const handleReset = () => {
+    setDepartureCity({ value: '', label: '' });
+    setArrivalCity({ value: '', label: '' });
+    setDate(getTodayDateString()); // Reset về ngày hiện tại
+    setTimeSlot('');
+    setItemType('');
+    setItemValue('');
+  };
+
+  // Reset form khi modal mở lại
+  useEffect(() => {
+    if (visible) {
+      handleReset();
+    }
+  }, [visible]);
+
   const handleSearch = () => {
     // Validation
     if (!departureCity.value) {
@@ -75,16 +91,10 @@ export default function SearchFlightModal({
       arrivalLabel: arrivalCity.label,
     };
 
-    onSearch(searchParams);
-  };
+    // Reset form về trạng thái ban đầu sau khi submit
+    handleReset();
 
-  const handleReset = () => {
-    setDepartureCity({ value: '', label: '' });
-    setArrivalCity({ value: '', label: '' });
-    setDate(getTodayDateString()); // Reset về ngày hiện tại
-    setTimeSlot('');
-    setItemType('');
-    setItemValue('');
+    onSearch(searchParams);
   };
 
   return (

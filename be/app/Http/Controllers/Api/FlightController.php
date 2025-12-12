@@ -70,6 +70,24 @@ class FlightController extends Controller
             'attachments.*' => 'required|integer|exists:attachments,id',
         ]);
 
+        // Kiểm tra chuyến bay trùng (cùng tuyến, cùng ngày, chưa hoàn thành/chưa hủy)
+        $existingFlight = Flight::where('customer_id', auth()->id())
+            ->where('from_airport', strtoupper($request->from_airport))
+            ->where('to_airport', strtoupper($request->to_airport))
+            ->whereDate('flight_date', $request->flight_date)
+            ->where(function ($query) {
+                $query->whereNotIn('status', ['completed', 'cancelled'])
+                    ->orWhereNull('status');
+            })
+            ->first();
+
+        if ($existingFlight) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã có chuyến bay hoạt động cho tuyến này vào ngày này. Vui lòng hủy chuyến bay cũ trước khi đăng chuyến bay mới.',
+            ], 422);
+        }
+
         return DB::transaction(function () use ($request) {
             $flight = Flight::create([
                 'uuid'           => Str::uuid(),

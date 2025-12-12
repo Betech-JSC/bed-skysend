@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -8,7 +8,7 @@ import {
     ActivityIndicator,
     Alert,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
 import api from '@/api/api';
@@ -71,6 +71,13 @@ export default function RequestMatchesScreen() {
     useEffect(() => {
         fetchRequests();
     }, []);
+
+    // Tự động fetch lại data khi quay lại màn hình
+    useFocusEffect(
+        useCallback(() => {
+            fetchRequests();
+        }, [])
+    );
 
     const onRefresh = () => {
         setRefreshing(true);

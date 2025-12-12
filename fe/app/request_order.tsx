@@ -290,7 +290,9 @@ export default function RequestOrderScreen() {
                             </Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => router.push('/contract-template')}
+                        >
                             <Text className="text-sm font-bold text-secondary underline">
                                 Xem hợp đồng mẫu
                             </Text>

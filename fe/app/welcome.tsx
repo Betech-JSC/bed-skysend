@@ -32,15 +32,15 @@ export default function WelcomeScreen() {
 
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
             >
                 <View className="flex-1 justify-center px-6 py-8">
                     {/* Logo & Branding */}
                     <View className="items-center mb-12">
-                        <View className="h-24 w-24 items-center justify-center rounded-full bg-primary/10 mb-6">
-                            <MaterialIcons name="flight" size={48} color="#2563EB" />
+                        <View className="h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4">
+                            <Image source={require("../assets/icon.png")} className="w-16 h-16" />
                         </View>
                         <Text className="text-4xl font-bold text-primary mb-2">SkySend</Text>
                         <Text className="text-lg text-center text-text-secondary dark:text-gray-400 max-w-xs">

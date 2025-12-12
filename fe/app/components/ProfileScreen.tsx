@@ -10,7 +10,7 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser } from '@/reducers/userSlice';
 import { RootState } from '@/store';
@@ -371,20 +371,25 @@ export default function ProfileScreen() {
     };
 
     return (
-        <View className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Top App Bar */}
-            <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light dark:bg-background-dark px-4 py-4">
-                <Text className="absolute left-0 right-0 text-center text-xl font-bold text-text-primary dark:text-white">
-                    Tài khoản
-                </Text>
-                <View className="w-10" />
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Avatar + Info */}
-                <View className="items-center px-4 pt-8">
-                    {/* Avatar temporarily hidden */}
-                    {/* <View className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-xl">
+        <>
+            <Stack.Screen
+                options={{
+                    headerShown: true,
+                    title: 'Tài khoản',
+                    headerTitle: 'Tài khoản',
+                    headerTitleStyle: {
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        color: '#111318',
+                    },
+                }}
+            />
+            <View className="flex-1 bg-background-light dark:bg-background-dark">
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    {/* Avatar + Info */}
+                    <View className="items-center px-4 pt-8">
+                        {/* Avatar temporarily hidden */}
+                        {/* <View className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-xl">
                         <Image
                             source={{
                                 uri: getAvatarUri(),
@@ -395,151 +400,151 @@ export default function ProfileScreen() {
                         />
                     </View> */}
 
-                    <Text className="mt-4 text-2xl font-bold text-text-primary dark:text-white">
-                        {displayProfile.name}
-                    </Text>
-                    <Text className="mt-1 text-base text-text-secondary dark:text-slate-400">
-                        {displayProfile.phone}
-                    </Text>
-                    {displayProfile.email && (
-                        <Text className="mt-1 text-sm text-text-secondary dark:text-slate-400">
-                            {displayProfile.email}
+                        <Text className="mt-4 text-2xl font-bold text-text-primary dark:text-white">
+                            {displayProfile.name}
                         </Text>
-                    )}
-
-                    {/* KYC Status Badge - Tạm thời ẩn */}
-                    {/* {getKycStatusBadge()} */}
-                </View>
-
-                {/* Recent Activities Section */}
-                {recentActivities.length > 0 && (
-                    <View className="mt-6 px-4">
-                        <View className="mb-4 flex-row items-center justify-between">
-                            <Text className="text-lg font-bold text-text-primary dark:text-white">
-                                Hoạt động gần đây
+                        <Text className="mt-1 text-base text-text-secondary dark:text-slate-400">
+                            {displayProfile.phone}
+                        </Text>
+                        {displayProfile.email && (
+                            <Text className="mt-1 text-sm text-text-secondary dark:text-slate-400">
+                                {displayProfile.email}
                             </Text>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    if (isSender) {
-                                        router.push('/(tabs)/(sender)/list_orders');
-                                    } else {
-                                        router.push('/(tabs)/(customer)/list_orders_customer');
-                                    }
-                                }}>
-                                <Text className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                    Xem tất cả
+                        )}
+
+                        {/* KYC Status Badge - Tạm thời ẩn */}
+                        {/* {getKycStatusBadge()} */}
+                    </View>
+
+                    {/* Recent Activities Section */}
+                    {recentActivities.length > 0 && (
+                        <View className="mt-6 px-4">
+                            <View className="mb-4 flex-row items-center justify-between">
+                                <Text className="text-lg font-bold text-text-primary dark:text-white">
+                                    Hoạt động gần đây
                                 </Text>
-                            </TouchableOpacity>
-                        </View>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        if (isSender) {
+                                            router.push('/(tabs)/(sender)/list_orders');
+                                        } else {
+                                            router.push('/(tabs)/(customer)/list_orders_customer');
+                                        }
+                                    }}>
+                                    <Text className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                        Xem tất cả
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
 
-                        <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
-                            {recentActivities.slice(0, 5).map((activity, index) => {
-                                const getIcon = () => {
-                                    switch (activity.type) {
-                                        case 'order':
-                                            return { name: 'local-shipping' as const, color: '#2563EB' };
-                                        case 'request':
-                                            return { name: 'send' as const, color: '#F59E0B' };
-                                        case 'transaction':
-                                            const isDeposit = activity.amount && activity.amount > 0;
-                                            return { name: 'account-balance-wallet' as const, color: isDeposit ? '#10B981' : '#EF4444' };
-                                        default:
-                                            return { name: 'info' as const, color: '#6B7280' };
-                                    }
-                                };
-
-                                const getStatusBadge = () => {
-                                    if (!activity.status) return null;
-
-                                    const statusColors: { [key: string]: string } = {
-                                        'pending': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-                                        'completed': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                                        'cancelled': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-                                        'accepted': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                            <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
+                                {recentActivities.slice(0, 5).map((activity, index) => {
+                                    const getIcon = () => {
+                                        switch (activity.type) {
+                                            case 'order':
+                                                return { name: 'local-shipping' as const, color: '#2563EB' };
+                                            case 'request':
+                                                return { name: 'send' as const, color: '#F59E0B' };
+                                            case 'transaction':
+                                                const isDeposit = activity.amount && activity.amount > 0;
+                                                return { name: 'account-balance-wallet' as const, color: isDeposit ? '#10B981' : '#EF4444' };
+                                            default:
+                                                return { name: 'info' as const, color: '#6B7280' };
+                                        }
                                     };
 
-                                    const statusLabels: { [key: string]: string } = {
-                                        'pending': 'Đang chờ',
-                                        'completed': 'Hoàn thành',
-                                        'cancelled': 'Đã hủy',
-                                        'accepted': 'Đã chấp nhận',
+                                    const getStatusBadge = () => {
+                                        if (!activity.status) return null;
+
+                                        const statusColors: { [key: string]: string } = {
+                                            'pending': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+                                            'completed': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                                            'cancelled': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                                            'accepted': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                        };
+
+                                        const statusLabels: { [key: string]: string } = {
+                                            'pending': 'Đang chờ',
+                                            'completed': 'Hoàn thành',
+                                            'cancelled': 'Đã hủy',
+                                            'accepted': 'Đã chấp nhận',
+                                        };
+
+                                        const colorClass = statusColors[activity.status] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+                                        const label = statusLabels[activity.status] || activity.status;
+
+                                        return (
+                                            <View className={`rounded-full px-2 py-0.5 ${colorClass}`}>
+                                                <Text className="text-xs font-medium">{label}</Text>
+                                            </View>
+                                        );
                                     };
 
-                                    const colorClass = statusColors[activity.status] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
-                                    const label = statusLabels[activity.status] || activity.status;
+                                    const icon = getIcon();
 
                                     return (
-                                        <View className={`rounded-full px-2 py-0.5 ${colorClass}`}>
-                                            <Text className="text-xs font-medium">{label}</Text>
-                                        </View>
-                                    );
-                                };
-
-                                const icon = getIcon();
-
-                                return (
-                                    <TouchableOpacity
-                                        key={`${activity.type}-${activity.id}-${index}`}
-                                        onPress={() => {
-                                            if (activity.navigateTo) {
-                                                router.push(activity.navigateTo as any);
-                                            }
-                                        }}
-                                        className={`flex-row items-center justify-between px-4 py-3 ${index < recentActivities.slice(0, 5).length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''}`}>
-                                        <View className="flex-row items-center flex-1 gap-3">
-                                            <View
-                                                className="h-10 w-10 items-center justify-center rounded-lg"
-                                                style={{ backgroundColor: `${icon.color}20` }}>
-                                                <MaterialIcons name={icon.name} size={20} color={icon.color} />
-                                            </View>
-                                            <View className="flex-1">
-                                                <Text className="text-sm font-semibold text-text-primary dark:text-white" numberOfLines={1}>
-                                                    {activity.title}
-                                                </Text>
-                                                <Text className="mt-0.5 text-xs text-gray-600 dark:text-gray-400" numberOfLines={1}>
-                                                    {activity.description}
-                                                </Text>
-                                                <View className="mt-1 flex-row items-center gap-2">
-                                                    <Text className="text-xs text-gray-500 dark:text-gray-500">
-                                                        {formatRelativeTime(activity.createdAt)}
+                                        <TouchableOpacity
+                                            key={`${activity.type}-${activity.id}-${index}`}
+                                            onPress={() => {
+                                                if (activity.navigateTo) {
+                                                    router.push(activity.navigateTo as any);
+                                                }
+                                            }}
+                                            className={`flex-row items-center justify-between px-4 py-3 ${index < recentActivities.slice(0, 5).length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''}`}>
+                                            <View className="flex-row items-center flex-1 gap-3">
+                                                <View
+                                                    className="h-10 w-10 items-center justify-center rounded-lg"
+                                                    style={{ backgroundColor: `${icon.color}20` }}>
+                                                    <MaterialIcons name={icon.name} size={20} color={icon.color} />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Text className="text-sm font-semibold text-text-primary dark:text-white" numberOfLines={1}>
+                                                        {activity.title}
                                                     </Text>
-                                                    {activity.amount && (
-                                                        <Text className="text-xs font-medium text-green-600 dark:text-green-400">
-                                                            {formatVND(activity.amount)} VNĐ
+                                                    <Text className="mt-0.5 text-xs text-gray-600 dark:text-gray-400" numberOfLines={1}>
+                                                        {activity.description}
+                                                    </Text>
+                                                    <View className="mt-1 flex-row items-center gap-2">
+                                                        <Text className="text-xs text-gray-500 dark:text-gray-500">
+                                                            {formatRelativeTime(activity.createdAt)}
                                                         </Text>
-                                                    )}
+                                                        {activity.amount && (
+                                                            <Text className="text-xs font-medium text-green-600 dark:text-green-400">
+                                                                {formatVND(activity.amount)} VNĐ
+                                                            </Text>
+                                                        )}
+                                                    </View>
                                                 </View>
                                             </View>
-                                        </View>
-                                        <View className="ml-2 items-end">
-                                            {getStatusBadge()}
-                                            {activity.navigateTo && (
-                                                <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" style={{ marginTop: 4 }} />
-                                            )}
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                                            <View className="ml-2 items-end">
+                                                {getStatusBadge()}
+                                                {activity.navigateTo && (
+                                                    <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" style={{ marginTop: 4 }} />
+                                                )}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                         </View>
-                    </View>
-                )}
+                    )}
 
-                {/* Empty state for activities */}
-                {!loadingActivities && recentActivities.length === 0 && (
-                    <View className="mt-6 px-4">
-                        <View className="items-center rounded-xl bg-white py-8 dark:bg-slate-800/50">
-                            <MaterialIcons name="history" size={48} color="#9CA3AF" />
-                            <Text className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                                Chưa có hoạt động nào
-                            </Text>
+                    {/* Empty state for activities */}
+                    {!loadingActivities && recentActivities.length === 0 && (
+                        <View className="mt-6 px-4">
+                            <View className="items-center rounded-xl bg-white py-8 dark:bg-slate-800/50">
+                                <MaterialIcons name="history" size={48} color="#9CA3AF" />
+                                <Text className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                                    Chưa có hoạt động nào
+                                </Text>
+                            </View>
                         </View>
-                    </View>
-                )}
+                    )}
 
-                {/* Menu List */}
-                <View className="mt-8 px-4 gap-y-4 pb-20">
-                    {/* Group 1 - Tạm thời ẩn chức năng xác thực */}
-                    {/* <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
+                    {/* Menu List */}
+                    <View className="mt-8 px-4 gap-y-4 pb-20">
+                        {/* Group 1 - Tạm thời ẩn chức năng xác thực */}
+                        {/* <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
                         <TouchableOpacity
                             onPress={() => router.push('/update_profile')}
                             className="flex-row items-center justify-between px-4 py-4"
@@ -559,56 +564,57 @@ export default function ProfileScreen() {
 
                     </View> */}
 
-                    {/* Group 2 */}
-                    <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
-                        <TouchableOpacity
-                            onPress={() => router.push('/terms-and-conditions')}
-                            className="flex-row items-center justify-between px-4 py-4"
-                        >
-                            <View className="flex-row items-center gap-4">
-                                <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                    <MaterialIcons name="gavel" size={24} color="#2563EB" />
+                        {/* Group 2 */}
+                        <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-slate-800/50">
+                            <TouchableOpacity
+                                onPress={() => router.push('/terms-and-conditions')}
+                                className="flex-row items-center justify-between px-4 py-4"
+                            >
+                                <View className="flex-row items-center gap-4">
+                                    <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                                        <MaterialIcons name="gavel" size={24} color="#2563EB" />
+                                    </View>
+                                    <Text className="text-base font-medium text-text-primary dark:text-white">
+                                        Hợp đồng & Điều khoản
+                                    </Text>
                                 </View>
-                                <Text className="text-base font-medium text-text-primary dark:text-white">
-                                    Hợp đồng & Điều khoản
-                                </Text>
-                            </View>
-                            <MaterialIcons name="chevron-right" size={24} color="#6B7280" />
-                        </TouchableOpacity>
+                                <MaterialIcons name="chevron-right" size={24} color="#6B7280" />
+                            </TouchableOpacity>
 
-                        <View className="mx-4 border-t border-slate-100 dark:border-slate-700" />
+                            <View className="mx-4 border-t border-slate-100 dark:border-slate-700" />
 
-                        <TouchableOpacity
-                            onPress={() => router.push('/support-center')}
-                            className="flex-row items-center justify-between px-4 py-4"
-                        >
-                            <View className="flex-row items-center gap-4">
-                                <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                    <Ionicons name="help-circle" size={24} color="#2563EB" />
+                            <TouchableOpacity
+                                onPress={() => router.push('/support-center')}
+                                className="flex-row items-center justify-between px-4 py-4"
+                            >
+                                <View className="flex-row items-center gap-4">
+                                    <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                                        <Ionicons name="help-circle" size={24} color="#2563EB" />
+                                    </View>
+                                    <Text className="text-base font-medium text-text-primary dark:text-white">
+                                        Trung tâm hỗ trợ
+                                    </Text>
                                 </View>
-                                <Text className="text-base font-medium text-text-primary dark:text-white">
-                                    Trung tâm hỗ trợ
-                                </Text>
+                                <MaterialIcons name="chevron-right" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Đăng xuất */}
+                        <TouchableOpacity
+                            onPress={logout}
+                            className="flex-row items-center gap-4 rounded-xl bg-white px-4 py-4 shadow-sm dark:bg-slate-800/50"
+                        >
+                            <View className="h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/20">
+                                <MaterialIcons name="logout" size={24} color="#DC2626" />
                             </View>
-                            <MaterialIcons name="chevron-right" size={24} color="#6B7280" />
+                            <Text className="text-base font-medium text-red-600 dark:text-red-400">
+                                Đăng xuất
+                            </Text>
                         </TouchableOpacity>
                     </View>
-
-                    {/* Đăng xuất */}
-                    <TouchableOpacity
-                        onPress={logout}
-                        className="flex-row items-center gap-4 rounded-xl bg-white px-4 py-4 shadow-sm dark:bg-slate-800/50"
-                    >
-                        <View className="h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/20">
-                            <MaterialIcons name="logout" size={24} color="#DC2626" />
-                        </View>
-                        <Text className="text-base font-medium text-red-600 dark:text-red-400">
-                            Đăng xuất
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </View>
+                </ScrollView>
+            </View>
+        </>
     );
 }
 

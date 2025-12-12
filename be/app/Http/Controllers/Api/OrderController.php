@@ -187,6 +187,12 @@ class OrderController extends Controller
                     $this->walletService->refundEscrowToSender($order);
                     $order->refundEscrow();
                 }
+
+                // Giảm booked_weight của flight khi hủy đơn
+                if ($order->flight) {
+                    $weight = $order->metadata['weight'] ?? 0.5; // Lấy weight từ metadata hoặc default 0.5kg
+                    $order->flight->decreaseBookedWeight($weight);
+                }
             }
 
             // Nếu hoàn tất → giải ngân tiền thưởng cho Customer
@@ -200,6 +206,11 @@ class OrderController extends Controller
             // Push notification vào Firebase cho đối tác
             $this->pushOrderStatusNotification($order, $newStatus, $user);
 
+            // Cập nhật flight status dựa trên tất cả orders
+            if ($order->flight) {
+                $this->updateFlightStatusBasedOnOrders($order->flight);
+            }
+
             // Load lại dữ liệu đẹp cho frontend
             $order->load(['sender', 'customer', 'flight']);
 
@@ -209,6 +220,29 @@ class OrderController extends Controller
                 'data'    => $order
             ], 200);
         });
+    }
+
+    /**
+     * Cập nhật flight status dựa trên trạng thái của tất cả orders
+     */
+    private function updateFlightStatusBasedOnOrders(\App\Models\Flight $flight): void
+    {
+        // Load tất cả orders của flight
+        $orders = $flight->orders;
+
+        // Nếu không có order nào, không cần cập nhật
+        if ($orders->isEmpty()) {
+            return;
+        }
+
+        // Kiểm tra nếu tất cả orders đã completed
+        $allCompleted = $orders->every(function ($order) {
+            return $order->status === 'completed';
+        });
+
+        if ($allCompleted && $flight->status !== 'completed') {
+            $flight->update(['status' => 'completed']);
+        }
     }
 
     // Thông báo thân thiện theo từng trạng thái

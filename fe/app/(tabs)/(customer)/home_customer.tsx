@@ -215,6 +215,18 @@ export default function HomeScreen() {
                 Alert.alert('Cảnh báo', 'Đăng thành công nhưng không lấy được ID chuyến bay');
             }
 
+            // Reset form về trạng thái ban đầu
+            setDepartureAirport({ value: '', label: '' });
+            setArrivalAirport({ value: '', label: '' });
+            setFlightDateTime(getTodayDateString());
+            setAirline('');
+            setFlightCode('');
+            setAllowedWeight('');
+
+            // Refetch dữ liệu mới nhất
+            fetchPriorityRequests();
+            fetchMatchingRequests();
+
             // CHUYỂN SANG MÀN HÌNH THÀNH CÔNG + TRUYỀN ĐÚNG ID
             router.replace({
                 pathname: "/flight_posted_success",

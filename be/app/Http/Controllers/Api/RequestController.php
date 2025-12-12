@@ -24,6 +24,116 @@ class RequestController extends Controller
         private FirebaseService $firebaseService,
         private RequestMatchingService $matchingService
     ) {}
+
+    /**
+     * Validate sender request với các rules:
+     * - Kiểm tra trạng thái user (bị khóa/vi phạm)
+     * - Kiểm tra số lượng request active tối đa
+     * - Kiểm tra trùng đơn hàng (cùng lộ trình + thời gian)
+     * - Kiểm tra hạn chế thời gian (không quá khứ, không quá 6 tháng)
+     * - Kiểm tra hạn chế khối lượng
+     */
+    private function validateSenderRequest(array $data, ?int $flightId = null): array
+    {
+        $userId = auth()->id();
+        $user = auth()->user();
+
+        // 1. Kiểm tra trạng thái user (bị khóa/vi phạm)
+        if ($user->trashed()) {
+            return [
+                'success' => false,
+                'message' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ SkySend để được hỗ trợ.',
+            ];
+        }
+
+        // 2. Kiểm tra số lượng request active tối đa (5 request)
+        $activeRequestCount = ModelsRequest::where('sender_id', $userId)
+            ->whereNotIn('status', ['completed', 'cancelled', 'declined', 'expired'])
+            ->count();
+
+        if ($activeRequestCount >= 5) {
+            return [
+                'success' => false,
+                'message' => 'Bạn đã đạt giới hạn 5 request đang hoạt động. Vui lòng hủy hoặc hoàn thành các request hiện tại trước khi tạo mới.',
+            ];
+        }
+
+        // 3. Kiểm tra trùng đơn hàng (cùng sender + lộ trình + thời gian)
+        $fromAirport = $data['from_airport'] ?? null;
+        $toAirport = $data['to_airport'] ?? null;
+        $desiredDate = $data['desired_date'] ?? null;
+        $flightDate = null;
+
+        // Nếu có flight_id, lấy flight_date từ flight
+        if ($flightId) {
+            $flight = Flight::find($flightId);
+            if ($flight) {
+                $fromAirport = $flight->from_airport;
+                $toAirport = $flight->to_airport;
+                $flightDate = $flight->flight_date;
+            }
+        }
+
+        if ($fromAirport && $toAirport && ($desiredDate || $flightDate)) {
+            $dateToCheck = $desiredDate ?? $flightDate;
+
+            $duplicateQuery = ModelsRequest::where('sender_id', $userId)
+                ->where('from_airport', strtoupper($fromAirport))
+                ->where('to_airport', strtoupper($toAirport))
+                ->whereNotIn('status', ['completed', 'cancelled', 'declined', 'expired']);
+
+            if ($flightId) {
+                // Nếu có flight_id, kiểm tra theo flight_id (chính xác hơn)
+                $duplicateQuery->where('flight_id', $flightId);
+            } else {
+                // Nếu không có flight_id, kiểm tra theo desired_date
+                $duplicateQuery->whereDate('desired_date', $dateToCheck);
+            }
+
+            $duplicateRequest = $duplicateQuery->first();
+
+            if ($duplicateRequest) {
+                return [
+                    'success' => false,
+                    'message' => 'Bạn đã có request đang hoạt động cho tuyến này vào ngày này. Vui lòng hủy request cũ trước khi tạo mới.',
+                ];
+            }
+        }
+
+        // 4. Kiểm tra hạn chế thời gian (không quá khứ, không quá 6 tháng)
+        $dateToValidate = $desiredDate ?? $flightDate;
+        if ($dateToValidate) {
+            $date = \Carbon\Carbon::parse($dateToValidate);
+            $sixMonthsLater = now()->addMonths(6);
+
+            if ($date->isPast() && !$date->isToday()) {
+                return [
+                    'success' => false,
+                    'message' => 'Không thể tạo request cho ngày trong quá khứ. Vui lòng chọn ngày hiện tại hoặc tương lai.',
+                ];
+            }
+
+            if ($date->isAfter($sixMonthsLater)) {
+                return [
+                    'success' => false,
+                    'message' => 'Không thể tạo request cho ngày quá xa (hơn 6 tháng). Vui lòng chọn ngày trong vòng 6 tháng tới.',
+                ];
+            }
+        }
+
+        // 5. Kiểm tra hạn chế khối lượng (nếu có desired_weight)
+        if (isset($data['desired_weight'])) {
+            $maxWeight = 50; // kg
+            if ($data['desired_weight'] > $maxWeight) {
+                return [
+                    'success' => false,
+                    'message' => "Khối lượng vượt quá giới hạn ({$maxWeight}kg). Vui lòng liên hệ SkySend để được hỗ trợ cho các gói hàng lớn hơn.",
+                ];
+            }
+        }
+
+        return ['success' => true];
+    }
     public function index(Request $request)
     {
         $query = ModelsRequest::with(['flight'])
@@ -42,6 +152,12 @@ class RequestController extends Controller
     public function store(StorePrivateRequestRequest $request) // Laravel tự validate
     {
         $validated = $request->validated(); // Đã được validate và an toàn
+
+        // Validate sender request
+        $validation = $this->validateSenderRequest($validated, $validated['flight_id']);
+        if (!$validation['success']) {
+            return response()->json($validation, 422);
+        }
 
         $flight = Flight::with('customer')->findOrFail($validated['flight_id']);
 
@@ -102,6 +218,12 @@ class RequestController extends Controller
             'item_description'    => 'required|string|max:1000',
             'note'                => 'nullable|string|max:500',
         ]);
+
+        // Validate sender request
+        $validation = $this->validateSenderRequest($validated, $validated['flight_id']);
+        if (!$validation['success']) {
+            return response()->json($validation, 422);
+        }
 
         // Get flight with customer info
         $flight = Flight::with('customer')->findOrFail($validated['flight_id']);
@@ -300,6 +422,9 @@ class RequestController extends Controller
                     $request->flight->customer_id
                 );
 
+                // Lấy weight từ request (desired_weight hoặc default 0.5kg)
+                $weight = $request->desired_weight ?? 0.5;
+
                 // Tạo đơn hàng
                 $order = Order::create([
                     'uuid'                   => Order::generateOrderUuid(),
@@ -323,8 +448,15 @@ class RequestController extends Controller
                     'metadata'               => [
                         'time_slot'  => $request->time_slot,
                         'item_value' => $request->item_value,
+                        'weight'     => $weight, // Lưu weight để có thể truy xuất sau này
                     ],
                 ]);
+
+                // Cập nhật booked_weight của flight
+                $flight = $request->flight;
+                if ($flight) {
+                    $flight->increaseBookedWeight($weight);
+                }
 
                 // Cập nhật chat room trên Firebase với order_id thực tế
                 if ($chatId) {
@@ -903,6 +1035,12 @@ class RequestController extends Controller
             'note' => 'nullable|string|max:500',
             'priority_level' => 'nullable|string|in:normal,priority,urgent',
         ]);
+
+        // Validate sender request
+        $validation = $this->validateSenderRequest($validated);
+        if (!$validation['success']) {
+            return response()->json($validation, 422);
+        }
 
         $priorityLevel = $validated['priority_level'] ?? 'normal';
         $expiresInHours = match ($priorityLevel) {
