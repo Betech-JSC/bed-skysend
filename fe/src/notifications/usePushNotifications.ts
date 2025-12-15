@@ -28,16 +28,34 @@ export function usePushNotifications() {
                         }
                         break;
                     case 'order_status':
-                        if (data?.order_uuid) {
-                            router.push({
-                                pathname: '/orders_details',
-                                params: { orderId: data.order_uuid },
-                            });
-                        } else if (data?.order_id) {
-                            router.push({
-                                pathname: '/orders_details',
-                                params: { orderId: String(data.order_id) },
-                            });
+                        // Navigate to order detail
+                        try {
+                            let orderIdentifier: string | null = null;
+
+                            // Ưu tiên: order_uuid > order_id > tracking_code
+                            if (data?.order_uuid) {
+                                orderIdentifier = String(data.order_uuid);
+                            } else if (data?.order_id) {
+                                orderIdentifier = String(data.order_id);
+                            } else if (data?.tracking_code) {
+                                orderIdentifier = String(data.tracking_code);
+                            }
+
+                            if (orderIdentifier) {
+                                // Thử dùng pathname với params (format chuẩn của expo-router)
+                                router.push({
+                                    pathname: '/orders_details',
+                                    params: { orderId: orderIdentifier },
+                                });
+                            } else {
+                                // Nếu không có order identifier, navigate đến danh sách đơn hàng
+                                console.warn('Notification order_status missing order identifier, navigating to orders list');
+                                router.push('/(tabs)/(sender)/list_orders');
+                            }
+                        } catch (navError) {
+                            console.error('Error navigating to order detail:', navError);
+                            // Fallback: navigate to orders list
+                            router.push('/(tabs)/(sender)/list_orders');
                         }
                         break;
                     case 'flight_status':

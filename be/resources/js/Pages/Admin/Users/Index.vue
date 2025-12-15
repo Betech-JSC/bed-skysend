@@ -88,6 +88,14 @@
               >
                 Khóa
               </a-button>
+              <a-button
+                type="link"
+                danger
+                size="small"
+                @click="handleDelete(record.id, record.name)"
+              >
+                Xóa vĩnh viễn
+              </a-button>
               <Link :href="`/admin/users/${record.id}`">
                 <a-button type="link" size="small">Chi tiết</a-button>
               </Link>
@@ -102,7 +110,7 @@
 <script setup>
 import { ref } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import AdminLayoutAntd from '@/Shared/AdminLayoutAntd.vue'
 
 defineOptions({
@@ -195,6 +203,27 @@ const handleUnban = (id) => {
     },
     onError: () => {
       message.error('Không thể mở khóa tài khoản')
+    },
+  })
+}
+
+const handleDelete = (id, userName) => {
+  Modal.confirm({
+    title: 'Xác nhận xóa vĩnh viễn',
+    content: `Bạn có chắc chắn muốn xóa vĩnh viễn người dùng "${userName}"? Hành động này không thể hoàn tác.`,
+    okText: 'Xóa vĩnh viễn',
+    okType: 'danger',
+    cancelText: 'Hủy',
+    onOk: () => {
+      router.delete(`/admin/users/${id}`, {
+        onSuccess: () => {
+          message.success('Đã xóa người dùng vĩnh viễn thành công')
+        },
+        onError: (errors) => {
+          const errorMessage = errors?.message || errors?.error || 'Không thể xóa người dùng'
+          message.error(errorMessage)
+        },
+      })
     },
   })
 }

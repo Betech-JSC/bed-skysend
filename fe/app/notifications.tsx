@@ -766,7 +766,7 @@ export default function NotificationScreen() {
                                                     {/* Unread dot */}
                                                     {hasUnread && (
                                                         <View className="w-2 h-2 rounded-full bg-primary" />
-                                                    )}
+                                                )}
                                                 </View>
                                             </View>
                                             <Text

@@ -9,22 +9,22 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function AppContent() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        headerStyle: {
-          backgroundColor: '#FFFFFF',
-        },
-        headerTintColor: '#1F2937',
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: 18,
-        },
-        headerBackTitleVisible: false,
-        headerShadowVisible: true,
-        animation: 'slide_from_right',
-      }}
-    />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+          },
+          headerTintColor: '#1F2937',
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 18,
+          },
+          headerBackTitleVisible: false,
+          headerShadowVisible: true,
+          animation: 'slide_from_right',
+        }}
+      />
   );
 }
 
@@ -33,8 +33,8 @@ function NotificationHandler() {
 
   React.useEffect(() => {
     // Configure notification handler với dynamic check
-    Notifications.setNotificationHandler({
-      handleNotification: async (notification) => {
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
         const data = notification.request.content.data || {};
         const type = data.type;
         const chatId = data.chat_id;
@@ -59,13 +59,13 @@ function NotificationHandler() {
         }
 
         // Các trường hợp khác: hiển thị bình thường
-        return {
+      return {
           shouldShowAlert: true,   // Hiển thị banner khi foreground
           shouldPlaySound: true,   // Phát âm thanh khi foreground
           shouldSetBadge: true,    // Cập nhật badge
-        };
-      },
-    });
+      };
+    },
+  });
   }, [pathname]);
 
   return null;
