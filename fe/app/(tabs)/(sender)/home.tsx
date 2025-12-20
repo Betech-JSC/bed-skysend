@@ -323,35 +323,48 @@ const Home = () => {
           />
         </View>
 
-        {/* Quick Actions */}
-        <View className="mb-4 flex-row gap-3">
+        {/* Quick Actions - Tạo Request lên trên, rõ ràng hơn */}
+        <View className="mb-4 gap-3">
+          {/* Nút Tạo Request - Nổi bật, màu primary */}
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/(sender)/create_request_waiting')}
-            className="flex-1 rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20"
+            className="rounded-xl bg-primary p-5 shadow-lg active:opacity-90"
           >
-            <View className="mb-2 flex-row items-center gap-2">
-              <MaterialIcons name="add-circle" size={24} color="#2563EB" />
-              <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                Tạo request chờ match
-              </Text>
+            <View className="flex-row items-center gap-3 mb-2">
+              <View className="h-12 w-12 items-center justify-center rounded-full bg-white/20">
+                <MaterialIcons name="add-circle" size={28} color="#FFFFFF" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-bold text-white">
+                  Tạo Request
+                </Text>
+                <Text className="text-xs text-white/90 mt-0.5">
+                  Tạo yêu cầu gửi hàng mới
+                </Text>
+              </View>
+              <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
             </View>
-            <Text className="text-xs text-blue-500 dark:text-blue-300">
-              Hệ thống tự động tìm customer phù hợp
-            </Text>
           </TouchableOpacity>
+
+          {/* Nút Xem Match - Màu secondary, khác biệt rõ ràng */}
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/(sender)/request_matches')}
-            className="flex-1 rounded-xl bg-green-50 p-4 dark:bg-green-900/20"
+            className="rounded-xl bg-gray-100 p-4 border-2 border-gray-200 dark:bg-gray-800 dark:border-gray-700 active:opacity-90"
           >
-            <View className="mb-2 flex-row items-center gap-2">
-              <MaterialIcons name="people" size={24} color="#10B981" />
-              <Text className="text-sm font-semibold text-green-600 dark:text-green-400">
-                Xem matches
-              </Text>
+            <View className="flex-row items-center gap-3">
+              <View className="h-10 w-10 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
+                <MaterialIcons name="people" size={20} color="#6B7280" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Xem Matches
+                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Danh sách requests đang chờ match
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color="#6B7280" />
             </View>
-            <Text className="text-xs text-green-500 dark:text-green-300">
-              Danh sách requests đang chờ
-            </Text>
           </TouchableOpacity>
         </View>
 

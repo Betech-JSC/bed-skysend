@@ -26,7 +26,9 @@ class Order extends Model
         'status',
         'confirmed_at',
         'picked_up_at',
+        'pickup_photos',
         'delivered_at',
+        'delivery_photos',
         'completed_at',
         'cancelled_at',
         'cancelled_by',
@@ -66,6 +68,8 @@ class Order extends Model
         'insured'             => 'boolean',
         'compensation_claimed' => 'boolean',
         'metadata'            => 'array',
+        'pickup_photos'       => 'array',
+        'delivery_photos'     => 'array',
         'sender_rating'       => 'integer',
         'customer_rating'     => 'integer',
     ];

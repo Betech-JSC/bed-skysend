@@ -203,7 +203,7 @@ export default function RequestMatchesScreen() {
 
             <View className="flex-1 bg-background-light dark:bg-background-dark">
                 <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
-                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
                     <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
                         Requests đang chờ match
                     </Text>

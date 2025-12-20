@@ -38,6 +38,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('orders/store', [OrderController::class, 'store']);
     Route::get('orders/{id}/show', [OrderController::class, 'show']);
     Route::put('orders/{id}/status', [OrderController::class, 'updateStatus']);
+    Route::post('orders/{id}/upload-pickup-photo', [OrderController::class, 'uploadPickupPhoto']);
+    Route::post('orders/{id}/upload-delivery-photo', [OrderController::class, 'uploadDeliveryPhoto']);
+    Route::delete('orders/{id}/delete-pickup-photo', [OrderController::class, 'deletePickupPhoto']);
+    Route::delete('orders/{id}/delete-delivery-photo', [OrderController::class, 'deleteDeliveryPhoto']);
 
 
     // Notifications
@@ -48,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('user/profile', [UserController::class, 'show']);
     Route::put('user/profile', [UserController::class, 'update']);
+    Route::post('user/switch-role', [UserController::class, 'switchRole']);
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
 

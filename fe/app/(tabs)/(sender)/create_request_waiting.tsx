@@ -240,7 +240,7 @@ export default function CreateRequestWaitingScreen() {
             />
             <SafeAreaView className="flex-1 bg-white dark:bg-background-dark">
                 <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
-                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
                 </View>
 
                 <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>

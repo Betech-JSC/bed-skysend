@@ -81,6 +81,76 @@
         </a-card>
       </a-col>
     </a-row>
+
+    <!-- Ảnh đơn hàng -->
+    <a-row :gutter="16" style="margin-top: 16px;">
+      <!-- Ảnh giao hàng (Pickup) -->
+      <a-col :xs="24" :md="12" v-if="getPickupPhotos().length > 0">
+        <a-card :title="`Ảnh giao hàng (${getPickupPhotos().length})`" :bordered="false">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <div
+              v-for="(photo, index) in getPickupPhotos()"
+              :key="index"
+              style="position: relative; cursor: pointer;"
+              @click="openImagePreview(getImageUrl(photo.url || photo))"
+            >
+              <img
+                :src="getImageUrl(photo.url || photo)"
+                :alt="`Ảnh giao hàng ${index + 1}`"
+                style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid #d9d9d9;"
+              />
+              <div style="margin-top: 4px; color: #8c8c8c; font-size: 11px; text-align: center;">
+                {{ formatDateTime(photo.uploaded_at || order.picked_up_at) }}
+              </div>
+            </div>
+          </div>
+        </a-card>
+      </a-col>
+
+      <!-- Ảnh nhận hàng (Delivery) -->
+      <a-col :xs="24" :md="12" v-if="getDeliveryPhotos().length > 0">
+        <a-card :title="`Ảnh nhận hàng (${getDeliveryPhotos().length})`" :bordered="false">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <div
+              v-for="(photo, index) in getDeliveryPhotos()"
+              :key="index"
+              style="position: relative; cursor: pointer;"
+              @click="openImagePreview(getImageUrl(photo.url || photo))"
+            >
+              <img
+                :src="getImageUrl(photo.url || photo)"
+                :alt="`Ảnh nhận hàng ${index + 1}`"
+                style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid #d9d9d9;"
+              />
+              <div style="margin-top: 4px; color: #8c8c8c; font-size: 11px; text-align: center;">
+                {{ formatDateTime(photo.uploaded_at || order.delivered_at) }}
+              </div>
+            </div>
+          </div>
+        </a-card>
+      </a-col>
+
+      <!-- Thông báo nếu chưa có ảnh -->
+      <a-col :xs="24" v-if="getPickupPhotos().length === 0 && getDeliveryPhotos().length === 0">
+        <a-card :bordered="false">
+          <a-empty description="Chưa có ảnh được upload" />
+        </a-card>
+      </a-col>
+    </a-row>
+
+    <!-- Modal preview ảnh -->
+    <a-modal
+      v-model:open="imagePreviewVisible"
+      :footer="null"
+      :width="800"
+      centered
+    >
+      <img
+        :src="previewImageUrl"
+        alt="Preview"
+        style="width: 100%; height: auto;"
+      />
+    </a-modal>
   </div>
 </template>
 
@@ -88,6 +158,7 @@
 import { Head } from '@inertiajs/vue3'
 import { useForm } from '@inertiajs/vue3'
 import { message } from 'ant-design-vue'
+import { ref } from 'vue'
 import AdminLayoutAntd from '@/Shared/AdminLayoutAntd.vue'
 
 defineOptions({
@@ -103,6 +174,9 @@ const statusForm = useForm({
   note: '',
   cancel_reason: '',
 })
+
+const imagePreviewVisible = ref(false)
+const previewImageUrl = ref('')
 
 const handleUpdateStatus = () => {
   statusForm.put(`/admin/orders/${props.order.id}/status`, {
@@ -120,5 +194,56 @@ const formatCurrency = (value) => {
     style: 'currency',
     currency: 'VND',
   }).format(value || 0)
+}
+
+const formatDateTime = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleString('vi-VN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const getImageUrl = (photoPath) => {
+  if (!photoPath) return ''
+  // Nếu đã là full URL thì trả về luôn
+  if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+    return photoPath
+  }
+  // Nếu là relative path, thêm base URL
+  if (photoPath.startsWith('/storage/')) {
+    return `${window.location.origin}${photoPath}`
+  }
+  // Nếu là path không có /storage/, thêm vào
+  return `${window.location.origin}/storage/${photoPath.replace(/^\/+/, '')}`
+}
+
+const openImagePreview = (imageUrl) => {
+  previewImageUrl.value = imageUrl
+  imagePreviewVisible.value = true
+}
+
+const getPickupPhotos = () => {
+  if (order.pickup_photos && Array.isArray(order.pickup_photos)) {
+    return order.pickup_photos
+  }
+  if (order.pickup_photo) {
+    return [{ url: order.pickup_photo }]
+  }
+  return []
+}
+
+const getDeliveryPhotos = () => {
+  if (order.delivery_photos && Array.isArray(order.delivery_photos)) {
+    return order.delivery_photos
+  }
+  if (order.delivery_photo) {
+    return [{ url: order.delivery_photo }]
+  }
+  return []
 }
 </script>

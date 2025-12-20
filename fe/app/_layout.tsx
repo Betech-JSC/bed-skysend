@@ -71,14 +71,18 @@ function NotificationHandler() {
   return null;
 }
 
-export default function Layout() {
+function PushNotificationsWrapper() {
   usePushNotifications();
+  return null;
+}
 
+export default function Layout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <NotificationHandler />
+          <PushNotificationsWrapper />
           <AppContent />
         </PersistGate>
       </Provider>

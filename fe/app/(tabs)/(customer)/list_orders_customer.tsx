@@ -24,6 +24,8 @@ import {
     mapToBackendStatus,
     ORDER_FILTER_TABS,
 } from "../../utils/orderStatusUtils";
+import { getAirportWithCity } from "../../utils/airportUtils";
+import { formatDateOnly } from "../../utils/dateUtils";
 
 function ListOrdersCustomer() {
     const router = useRouter();
@@ -83,6 +85,28 @@ function ListOrdersCustomer() {
                     return normalized === orderStatusFilter;
                 });
             }
+
+            // Sort by priority: urgent > priority > normal/null, then by created_at desc
+            ordersData.sort((a: any, b: any) => {
+                const priorityOrder: { [key: string]: number } = {
+                    'urgent': 1,
+                    'priority': 2,
+                    'normal': 3,
+                };
+                const aPriority = a.request?.priority_level || 'normal';
+                const bPriority = b.request?.priority_level || 'normal';
+                const aPriorityOrder = priorityOrder[aPriority] || 3;
+                const bPriorityOrder = priorityOrder[bPriority] || 3;
+                
+                if (aPriorityOrder !== bPriorityOrder) {
+                    return aPriorityOrder - bPriorityOrder;
+                }
+                
+                // Secondary sort by created_at desc
+                const aDate = new Date(a.created_at || 0).getTime();
+                const bDate = new Date(b.created_at || 0).getTime();
+                return bDate - aDate;
+            });
 
             setOrders(ordersData);
         } catch (err: any) {
@@ -258,7 +282,7 @@ function ListOrdersCustomer() {
                                     <View className="px-4 py-6">
                                         <View className="flex-row items-center justify-between">
                                             <Text className="text-xl font-bold text-text-primary dark:text-white">
-                                                {flight.from_airport || 'Chưa có'}
+                                                {getAirportWithCity(flight.from_airport)}
                                             </Text>
                                             <View className="flex-row items-center gap-2">
                                                 <View className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
@@ -266,22 +290,14 @@ function ListOrdersCustomer() {
                                                 <View className="w-4 h-px bg-gray-300 dark:bg-gray-600" />
                                             </View>
                                             <Text className="text-xl font-bold text-text-primary dark:text-white">
-                                                {flight.to_airport || 'Chưa có'}
+                                                {getAirportWithCity(flight.to_airport)}
                                             </Text>
                                         </View>
-                                        {flight.flight_date && (() => {
-                                            try {
-                                                const date = new Date(flight.flight_date);
-                                                if (!isNaN(date.getTime())) {
-                                                    return (
-                                                        <Text className="text-center text-sm text-gray-500 mt-2">
-                                                            {date.toLocaleDateString('vi-VN')}
-                                                        </Text>
-                                                    );
-                                                }
-                                            } catch { }
-                                            return null;
-                                        })()}
+                                        {flight.flight_date && (
+                                            <Text className="text-center text-sm text-gray-500 mt-2">
+                                                {formatDateOnly(flight.flight_date)}
+                                            </Text>
+                                        )}
                                     </View>
 
                                     <View className="h-px bg-gray-100 dark:bg-gray-700" />

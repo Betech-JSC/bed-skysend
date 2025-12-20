@@ -633,7 +633,7 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
         <SafeAreaView style={{ flex: 1 }}>
             <View className="px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
                 <View className="flex-row items-center justify-between mb-2">
-                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
                     <View className="flex-1 ml-3">
                         <View className="flex-row items-center">
                             <Text className="text-lg font-bold text-text-primary dark:text-white">

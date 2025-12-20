@@ -14,6 +14,7 @@ import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import api from '@/api/api';
+import { formatDateTime } from '../../utils/dateUtils';
 
 interface Flight {
   id: number;
@@ -38,7 +39,20 @@ interface Flight {
   status: string;
   available_weight: number;
   is_fully_booked: boolean;
-  requests: any[];
+  requests: Array<{
+    id: number;
+    status: string;
+    order?: {
+      id: number;
+      uuid: string;
+      status: string;
+    };
+    order_id?: number;
+    sender?: {
+      id: number;
+      name: string;
+    };
+  }>;
 }
 
 type FlightStatusFilter = '' | 'pending' | 'verified' | 'completed' | 'cancelled';
@@ -124,11 +138,7 @@ export default function FlightHistoryScreen() {
     }, [])
   );
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Không xác định';
-    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} - ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
-  };
+  // formatDateTime is now imported from utils/dateUtils
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<
@@ -137,26 +147,26 @@ export default function FlightHistoryScreen() {
     > = {
       pending: {
         icon: 'hourglass-empty',
-        color: '#D97706',
-        bgColor: 'bg-yellow-100 dark:bg-yellow-900/50',
+        color: '#F59E0B',
+        bgColor: 'bg-amber-100 dark:bg-amber-900/30',
         label: 'Chờ xác thực',
       },
       verified: {
         icon: 'schedule',
         color: '#2563EB',
-        bgColor: 'bg-blue-100 dark:bg-blue-900/50',
+        bgColor: 'bg-primary/10',
         label: 'Sắp tới',
       },
       completed: {
         icon: 'task-alt',
-        color: '#6B7280',
-        bgColor: 'bg-gray-100 dark:bg-gray-700',
+        color: '#10B981',
+        bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
         label: 'Đã hoàn thành',
       },
       cancelled: {
         icon: 'cancel',
-        color: '#DC2626',
-        bgColor: 'bg-red-100 dark:bg-red-900/50',
+        color: '#EF4444',
+        bgColor: 'bg-red-100 dark:bg-red-900/30',
         label: 'Đã hủy',
       },
     };
@@ -165,9 +175,9 @@ export default function FlightHistoryScreen() {
 
     return (
       <View className={`flex-row items-center gap-1.5 rounded-lg px-2.5 py-1 ${config.bgColor}`}>
-        <MaterialIcons name={config.icon as any} size={16} color={config.color} />
+        <MaterialIcons name={config.icon as any} size={14} color={config.color} />
         <Text
-          className="text-xs font-medium"
+          className="text-xs font-semibold"
           style={{ color: config.color }}
         >
           {config.label}
@@ -314,7 +324,7 @@ export default function FlightHistoryScreen() {
               </Text>
             </View>
           ) : (
-            <View className="gap-4 py-2">
+            <View className="gap-3 py-3">
               {filteredFlights.map((flight) => (
                 <TouchableOpacity
                   key={flight.id}
@@ -324,13 +334,14 @@ export default function FlightHistoryScreen() {
                       params: { id: flight.id.toString() },
                     })
                   }
+                  activeOpacity={0.7}
                 >
-                  <View className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                  <View className="rounded-2xl bg-white p-5 shadow-md dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
                     {/* Header */}
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-row items-center gap-3">
+                    <View className="flex-row items-center justify-between mb-4">
+                      <View className="flex-row items-center gap-3 flex-1">
                         <View
-                          className={`h-10 w-10 items-center justify-center rounded-full ${getFlightIconBg(
+                          className={`h-12 w-12 items-center justify-center rounded-xl ${getFlightIconBg(
                             flight.status
                           )}`}
                         >
@@ -340,20 +351,20 @@ export default function FlightHistoryScreen() {
                             color="#2563EB"
                           />
                         </View>
-                        <View>
-                          <Text className="text-base font-bold text-text-primary-light dark:text-text-primary-dark">
+                        <View className="flex-1">
+                          <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
                             {flight.flight_number}
                           </Text>
-                          <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                          <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-0.5">
                             {formatDateTime(flight.flight_date)}
                           </Text>
                         </View>
                       </View>
 
-                      <View className="flex-row items-center gap-2">
+                      <View className="flex-row items-center gap-2 flex-shrink-0">
                         {flight.requests && flight.requests.length > 0 && (
-                          <View className="rounded-full bg-secondary px-3 py-2">
-                            <Text className="text-sm font-bold text-white">
+                          <View className="rounded-lg bg-primary/10 px-2.5 py-1.5">
+                            <Text className="text-xs font-semibold text-primary">
                               {flight.requests.length} Yêu cầu
                             </Text>
                           </View>
@@ -364,11 +375,10 @@ export default function FlightHistoryScreen() {
                             req.status === 'accepted' || req.status === 'confirmed'
                           ) || [];
                           if (confirmedRequests.length > 0) {
-                            const firstSender = confirmedRequests[0]?.sender || {};
                             return (
-                              <View className="rounded-full bg-green-500 px-3 py-2 flex-row items-center gap-1.5">
-                                <MaterialIcons name="check-circle" size={14} color="white" />
-                                <Text className="text-xs font-bold text-white">
+                              <View className="rounded-lg bg-emerald-500/10 px-2.5 py-1.5 flex-row items-center gap-1">
+                                <MaterialIcons name="check-circle" size={14} color="#10B981" />
+                                <Text className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                                   Đã xác nhận
                                 </Text>
                               </View>
@@ -380,70 +390,96 @@ export default function FlightHistoryScreen() {
                     </View>
 
                     {/* Route */}
-                    <View className="my-4 flex-row items-center justify-between">
-                      <View className="items-center">
-                        <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                    <View className="mb-4 flex-row items-center justify-between px-2">
+                      <View className="items-center flex-1">
+                        <Text className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">
                           {flight.from_airport}
                         </Text>
-                        {/* <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                        {flight.from_airport}
-                      </Text> */}
                       </View>
 
-                      <View className="flex-1 flex-row items-center px-4">
-                        <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
-                        <MaterialIcons name="flight" size={24} color="#9CA3AF" />
-                        <View className="flex-1 border-t border-gray-300 dark:border-gray-600" />
+                      <View className="flex-1 flex-row items-center px-3">
+                        <View className="flex-1 border-t-2 border-primary/30 dark:border-primary/50" />
+                        <View className="mx-2">
+                          <MaterialIcons name="flight" size={20} color="#2563EB" />
+                        </View>
+                        <View className="flex-1 border-t-2 border-primary/30 dark:border-primary/50" />
                       </View>
 
-                      <View className="items-center">
-                        <Text className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                      <View className="items-center flex-1">
+                        <Text className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">
                           {flight.to_airport}
                         </Text>
-                        {/* <Text className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                        {flight.to_airport}
-                      </Text> */}
                       </View>
                     </View>
 
                     {/* Badges */}
-                    <View className="flex-row gap-2 flex-wrap">
+                    <View className="flex-row gap-2 flex-wrap mb-3">
                       {getStatusBadge(flight.status)}
                       {flight.verified && flight.status !== 'completed' && flight.status !== 'cancelled' && (
-                        <View className="flex-row items-center gap-1.5 rounded-lg bg-green-100 px-2.5 py-1 dark:bg-green-900/50">
-                          <MaterialIcons name="verified" size={16} color="#16A34A" />
-                          <Text className="text-xs font-medium text-green-800 dark:text-green-200">
+                        <View className="flex-row items-center gap-1.5 rounded-lg bg-emerald-100 px-2.5 py-1 dark:bg-emerald-900/30">
+                          <MaterialIcons name="verified" size={14} color="#10B981" />
+                          <Text className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                             Đã xác thực
                           </Text>
                         </View>
                       )}
-                      {flight.available_weight !== undefined && (
-                        <View className="flex-row items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1 dark:bg-blue-900/50">
-                          <MaterialIcons name="scale" size={16} color="#2563EB" />
-                          <Text className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                      {flight.available_weight !== undefined && flight.available_weight > 0 && (
+                        <View className="flex-row items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1">
+                          <MaterialIcons name="scale" size={14} color="#2563EB" />
+                          <Text className="text-xs font-semibold text-primary">
                             Còn {flight.available_weight}kg
                           </Text>
                         </View>
                       )}
-                      {/* Badge thông báo chuyến đã confirm với sender */}
-                      {(() => {
-                        const confirmedRequests = flight.requests?.filter((req: any) =>
-                          req.status === 'accepted' || req.status === 'confirmed'
-                        ) || [];
-                        if (confirmedRequests.length > 0) {
-                          const firstSender = confirmedRequests[0]?.sender || {};
-                          return (
-                            <View className="flex-row items-center gap-1.5 rounded-lg bg-emerald-100 px-2.5 py-1 dark:bg-emerald-900/50">
-                              <MaterialIcons name="check-circle" size={16} color="#10B981" />
-                              <Text className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                                Đã xác nhận với {firstSender.name || 'người gửi'}
-                              </Text>
-                            </View>
-                          );
-                        }
-                        return null;
-                      })()}
                     </View>
+
+                    {/* Thông báo chuyến bay hoàn thành và nút xem đơn hàng */}
+                    {(() => {
+                      // Tìm request đã được accepted/confirmed
+                      const confirmedRequest = flight.requests?.find((req: any) =>
+                        (req.status === 'accepted' || req.status === 'confirmed') && (req.order || req.order_id)
+                      );
+
+                      if (confirmedRequest) {
+                        const order = confirmedRequest.order;
+                        const orderId = order?.id || order?.uuid || confirmedRequest.order_id;
+                        const orderStatus = order?.status;
+
+                        // Kiểm tra nếu order đã completed
+                        const isOrderCompleted = orderStatus === 'completed';
+
+                        return (
+                          <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                            {isOrderCompleted && (
+                              <View className="mb-2.5 flex-row items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 shadow-sm">
+                                <MaterialIcons name="check-circle" size={18} color="#FFFFFF" />
+                                <Text className="text-sm font-bold text-white">
+                                  ✓ Chuyến bay hoàn thành
+                                </Text>
+                              </View>
+                            )}
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation(); // Ngăn chặn navigate đến detail flight
+                                if (orderId) {
+                                  router.push({
+                                    pathname: '/orders_details',
+                                    params: { orderId: String(orderId) }
+                                  });
+                                }
+                              }}
+                              className="flex-row items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 shadow-sm active:opacity-90"
+                            >
+                              <MaterialIcons name="local-shipping" size={18} color="#FFFFFF" />
+                              <Text className="text-sm font-bold text-white">
+                                Xem đơn hàng
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      }
+                      return null;
+                    })()}
                   </View>
                 </TouchableOpacity>
               ))}
@@ -455,10 +491,10 @@ export default function FlightHistoryScreen() {
         <View className="absolute bottom-6 right-6">
           <TouchableOpacity
             onPress={() => router.push('/home_customer')}
-            className="flex-row items-center gap-2 rounded-full bg-primary px-6 py-4 shadow-lg"
+            className="flex-row items-center gap-2 rounded-full bg-primary px-5 py-3.5 shadow-xl active:opacity-90"
           >
-            <MaterialIcons name="add" size={28} color="white" />
-            <Text className="text-base font-semibold text-white">Thêm chuyến bay</Text>
+            <MaterialIcons name="add" size={24} color="white" />
+            <Text className="text-base font-bold text-white">Thêm chuyến bay</Text>
           </TouchableOpacity>
         </View>
       </View>

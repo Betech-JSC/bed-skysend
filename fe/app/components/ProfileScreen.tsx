@@ -123,10 +123,45 @@ export default function ProfileScreen() {
         }
     };
 
-    const toggleRole = () => {
+    const toggleRole = async () => {
         if (!user) return;
         const newRole = isSender ? 'customer' : 'sender';
-        dispatch(setUser({ ...user, role: newRole }));
+        
+        try {
+            const response = await api.post('user/switch-role', { role: newRole });
+            
+            if (response.data?.success) {
+                // Cập nhật Redux store với role mới
+                dispatch(setUser({ ...user, role: newRole }));
+                
+                // Cập nhật profile state
+                if (profile) {
+                    setProfile({ ...profile, role: newRole });
+                }
+                
+                Alert.alert(
+                    'Thành công',
+                    `Đã chuyển sang vai trò ${newRole === 'sender' ? 'Người gửi' : 'Hành khách'}`,
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => {
+                                // Reload app để cập nhật navigation tabs
+                                router.replace(newRole === 'sender' ? '/(tabs)/(sender)/home' : '/(tabs)/(customer)/home_customer');
+                            }
+                        }
+                    ]
+                );
+            } else {
+                throw new Error(response.data?.message || 'Chuyển đổi vai trò thất bại');
+            }
+        } catch (error: any) {
+            console.error('Error switching role:', error);
+            Alert.alert(
+                'Lỗi',
+                error.response?.data?.message || error.message || 'Không thể chuyển đổi vai trò. Vui lòng thử lại.'
+            );
+        }
     };
 
     const logout = async () => {
@@ -411,6 +446,49 @@ export default function ProfileScreen() {
                                 {displayProfile.email}
                             </Text>
                         )}
+
+                        {/* Role Switch Button */}
+                        <View className="mt-4 w-full max-w-xs">
+                            <TouchableOpacity
+                                onPress={toggleRole}
+                                className="flex-row items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 shadow-lg active:opacity-90"
+                            >
+                                <MaterialIcons 
+                                    name={isSender ? "person" : "local-shipping"} 
+                                    size={20} 
+                                    color="#FFFFFF" 
+                                />
+                                <Text className="text-base font-bold text-white">
+                                    Chuyển sang {isSender ? 'Hành khách' : 'Người gửi'}
+                                </Text>
+                                <MaterialIcons name="swap-horiz" size={20} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <View className="mt-2 flex-row items-center justify-center gap-2">
+                                <View className={`flex-row items-center gap-1 rounded-full px-3 py-1 ${isSender ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                    <MaterialIcons 
+                                        name="local-shipping" 
+                                        size={14} 
+                                        color={isSender ? "#2563EB" : "#6B7280"} 
+                                    />
+                                    <Text className={`text-xs font-semibold ${isSender ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        Người gửi
+                                    </Text>
+                                </View>
+                                <View className={`flex-row items-center gap-1 rounded-full px-3 py-1 ${!isSender ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                    <MaterialIcons 
+                                        name="person" 
+                                        size={14} 
+                                        color={!isSender ? "#10B981" : "#6B7280"} 
+                                    />
+                                    <Text className={`text-xs font-semibold ${!isSender ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        Hành khách
+                                    </Text>
+                                </View>
+                            </View>
+                            <Text className="mt-2 text-center text-xs text-text-secondary dark:text-gray-400">
+                                Vai trò hiện tại: <Text className="font-bold">{isSender ? 'Người gửi' : 'Hành khách'}</Text>
+                            </Text>
+                        </View>
 
                         {/* KYC Status Badge - Tạm thời ẩn */}
                         {/* {getKycStatusBadge()} */}

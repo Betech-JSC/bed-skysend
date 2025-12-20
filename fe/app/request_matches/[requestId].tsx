@@ -13,6 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
 import api from '@/api/api';
 import BackButton from 'app/components/BackButton';
+import { formatDateOnly } from '../utils/dateUtils';
 
 interface Match {
     id: number;
@@ -211,7 +212,7 @@ export default function RequestMatchesDetailScreen() {
                 <View className="mb-1 flex-row items-center">
                     <MaterialIcons name="event" size={16} color={isDark ? '#9ca3af' : '#6b7280'} />
                     <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(item.flight.flight_date).toLocaleDateString('vi-VN')}
+                        {formatDateOnly(item.flight.flight_date)}
                     </Text>
                 </View>
                 <View className="flex-row items-center">
@@ -281,7 +282,7 @@ export default function RequestMatchesDetailScreen() {
                             Request: {requestInfo.from_airport} → {requestInfo.to_airport}
                         </Text>
                         <Text className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                            Ngày: {requestInfo.desired_date ? new Date(requestInfo.desired_date).toLocaleDateString('vi-VN') : 'N/A'}
+                            Ngày: {requestInfo.desired_date ? formatDateOnly(requestInfo.desired_date) : 'N/A'}
                         </Text>
                     </View>
                 )}
@@ -335,7 +336,7 @@ export default function RequestMatchesDetailScreen() {
                             <View className="flex-row items-center">
                                 <MaterialIcons name="event" size={16} color={isDark ? '#9ca3af' : '#6b7280'} />
                                 <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                                    {new Date(sentRequest.flight.flight_date).toLocaleDateString('vi-VN')}
+                                    {formatDateOnly(sentRequest.flight.flight_date)}
                                 </Text>
                             </View>
                         </View>

@@ -16,6 +16,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { Stack, useRouter } from "expo-router";
+import { usePathname } from "expo-router";
 import { Swipeable } from "react-native-gesture-handler";
 import { getDatabase, ref, onValue, off, set, remove } from "firebase/database";
 import { app } from "@/firebaseConfig";
@@ -146,43 +147,71 @@ function getGroupTitleAndBody(group: NotificationGroup): { title: string; body: 
         }
         case "order_status": {
             const latest = notifications[0];
+            const orderId = latest.data?.order_uuid || latest.data?.tracking_code || latest.data?.order_id;
+            const orderIdentifier = orderId ? `#${orderId}` : '';
+            
             if (count === 1) {
+                // Show specific order info if available
+                if (orderIdentifier) {
+                    return {
+                        title: `Đơn hàng ${orderIdentifier}`,
+                        body: latest.body || latest.title
+                    };
+                }
                 return {
                     title: latest.title,
                     body: latest.body
                 };
             }
             return {
-                title: `Cập nhật đơn hàng (${count} thông báo)`,
-                body: latest.body
+                title: `Đơn hàng ${orderIdentifier || ''} - ${count} cập nhật`.trim(),
+                body: latest.body || `Có ${count} thông báo mới về đơn hàng này`
             };
         }
         case "flight_status": {
             const latest = notifications[0];
+            const flightNumber = latest.data?.flight_number;
+            const flightInfo = flightNumber ? `Chuyến bay ${flightNumber}` : 'Chuyến bay';
+            
             if (count === 1) {
+                if (flightNumber) {
+                    return {
+                        title: `${flightInfo}`,
+                        body: latest.body || latest.title
+                    };
+                }
                 return {
                     title: latest.title,
                     body: latest.body
                 };
             }
             return {
-                title: `Cập nhật chuyến bay (${count} thông báo)`,
-                body: latest.body
+                title: `${flightInfo} - ${count} cập nhật`,
+                body: latest.body || `Có ${count} thông báo mới về chuyến bay này`
             };
         }
         case "new_request":
         case "request_accepted":
         case "request_declined": {
             const latest = notifications[0];
+            const requestId = latest.data?.request_uuid || latest.data?.request_id;
+            const requestIdentifier = requestId ? `#${requestId}` : '';
+            
             if (count === 1) {
+                if (requestIdentifier) {
+                    return {
+                        title: `Yêu cầu ${requestIdentifier}`,
+                        body: latest.body || latest.title
+                    };
+                }
                 return {
                     title: latest.title,
                     body: latest.body
                 };
             }
             return {
-                title: `Yêu cầu: ${count} cập nhật`,
-                body: latest.body
+                title: `Yêu cầu ${requestIdentifier || ''} - ${count} cập nhật`.trim(),
+                body: latest.body || `Có ${count} thông báo mới về yêu cầu này`
             };
         }
         case "request_match": {
@@ -262,6 +291,7 @@ function groupNotifications(notifications: Notification[]): NotificationGroup[] 
 export default function NotificationScreen() {
     const user = useSelector((state: RootState) => state.user);
     const router = useRouter();
+    const pathname = usePathname();
     const [filter, setFilter] = useState<"all" | "unread">("all");
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
@@ -337,75 +367,137 @@ export default function NotificationScreen() {
                 switch (type) {
                     case "chat_message":
                         if (data?.chat_id) {
-                            router.push(`/chat/${data.chat_id}`);
+                            const chatId = String(data.chat_id).trim();
+                            if (chatId) {
+                                console.log('Navigating to chat:', chatId);
+                                router.push(`/chat/${chatId}`);
+                            } else {
+                                console.warn('Invalid chat_id in notification');
+                            }
+                        } else {
+                            console.warn('Notification chat_message missing chat_id');
                         }
                         break;
                     case "order_status":
                         // Navigate to order detail
-                        if (data?.order_uuid) {
-                            router.push({
-                                pathname: '/orders_details',
-                                params: { orderId: data.order_uuid }
-                            });
-                        } else if (data?.order_id) {
-                            router.push({
-                                pathname: '/orders_details',
-                                params: { orderId: String(data.order_id) }
-                            });
-                        } else if (data?.tracking_code) {
-                            // Fallback: try to find order by tracking code
-                            router.push({
-                                pathname: '/orders_details',
-                                params: { orderId: data.tracking_code }
-                            });
+                        try {
+                            let orderIdentifier: string | null = null;
+
+                            // Ưu tiên: order_uuid > order_id > tracking_code
+                            if (data?.order_uuid) {
+                                orderIdentifier = String(data.order_uuid).trim();
+                            } else if (data?.order_id) {
+                                orderIdentifier = String(data.order_id).trim();
+                            } else if (data?.tracking_code) {
+                                orderIdentifier = String(data.tracking_code).trim();
+                            }
+
+                            if (orderIdentifier) {
+                                console.log('Navigating to order detail:', orderIdentifier);
+                                router.push({
+                                    pathname: '/orders_details',
+                                    params: { orderId: orderIdentifier }
+                                });
+                            } else {
+                                console.warn('Notification order_status missing order identifier, navigating to orders list');
+                                // Điều hướng dựa trên role của user
+                                const ordersListPath = user?.role === 'customer' 
+                                    ? '/(tabs)/(customer)/list_orders_customer'
+                                    : '/(tabs)/(sender)/list_orders';
+                                router.push(ordersListPath);
+                            }
+                        } catch (navError) {
+                            console.error('Error navigating to order detail:', navError);
+                            // Fallback dựa trên role
+                            const ordersListPath = user?.role === 'customer' 
+                                ? '/(tabs)/(customer)/list_orders_customer'
+                                : '/(tabs)/(sender)/list_orders';
+                            router.push(ordersListPath);
                         }
                         break;
                     case "flight_status":
                         // Navigate to flight detail or flight list
-                        if (data?.flight_uuid) {
-                            router.push({
-                                pathname: '/flights/[id]',
-                                params: { id: data.flight_uuid }
-                            });
-                        } else if (data?.flight_id) {
-                            router.push({
-                                pathname: '/flights/[id]',
-                                params: { id: String(data.flight_id) }
-                            });
-                        } else {
-                            // Fallback: navigate to flights list
-                            router.push('/flights');
+                        try {
+                            if (data?.flight_uuid) {
+                                const flightId = String(data.flight_uuid).trim();
+                                console.log('Navigating to flight detail:', flightId);
+                                router.push({
+                                    pathname: '/detail-flight-customer',
+                                    params: { id: flightId }
+                                });
+                            } else if (data?.flight_id) {
+                                const flightId = String(data.flight_id).trim();
+                                console.log('Navigating to flight detail:', flightId);
+                                router.push({
+                                    pathname: '/detail-flight-customer',
+                                    params: { id: flightId }
+                                });
+                            } else {
+                                console.warn('Notification flight_status missing flight identifier, navigating to flights list');
+                                router.push('/(tabs)/(customer)/flight-history-customer');
+                            }
+                        } catch (navError) {
+                            console.error('Error navigating to flight detail:', navError);
+                            router.push('/(tabs)/(customer)/flight-history-customer');
                         }
                         break;
                     case "new_request":
                     case "request_accepted":
                     case "request_declined":
                         // Navigate to request detail
-                        if (data?.request_uuid) {
-                            router.push({
-                                pathname: '/private-requests/[id]',
-                                params: { id: data.request_uuid }
-                            });
-                        } else if (data?.request_id) {
-                            router.push({
-                                pathname: '/private-requests/[id]',
-                                params: { id: String(data.request_id) }
-                            });
+                        try {
+                            if (data?.request_uuid) {
+                                const requestId = String(data.request_uuid).trim();
+                                console.log('Navigating to request detail:', requestId);
+                                router.push({
+                                    pathname: '/private-requests/[id]',
+                                    params: { id: requestId }
+                                });
+                            } else if (data?.request_id) {
+                                const requestId = String(data.request_id).trim();
+                                console.log('Navigating to request detail:', requestId);
+                                router.push({
+                                    pathname: '/private-requests/[id]',
+                                    params: { id: requestId }
+                                });
+                            } else {
+                                console.warn('Notification request missing request identifier');
+                            }
+                        } catch (navError) {
+                            console.error('Error navigating to request detail:', navError);
                         }
                         break;
                     case "request_match":
                         // Navigate to matches detail
-                        if (data?.request_id) {
-                            router.push(`/request_matches/${data.request_id}`);
+                        try {
+                            if (data?.request_id) {
+                                const requestId = String(data.request_id).trim();
+                                console.log('Navigating to request matches:', requestId);
+                                router.push(`/request_matches/${requestId}`);
+                            } else {
+                                console.warn('Notification request_match missing request_id');
+                            }
+                        } catch (navError) {
+                            console.error('Error navigating to request matches:', navError);
                         }
                         break;
                     case "system":
-                        // System notifications don't navigate
+                        // System notifications navigate to notifications screen
+                        console.log('Navigating to notifications screen');
+                        router.push('/notifications');
                         break;
+                    default:
+                        console.warn('Unknown notification type:', type);
+                        router.push('/notifications');
                 }
             } catch (error) {
                 console.error("Navigation error:", error);
-                // Không hiển thị lỗi cho user, chỉ log
+                // Fallback to notifications screen
+                try {
+                    router.push('/notifications');
+                } catch (fallbackError) {
+                    console.error('Failed to navigate to notifications screen:', fallbackError);
+                }
             }
         },
         [router]
@@ -633,7 +725,7 @@ export default function NotificationScreen() {
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
                 {/* Top App Bar - Compact */}
                 <View className="flex-row items-center justify-between px-4 pt-3 pb-2 bg-background-light/80 dark:bg-background-dark/80">
-                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
                     <Text className="flex-1 text-center text-base font-bold text-text-primary-light dark:text-text-primary-dark -ml-10">
                         Thông báo
                     </Text>

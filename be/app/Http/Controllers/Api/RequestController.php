@@ -136,8 +136,26 @@ class RequestController extends Controller
     }
     public function index(Request $request)
     {
+        $user = auth()->user();
+
+        // Chỉ lấy requests khi user ở role sender
+        // Khi user ở role customer, họ không nên thấy requests của chính họ
+        if ($user->role === 'customer') {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'data' => [],
+                    'current_page' => 1,
+                    'total' => 0,
+                    'per_page' => 20,
+                    'last_page' => 1,
+                ],
+                'message' => 'Bạn đang ở vai trò hành khách. Vui lòng chuyển sang vai trò người gửi để xem các yêu cầu của bạn.'
+            ]);
+        }
+
         $query = ModelsRequest::with(['flight'])
-            ->where('sender_id', auth()->id());
+            ->where('sender_id', $user->id);
 
         // Filter theo status nếu có
         if ($request->filled('status')) {
@@ -151,6 +169,16 @@ class RequestController extends Controller
 
     public function store(StorePrivateRequestRequest $request) // Laravel tự validate
     {
+        $user = auth()->user();
+
+        // Chỉ cho phép tạo request khi user ở role sender
+        if ($user->role === 'customer') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò hành khách. Vui lòng chuyển sang vai trò người gửi để tạo yêu cầu.'
+            ], 403);
+        }
+
         $validated = $request->validated(); // Đã được validate và an toàn
 
         // Validate sender request
@@ -160,6 +188,14 @@ class RequestController extends Controller
         }
 
         $flight = Flight::with('customer')->findOrFail($validated['flight_id']);
+
+        // Không cho phép gửi request cho chính chuyến bay của mình
+        if ($flight->customer_id === $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không thể gửi yêu cầu cho chính chuyến bay của mình.'
+            ], 403);
+        }
 
         if (($flight->max_weight - $flight->booked_weight) < 0.5) {
             return response()->json([
@@ -582,14 +618,24 @@ class RequestController extends Controller
 
     public function matchingForCustomer(Request $request)
     {
-        $customerId = $request->user()->id;
+        $user = $request->user();
+        $customerId = $user->id;
         $perPage = (int) min($request->query('per_page', 15), 50);
+
+        // Chỉ cho phép xem khi user ở role customer
+        if ($user->role === 'sender') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò người gửi. Vui lòng chuyển sang vai trò hành khách để xem các yêu cầu.'
+            ], 403);
+        }
 
         $builder = ModelsRequest::with([
             'sender',
             'flight',
         ])
             ->whereHas('flight', fn($q) => $q->where('customer_id', $customerId))
+            ->where('sender_id', '!=', $customerId) // Loại trừ requests của chính user khi họ là sender
             ->active();
 
         if ($request->filled('priority_level') && in_array($request->priority_level, ['normal', 'priority', 'urgent'])) {
@@ -628,6 +674,14 @@ class RequestController extends Controller
     {
         $user = auth()->user();
 
+        // Chỉ cho phép xem khi user ở role customer
+        if ($user->role === 'sender') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò người gửi. Vui lòng chuyển sang vai trò hành khách để xem các yêu cầu.'
+            ], 403);
+        }
+
         $flight = Flight::findOrFail($flightId);
 
         // Chỉ customer của flight mới được xem requests
@@ -641,12 +695,15 @@ class RequestController extends Controller
         $requests = ModelsRequest::with([
             'sender',
             'flight',
+            'order', // Include order if request is accepted/confirmed
         ])
             ->where('flight_id', $flightId)
-            ->where('status', 'pending')
+            ->where('sender_id', '!=', $user->id) // Loại trừ requests của chính user khi họ là sender
+            // Lấy tất cả requests với mọi trạng thái, không chỉ pending
+            ->orderByRaw("FIELD(status, 'pending', 'accepted', 'confirmed', 'declined', 'expired', 'cancelled')")
             ->orderByRaw("FIELD(priority_level, 'urgent','priority','normal')")
             ->orderByDesc('reward')
-            ->orderBy('expires_at')
+            ->orderByDesc('created_at')
             ->get();
 
         $requests->transform(fn($req) => $this->transformCustomerRequest($req, $user->id));
@@ -671,6 +728,8 @@ class RequestController extends Controller
             'reward'          => (float) $request->reward,
             'expires_at'      => $request->expires_at?->toIso8601String(),
             'time_slot'       => $request->time_slot,
+            'created_at'      => $request->created_at?->toIso8601String(),
+            'responded_at'    => $request->responded_at?->toIso8601String(),
             'can_accept'      => $request->can_accept && $flight?->customer_id === $customerId,
             'is_expired'      => $request->is_expired,
             'item'            => [
@@ -694,6 +753,15 @@ class RequestController extends Controller
                 'flight_number'    => $flight->flight_number,
                 'available_weight' => $flight->available_weight,
             ] : null,
+            'order'           => $request->order ? [
+                'id'        => $request->order->id,
+                'uuid'      => $request->order->uuid,
+                'status'    => $request->order->status,
+            ] : null,
+            'order_id'        => $request->order_id,
+            'note'            => $request->note,
+            'item_description' => $request->item_description,
+            'item_value'      => (float) $request->item_value,
         ];
     }
 
@@ -713,6 +781,21 @@ class RequestController extends Controller
         // === KIỂM TRA QUYỀN TRUY CẬP ===
         $isSender   = $request->sender_id === $user->id;
         $isCustomer = $request->flight && $request->flight->customer_id === $user->id;
+
+        // Kiểm tra role: sender chỉ xem được requests của chính họ, customer chỉ xem được requests trên flights của họ
+        if ($isSender && $user->role !== 'sender') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò hành khách. Vui lòng chuyển sang vai trò người gửi để xem yêu cầu này.'
+            ], 403);
+        }
+
+        if ($isCustomer && $user->role !== 'customer') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò người gửi. Vui lòng chuyển sang vai trò hành khách để xem yêu cầu này.'
+            ], 403);
+        }
 
         if (!$isSender && !$isCustomer) {
             return response()->json([
@@ -933,6 +1016,14 @@ class RequestController extends Controller
     {
         $user = auth()->user();
 
+        // Chỉ cho phép cập nhật khi user ở role sender
+        if ($user->role === 'customer') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò hành khách. Vui lòng chuyển sang vai trò người gửi để cập nhật yêu cầu.'
+            ], 403);
+        }
+
         $existingRequest = ModelsRequest::where('id', $id)
             ->where('sender_id', $user->id)
             ->firstOrFail();
@@ -1022,6 +1113,16 @@ class RequestController extends Controller
      */
     public function createWaiting(Request $request)
     {
+        $user = auth()->user();
+
+        // Chỉ cho phép tạo request chờ match khi user ở role sender
+        if ($user->role === 'customer') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò hành khách. Vui lòng chuyển sang vai trò người gửi để tạo yêu cầu.'
+            ], 403);
+        }
+
         $validated = $request->validate([
             'from_airport' => 'required|string|size:3',
             'to_airport' => 'required|string|size:3',

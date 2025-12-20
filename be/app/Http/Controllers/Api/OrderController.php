@@ -11,6 +11,7 @@ use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
@@ -30,14 +31,24 @@ class OrderController extends Controller
 
         $query = Order::with([
             'flight',
+            'request',
         ])
+            ->leftJoin('requests', 'orders.request_id', '=', 'requests.id')
             ->when($user->role === 'sender' || !$user->role, function ($q) use ($user) {
-                $q->where('sender_id', $user->id);
+                $q->where('orders.sender_id', $user->id);
             })
             ->when($user->role === 'customer', function ($q) use ($user) {
-                $q->where('customer_id', $user->id);
+                $q->where('orders.customer_id', $user->id);
             })
-            ->orderByDesc('created_at');
+            ->select('orders.*')
+            ->orderByRaw("
+                CASE 
+                    WHEN requests.priority_level = 'urgent' THEN 1
+                    WHEN requests.priority_level = 'priority' THEN 2
+                    ELSE 3
+                END
+            ")
+            ->orderByDesc('orders.created_at');
 
         // Bộ lọc theo trạng thái (từ query string)
         if ($status = $request->query('status')) {
@@ -316,6 +327,258 @@ class OrderController extends Controller
             }
         } catch (\Exception $e) {
             \Log::error('Error pushing order status notification: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload ảnh khi sender giao hàng (pickup)
+     */
+    public function uploadPickupPhoto(Request $request, string $id)
+    {
+        $user = auth()->user();
+
+        $order = Order::findOrFail($id);
+
+        // Kiểm tra quyền: chỉ sender mới được upload pickup photo
+        if ($order->sender_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện hành động này'
+            ], 403);
+        }
+
+        // Validate status: chỉ upload khi order ở trạng thái confirmed hoặc pending
+        if (!in_array($order->status, ['confirmed', 'pending'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ có thể chụp ảnh khi đơn hàng ở trạng thái đã xác nhận'
+            ], 400);
+        }
+
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // Max 5MB
+        ]);
+
+        try {
+            // Upload ảnh
+            $photo = $request->file('photo');
+            $filename = 'orders/' . $order->uuid . '/pickup_' . time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
+            $path = $photo->storeAs('public', $filename);
+            $photoUrl = Storage::url($filename);
+
+            // Lấy danh sách ảnh hiện tại hoặc tạo mới
+            $photos = $order->pickup_photos ?? [];
+            $photos[] = [
+                'url' => $photoUrl,
+                'uploaded_at' => now()->toIso8601String(),
+            ];
+
+            // Cập nhật order
+            $order->pickup_photos = $photos;
+
+            // Chỉ cập nhật status và picked_up_at lần đầu tiên
+            if (!$order->picked_up_at) {
+                $order->status = 'picked_up';
+                $order->picked_up_at = now();
+
+                // Gửi thông báo cho customer
+                $this->pushOrderStatusNotification($order, 'picked_up', $user);
+            }
+
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã chụp ảnh giao hàng thành công',
+                'data' => [
+                    'pickup_photos' => $photos,
+                    'status' => $order->status
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error uploading pickup photo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể upload ảnh. Vui lòng thử lại.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload ảnh khi customer nhận hàng (delivery)
+     */
+    public function uploadDeliveryPhoto(Request $request, string $id)
+    {
+        $user = auth()->user();
+
+        $order = Order::findOrFail($id);
+
+        // Kiểm tra quyền: chỉ customer mới được upload delivery photo
+        if ($order->customer_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện hành động này'
+            ], 403);
+        }
+
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // Max 5MB
+        ]);
+
+        try {
+            // Upload ảnh
+            $photo = $request->file('photo');
+            $filename = 'orders/' . $order->uuid . '/delivery_' . time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
+            $path = $photo->storeAs('public', $filename);
+            $photoUrl = Storage::url($filename);
+
+            // Lấy danh sách ảnh hiện tại hoặc tạo mới
+            $photos = $order->delivery_photos ?? [];
+            $photos[] = [
+                'url' => $photoUrl,
+                'uploaded_at' => now()->toIso8601String(),
+            ];
+
+            // Cập nhật order
+            $order->delivery_photos = $photos;
+
+            // Chỉ cập nhật status và delivered_at lần đầu tiên
+            if (!$order->delivered_at) {
+                $order->status = 'delivered';
+                $order->delivered_at = now();
+
+                // Gửi thông báo cho sender
+                $this->pushOrderStatusNotification($order, 'delivered', $user);
+            }
+
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã chụp ảnh nhận hàng thành công',
+                'data' => [
+                    'delivery_photos' => $photos,
+                    'status' => $order->status
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error uploading delivery photo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể upload ảnh. Vui lòng thử lại.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Xóa ảnh pickup
+     */
+    public function deletePickupPhoto(Request $request, string $id)
+    {
+        $user = auth()->user();
+        $order = Order::findOrFail($id);
+
+        // Kiểm tra quyền
+        if ($order->sender_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện hành động này'
+            ], 403);
+        }
+
+        $request->validate([
+            'photo_url' => 'required|string',
+        ]);
+
+        try {
+            $photos = $order->pickup_photos ?? [];
+            $photoUrl = $request->input('photo_url');
+
+            // Tìm và xóa ảnh khỏi array
+            $photos = array_filter($photos, function ($photo) use ($photoUrl) {
+                return is_array($photo) ? ($photo['url'] ?? '') !== $photoUrl : $photo !== $photoUrl;
+            });
+            $photos = array_values($photos); // Re-index array
+
+            // Xóa file từ storage
+            $oldPath = str_replace('/storage/', '', $photoUrl);
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            // Cập nhật order
+            $order->pickup_photos = $photos;
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xóa ảnh thành công',
+                'data' => [
+                    'pickup_photos' => $photos
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting pickup photo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa ảnh. Vui lòng thử lại.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Xóa ảnh delivery
+     */
+    public function deleteDeliveryPhoto(Request $request, string $id)
+    {
+        $user = auth()->user();
+        $order = Order::findOrFail($id);
+
+        // Kiểm tra quyền
+        if ($order->customer_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện hành động này'
+            ], 403);
+        }
+
+        $request->validate([
+            'photo_url' => 'required|string',
+        ]);
+
+        try {
+            $photos = $order->delivery_photos ?? [];
+            $photoUrl = $request->input('photo_url');
+
+            // Tìm và xóa ảnh khỏi array
+            $photos = array_filter($photos, function ($photo) use ($photoUrl) {
+                return is_array($photo) ? ($photo['url'] ?? '') !== $photoUrl : $photo !== $photoUrl;
+            });
+            $photos = array_values($photos); // Re-index array
+
+            // Xóa file từ storage
+            $oldPath = str_replace('/storage/', '', $photoUrl);
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            // Cập nhật order
+            $order->delivery_photos = $photos;
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xóa ảnh thành công',
+                'data' => [
+                    'delivery_photos' => $photos
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting delivery photo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa ảnh. Vui lòng thử lại.'
+            ], 500);
         }
     }
 }

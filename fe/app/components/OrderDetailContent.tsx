@@ -12,6 +12,9 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAvatarUrl } from "@/constants/avatars";
 import { getAirlineLogo } from "@/constants/airlines";
+import { getAirportWithCity } from "../utils/airportUtils";
+import { formatDate, formatTime } from "../utils/dateUtils";
+import OrderPhotoUpload from "./OrderPhotoUpload";
 
 interface OrderDetailContentProps {
     order: any;
@@ -53,28 +56,7 @@ export default function OrderDetailContent({
         return statusMap[normalized] || { label: normalized, step: 0 };
     };
 
-    const formatDate = (dateString: string | null | undefined): string | null => {
-        if (!dateString) return null;
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return null;
-            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-            return `${days[date.getDay()]}, ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
-        } catch {
-            return null;
-        }
-    };
-
-    const formatTime = (dateString: string | null | undefined): string | null => {
-        if (!dateString) return null;
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return null;
-            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-        } catch {
-            return null;
-        }
-    };
+    // formatDate and formatTime are now imported from utils/dateUtils
 
     const formatAirport = (airport: string | null | undefined): string | null => {
         if (!airport || airport.trim() === '') return null;
@@ -145,7 +127,7 @@ export default function OrderDetailContent({
                 <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
                     <Text className="text-lg font-bold mb-4">Thông tin đơn hàng</Text>
 
-                    {(formatAirport(flight.from_airport) || formatAirport(flight.to_airport)) && (
+                    {(flight.from_airport || flight.to_airport) && (
                         <View className="flex-row items-center gap-3 mb-4">
                             <MaterialIcons name="flight-takeoff" size={24} color="#2463EB" />
                             <View className="flex-1">
@@ -153,7 +135,7 @@ export default function OrderDetailContent({
                                     Tuyến đường
                                 </Text>
                                 <Text className="font-semibold text-base">
-                                    {formatAirport(flight.from_airport) || 'Chưa có'} → {formatAirport(flight.to_airport) || 'Chưa có'}
+                                    {getAirportWithCity(flight.from_airport)} → {getAirportWithCity(flight.to_airport)}
                                 </Text>
                             </View>
                         </View>
@@ -316,6 +298,101 @@ export default function OrderDetailContent({
                             {order.customer_note || request.note || ''}
                         </Text>
                     </View>
+                )}
+
+                {/* Photo Upload Section */}
+                {order.status && (
+                    <>
+                        {/* Pickup Photo - Only for sender when status is confirmed/pending */}
+                        {isSender && (order.status === 'confirmed' || order.status === 'pending' || order.status === 'picked_up' || order.status === 'in_transit' || order.status === 'arrived' || order.status === 'delivered') && (
+                            <View className="mb-4">
+                                <OrderPhotoUpload
+                                    orderId={String(order.id)}
+                                    type="pickup"
+                                    currentPhotos={order.pickup_photos || (order.pickup_photo ? [order.pickup_photo] : null)}
+                                    onSuccess={onRetry}
+                                />
+                            </View>
+                        )}
+
+                        {/* Display pickup photos if exists */}
+                        {((order.pickup_photos && order.pickup_photos.length > 0) || order.pickup_photo) && (
+                            <View className="mb-4 rounded-xl bg-white dark:bg-gray-800 p-4 shadow-sm">
+                                <Text className="text-base font-bold text-text-primary dark:text-white mb-3">
+                                    Ảnh giao hàng ({order.pickup_photos?.length || (order.pickup_photo ? 1 : 0)})
+                                </Text>
+                                <View className="flex-row flex-wrap gap-3">
+                                    {(order.pickup_photos || (order.pickup_photo ? [{ url: order.pickup_photo }] : [])).map((photo: any, index: number) => {
+                                        const photoUrl = typeof photo === 'string' ? photo : photo.url;
+                                        return (
+                                            <View key={index} className="relative">
+                                                <Image
+                                                    source={{ uri: photoUrl }}
+                                                    className="w-32 h-32 rounded-lg"
+                                                    resizeMode="cover"
+                                                />
+                                                {photo.uploaded_at && (
+                                                    <Text className="text-xs text-text-secondary dark:text-gray-400 mt-1">
+                                                        {formatTime(photo.uploaded_at)}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                                {order.picked_up_at && !order.pickup_photos && (
+                                    <Text className="text-xs text-text-secondary dark:text-gray-400 mt-2">
+                                        Chụp lúc: {formatTime(order.picked_up_at)}
+                                    </Text>
+                                )}
+                            </View>
+                        )}
+
+                        {/* Delivery Photo - Only for customer when status is picked_up/in_transit/arrived/delivered */}
+                        {!isSender && (order.status === 'picked_up' || order.status === 'in_transit' || order.status === 'arrived' || order.status === 'delivered') && (
+                            <View className="mb-4">
+                                <OrderPhotoUpload
+                                    orderId={String(order.id)}
+                                    type="delivery"
+                                    currentPhotos={order.delivery_photos || (order.delivery_photo ? [order.delivery_photo] : null)}
+                                    onSuccess={onRetry}
+                                />
+                            </View>
+                        )}
+
+                        {/* Display delivery photos if exists */}
+                        {((order.delivery_photos && order.delivery_photos.length > 0) || order.delivery_photo) && (
+                            <View className="mb-4 rounded-xl bg-white dark:bg-gray-800 p-4 shadow-sm">
+                                <Text className="text-base font-bold text-text-primary dark:text-white mb-3">
+                                    Ảnh nhận hàng ({order.delivery_photos?.length || (order.delivery_photo ? 1 : 0)})
+                                </Text>
+                                <View className="flex-row flex-wrap gap-3">
+                                    {(order.delivery_photos || (order.delivery_photo ? [{ url: order.delivery_photo }] : [])).map((photo: any, index: number) => {
+                                        const photoUrl = typeof photo === 'string' ? photo : photo.url;
+                                        return (
+                                            <View key={index} className="relative">
+                                                <Image
+                                                    source={{ uri: photoUrl }}
+                                                    className="w-32 h-32 rounded-lg"
+                                                    resizeMode="cover"
+                                                />
+                                                {photo.uploaded_at && (
+                                                    <Text className="text-xs text-text-secondary dark:text-gray-400 mt-1">
+                                                        {formatTime(photo.uploaded_at)}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                                {order.delivered_at && !order.delivery_photos && (
+                                    <Text className="text-xs text-text-secondary dark:text-gray-400 mt-2">
+                                        Chụp lúc: {formatTime(order.delivered_at)}
+                                    </Text>
+                                )}
+                            </View>
+                        )}
+                    </>
                 )}
             </ScrollView>
 

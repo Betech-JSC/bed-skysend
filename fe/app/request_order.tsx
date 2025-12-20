@@ -19,6 +19,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import api from '@/api/api';
 import ItemTypeSelect from './components/ItemTypeSelect';
 import { getAvatarUrl } from '@/constants/avatars';
+import BackButton from './components/BackButton';
+import DateTimePickerInput from './components/DateTimePickerInput';
+import { formatDateOnly } from './utils/dateUtils';
 
 export default function RequestOrderScreen() {
     const router = useRouter();
@@ -29,6 +32,7 @@ export default function RequestOrderScreen() {
     const [itemValue, setItemValue] = useState('');
     const [itemDescription, setItemDescription] = useState('');
     const [timeSlot, setTimeSlot] = useState('');
+    const [deadline, setDeadline] = useState<Date | null>(null);
     const [note, setNote] = useState('');
     const [itemType, setItemType] = useState('');
 
@@ -59,6 +63,16 @@ export default function RequestOrderScreen() {
             return;
         }
 
+        if (!deadline) {
+            Alert.alert('Lỗi', 'Vui lòng chọn thời hạn nhận hàng');
+            return;
+        }
+
+        if (deadline <= new Date()) {
+            Alert.alert('Lỗi', 'Thời hạn nhận hàng phải sau thời điểm hiện tại');
+            return;
+        }
+
         if (!terms1 || !terms2) {
             Alert.alert('Lỗi', 'Vui lòng xác nhận các điều khoản');
             return;
@@ -72,6 +86,7 @@ export default function RequestOrderScreen() {
                 reward: rewardNum,
                 item_value: itemValueNum,
                 item_description: itemDescription.trim(),
+                deadline_at: deadline.toISOString(),
                 note: note.trim() || undefined,
             };
 
@@ -106,24 +121,14 @@ export default function RequestOrderScreen() {
         ? `${flight.from_airport} → ${flight.to_airport}`
         : 'Chưa có thông tin';
     const flightDate = flight.flight_date
-        ? (() => {
-            try {
-                const date = new Date(flight.flight_date);
-                if (!isNaN(date.getTime())) {
-                    return date.toLocaleDateString('vi-VN');
-                }
-            } catch { }
-            return 'Chưa có thông tin';
-        })()
+        ? formatDateOnly(flight.flight_date) || 'Chưa có thông tin'
         : 'Chưa có thông tin';
 
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
             {/* Top App Bar */}
             <View className="sticky top-0 z-50 flex-row items-center bg-background-light dark:bg-background-dark px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={28} color="#1F2937" className="dark:text-white" />
-                </TouchableOpacity>
+                <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
                 <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white pr-10">
                     Gửi yêu cầu
                 </Text>
@@ -245,6 +250,20 @@ export default function RequestOrderScreen() {
                                 numberOfLines={4}
                                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-text-primary dark:text-white min-h-24"
                             />
+                        </View>
+
+                        {/* Thời hạn nhận hàng */}
+                        <View>
+                            <DateTimePickerInput
+                                label="Thời hạn nhận hàng"
+                                value={deadline}
+                                onValueChange={setDeadline}
+                                placeholder="Chọn ngày và giờ nhận hàng"
+                                minimumDate={new Date()}
+                            />
+                            <Text className="mt-1 text-xs text-text-secondary dark:text-gray-400">
+                                Thời hạn tối thiểu để hành khách nhận hàng
+                            </Text>
                         </View>
 
                         {/* Ghi chú */}

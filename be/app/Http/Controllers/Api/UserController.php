@@ -134,6 +134,40 @@ class UserController extends Controller
         ]);
     }
 
+    /**
+     * Chuyển đổi role giữa sender và customer
+     */
+    public function switchRole(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'role' => ['required', 'string', Rule::in(['sender', 'customer'])],
+        ]);
+
+        $newRole = $request->input('role');
+
+        // Kiểm tra role hiện tại
+        if ($user->role === $newRole) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò này rồi'
+            ], 400);
+        }
+
+        // Cập nhật role
+        $user->role = $newRole;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã chuyển đổi vai trò thành công',
+            'data' => [
+                'user' => $user,
+                'role' => $user->role,
+            ],
+        ]);
+    }
 
     public function changePassword(Request $request)
     {

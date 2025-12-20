@@ -8,6 +8,7 @@ import {
     Image,
     ActivityIndicator,
     Alert,
+    Linking,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams, Stack } from "expo-router";
@@ -17,6 +18,7 @@ import api from "@/api/api";
 import { getAvatarUrl } from "@/constants/avatars";
 import UserProfileInfo from "../components/UserProfileInfo";
 import BackButton from "../components/BackButton";
+import { formatDate, formatDateTime } from "../utils/dateUtils";
 
 interface RequestDetail {
     id: number;
@@ -31,6 +33,7 @@ interface RequestDetail {
     priority_level: string;
     status: string;
     expires_at: string;
+    deadline_at: string | null;
     created_at: string;
     updated_at: string;
     flight?: {
@@ -97,6 +100,7 @@ export default function PrivateRequestDetailScreen() {
                     priority_level: apiData.priority_level || "normal",
                     status: apiData.status || "pending",
                     expires_at: apiData.expires_at || "",
+                    deadline_at: apiData.deadline_at || null,
                     created_at: apiData.created_at || "",
                     updated_at: apiData.updated_at || "",
                     flight: apiData.flight ? {
@@ -138,13 +142,23 @@ export default function PrivateRequestDetailScreen() {
         }).format(amount);
     };
 
-    const formatDate = (dateString: string | null | undefined): string | null => {
-        if (!dateString) return null;
+    // formatDate and formatDateTime are now imported from utils/dateUtils
+
+    const getDeadlineStatus = (deadlineAt: string | null | undefined): { color: string; text: string } | null => {
+        if (!deadlineAt) return null;
         try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return null;
-            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-            return `${days[date.getDay()]}, ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            const deadline = new Date(deadlineAt);
+            const now = new Date();
+            const diffMs = deadline.getTime() - now.getTime();
+            const diffHours = diffMs / (1000 * 60 * 60);
+
+            if (diffMs < 0) {
+                return { color: 'text-red-600 dark:text-red-400', text: 'Đã quá hạn' };
+            } else if (diffHours < 2) {
+                return { color: 'text-orange-600 dark:text-orange-400', text: 'Sắp đến hạn' };
+            } else {
+                return { color: 'text-green-600 dark:text-green-400', text: 'Còn thời gian' };
+            }
         } catch {
             return null;
         }
@@ -245,7 +259,7 @@ export default function PrivateRequestDetailScreen() {
             <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
                 {/* Header with Back Button */}
                 <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
-                    <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+                    <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
                     <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
                         {request ? `Yêu cầu #${request.uuid}` : 'Chi tiết yêu cầu'}
                     </Text>
@@ -519,7 +533,20 @@ export default function PrivateRequestDetailScreen() {
                                 {/* Thông tin liên hệ */}
                                 <View className="gap-3">
                                     {customer.phone && (
-                                        <View className="flex-row items-center gap-3">
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                const phoneNumber = customer.phone.replace(/[^0-9+]/g, '');
+                                                if (phoneNumber) {
+                                                    Linking.openURL(`tel:${phoneNumber}`).catch((err) => {
+                                                        console.error('Error opening phone dialer:', err);
+                                                        Alert.alert('Lỗi', 'Không thể mở ứng dụng gọi điện');
+                                                    });
+                                                } else {
+                                                    Alert.alert('Lỗi', 'Số điện thoại không hợp lệ');
+                                                }
+                                            }}
+                                            className="flex-row items-center gap-3 active:opacity-70"
+                                        >
                                             <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                                                 <MaterialIcons name="phone" size={20} color="#2563EB" />
                                             </View>
@@ -527,19 +554,14 @@ export default function PrivateRequestDetailScreen() {
                                                 <Text className="text-xs text-text-secondary dark:text-slate-400 mb-0.5">
                                                     Số điện thoại
                                                 </Text>
-                                                <Text className="text-base font-medium text-text-primary dark:text-white">
+                                                <Text className="text-base font-medium text-primary dark:text-blue-400">
                                                     {customer.phone}
                                                 </Text>
                                             </View>
-                                            <TouchableOpacity
-                                                onPress={() => {
-                                                    // Có thể thêm chức năng gọi điện
-                                                }}
-                                                className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10"
-                                            >
-                                                <MaterialIcons name="call" size={20} color="#2563EB" />
-                                            </TouchableOpacity>
-                                        </View>
+                                            <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                                                <MaterialIcons name="call" size={20} color="#FFFFFF" />
+                                            </View>
+                                        </TouchableOpacity>
                                     )}
 
                                     {customer.email && (
@@ -575,6 +597,35 @@ export default function PrivateRequestDetailScreen() {
                                         </View>
                                         <MaterialIcons name="chevron-right" size={20} color="#2563EB" />
                                     </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Thông tin thời hạn nhận hàng */}
+                        {request.deadline_at && (
+                            <View className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-lg">
+                                <View className="flex-row items-center gap-4">
+                                    <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                                        <MaterialIcons
+                                            name="access-time"
+                                            size={24}
+                                            color="#2563EB"
+                                            className="dark:text-blue-400"
+                                        />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-sm text-text-secondary dark:text-slate-400">
+                                            Thời hạn nhận hàng
+                                        </Text>
+                                        <Text className="text-base font-medium text-text-primary dark:text-white">
+                                            {formatDateTime(request.deadline_at) || "Không xác định"}
+                                        </Text>
+                                        {getDeadlineStatus(request.deadline_at) && (
+                                            <Text className={`text-xs font-semibold mt-1 ${getDeadlineStatus(request.deadline_at)?.color}`}>
+                                                {getDeadlineStatus(request.deadline_at)?.text}
+                                            </Text>
+                                        )}
+                                    </View>
                                 </View>
                             </View>
                         )}

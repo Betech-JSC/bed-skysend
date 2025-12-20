@@ -24,13 +24,32 @@ class FlightController extends Controller
     ) {}
     /**
      * Lấy danh sách chuyến bay đã đăng của user hiện tại
+     * Chỉ lấy khi user ở role customer
      */
     public function index(Request $request)
     {
-        $user_id = auth()->id();
+        $user = auth()->user();
+        $user_id = $user->id;
+
+        // Chỉ lấy flights khi user ở role customer
+        // Khi user ở role sender, họ không nên thấy flights của chính họ
+        if ($user->role === 'sender') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Bạn đang ở vai trò người gửi. Vui lòng chuyển sang vai trò hành khách để xem chuyến bay của bạn.',
+                'data'    => [],
+                'pagination' => [
+                    'current_page' => 1,
+                    'total_pages'  => 1,
+                    'total_items'  => 0,
+                    'per_page'     => 10,
+                    'has_more'     => false,
+                ]
+            ]);
+        }
 
         $query = Flight::where('customer_id', $user_id)
-            ->with('requests')
+            ->with(['requests.sender', 'requests.order']) // Load requests với sender và order
             ->latest(); // mới nhất trước
 
         // Tùy chọn: lọc theo trạng thái (pending, verified, cancelled...)
@@ -58,6 +77,16 @@ class FlightController extends Controller
     // Đăng chuyến bay
     public function store(Request $request)
     {
+        $user = auth()->user();
+
+        // Chỉ cho phép đăng chuyến bay khi user ở role customer
+        if ($user->role === 'sender') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò người gửi. Vui lòng chuyển sang vai trò hành khách để đăng chuyến bay.'
+            ], 403);
+        }
+
         $request->validate([
             'from_airport' => 'required|string|max:10',
             'to_airport' => 'required|string|max:10',
@@ -71,7 +100,7 @@ class FlightController extends Controller
         ]);
 
         // Kiểm tra chuyến bay trùng (cùng tuyến, cùng ngày, chưa hoàn thành/chưa hủy)
-        $existingFlight = Flight::where('customer_id', auth()->id())
+        $existingFlight = Flight::where('customer_id', $user->id)
             ->where('from_airport', strtoupper($request->from_airport))
             ->where('to_airport', strtoupper($request->to_airport))
             ->whereDate('flight_date', $request->flight_date)
@@ -135,7 +164,17 @@ class FlightController extends Controller
 
     public function show($id)
     {
-        $flight = Flight::where('customer_id', Auth::id())
+        $user = auth()->user();
+
+        // Chỉ cho phép xem khi user ở role customer
+        if ($user->role === 'sender') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò người gửi. Vui lòng chuyển sang vai trò hành khách để xem chuyến bay này.'
+            ], 403);
+        }
+
+        $flight = Flight::where('customer_id', $user->id)
             ->where('id', $id)
             ->firstOrFail();
 
@@ -283,6 +322,16 @@ class FlightController extends Controller
     {
         $senderId = auth()->id();
         $perPage = (int) min($request->query('per_page', 15), 50);
+
+        $user = auth()->user();
+        
+        // Chỉ cho phép xem khi user ở role sender
+        if ($user->role === 'customer') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đang ở vai trò hành khách. Vui lòng chuyển sang vai trò người gửi để xem các chuyến bay có sẵn.'
+            ], 403);
+        }
 
         $query = Flight::with(['customer'])
             ->where('verified', true)

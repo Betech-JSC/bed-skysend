@@ -12,6 +12,8 @@ use Illuminate\Support\Carbon;
 
 class Flight extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'uuid',
         'customer_id',
@@ -122,6 +124,14 @@ class Flight extends Model
                 $q->where('flight_date', today())
                     ->whereTime('created_at', '>=', now()->subHours(6));
             });
+    }
+
+    /** Chỉ lấy chuyến bay còn hoạt động (chưa quá ngày bay 1 ngày) */
+    public function scopeActive($query)
+    {
+        // Chuyến bay được coi là active nếu flight_date >= (today - 1 day)
+        // SoftDeletes tự động loại bỏ các record đã bị soft delete
+        return $query->where('flight_date', '>=', now()->subDay()->toDateString());
     }
 
     /** Tìm chuyến bay theo tuyến + ngày */

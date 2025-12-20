@@ -1,0 +1,40 @@
+// Mapping mã sân bay với tên thành phố
+export const airportCities: { [key: string]: string } = {
+    // Các sân bay chính Việt Nam
+    'SGN': 'TP.HCM',
+    'HAN': 'Hà Nội',
+    'DAD': 'Đà Nẵng',
+    'HPH': 'Hải Phòng',
+    'VCA': 'Cần Thơ',
+    'CXR': 'Nha Trang',
+    'PQC': 'Phú Quốc',
+    'VDO': 'Quảng Ninh',
+    'DLI': 'Đà Lạt',
+    'VCL': 'Chu Lai',
+    'UIH': 'Quy Nhon',
+    'VKG': 'Rạch Giá',
+    'BMV': 'Buôn Ma Thuột',
+    'VDH': 'Đồng Hới',
+    'VCS': 'Côn Đảo',
+    'TBB': 'Tuy Hòa',
+    'CAH': 'Cà Mau',
+
+    // Các sân bay quốc tế phổ biến (nếu cần)
+    'BKK': 'Bangkok',
+    'SIN': 'Singapore',
+    'KUL': 'Kuala Lumpur',
+    'ICN': 'Seoul',
+    'NRT': 'Tokyo',
+    'PEK': 'Bắc Kinh',
+    'PVG': 'Thượng Hải',
+    'HKG': 'Hong Kong',
+    'TPE': 'Đài Bắc',
+    'BWN': 'Bandar Seri Begawan',
+    'PNH': 'Phnom Penh',
+    'REP': 'Siem Reap',
+    'DPS': 'Bali',
+    'CGK': 'Jakarta',
+    'MNL': 'Manila',
+    'BKI': 'Kota Kinabalu',
+};
+

@@ -14,6 +14,9 @@ class Kernel extends ConsoleKernel
     {
         // Re-match requests mỗi 5 phút
         $schedule->job(\App\Jobs\ReMatchRequestsJob::class)->everyMinute();
+
+        // Cleanup expired flights hàng ngày lúc 2:00 AM
+        $schedule->command('cleanup:expired-flights')->dailyAt('02:00');
     }
 
     /**

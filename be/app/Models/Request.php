@@ -29,6 +29,7 @@ class Request extends Model
         'confirmed_by',
         'confirmed_at',
         'expires_at',
+        'deadline_at',
         'note',
 
         // Matching fields
@@ -43,6 +44,7 @@ class Request extends Model
         'accepted_at'   => 'datetime',
         'confirmed_at'  => 'datetime',
         'expires_at'    => 'datetime',
+        'deadline_at'   => 'datetime',
         'desired_date'  => 'date',
         'item_value'    => 'decimal:2',
         'reward'        => 'decimal:2',

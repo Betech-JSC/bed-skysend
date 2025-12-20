@@ -21,6 +21,7 @@ import { getAvatarUrl } from '@/constants/avatars';
 import { getAirlineLogo } from '@/constants/airlines';
 import BackButton from './components/BackButton';
 import { getRequestStatusLabel } from './utils/orderStatusUtils';
+import { formatDate, formatTime } from './utils/dateUtils';
 
 interface FlightDetail {
   id: number;
@@ -185,18 +186,7 @@ export default function FlightDetailScreen() {
     }, [flightId])
   );
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Không xác định';
-    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    return `${days[date.getDay()]}, ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '--:--';
-    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-  };
+  // formatDate and formatTime are now imported from utils/dateUtils
 
   const getStatusText = (status: string) => {
     const map: Record<string, string> = {
@@ -248,7 +238,7 @@ export default function FlightDetailScreen() {
       <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
         <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light/80 px-4 py-4 backdrop-blur-sm dark:bg-background-dark/80">
-          <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
+          <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
           <Text className="text-lg font-bold text-text-dark-gray -ml-10 flex-1 text-center dark:text-white">
             Chi tiết chuyến bay
           </Text>
@@ -395,16 +385,29 @@ export default function FlightDetailScreen() {
                     const isPending = requestStatus === 'pending';
                     const isAccepted = requestStatus === 'accepted' || requestStatus === 'confirmed';
                     const isDeclined = requestStatus === 'declined';
+                    const isExpired = requestStatus === 'expired';
+                    const isCancelled = requestStatus === 'cancelled';
+                    const hasOrder = req.order || req.order_id;
+
+                    // Xác định màu sắc và style dựa trên trạng thái
+                    const getCardStyle = () => {
+                      if (isAccepted) {
+                        return 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-900/20';
+                      } else if (isDeclined) {
+                        return 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-900/20';
+                      } else if (isExpired) {
+                        return 'border-gray-300 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-900/20';
+                      } else if (isCancelled) {
+                        return 'border-gray-300 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-900/20';
+                      } else {
+                        return 'border-gray-200 dark:border-gray-700';
+                      }
+                    };
 
                     return (
                       <View
                         key={req.id || req.uuid}
-                        className={`rounded-lg border p-4 ${isAccepted
-                          ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-900/20'
-                          : isDeclined
-                            ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-900/20'
-                            : 'border-gray-200 dark:border-gray-700'
-                          }`}
+                        className={`rounded-lg border p-4 ${getCardStyle()}`}
                       >
                         {/* Header: Sender info + Status */}
                         <View className="flex-row items-center justify-between mb-3">
@@ -413,9 +416,33 @@ export default function FlightDetailScreen() {
                               <Text className="font-bold text-text-dark-gray dark:text-white">
                                 {sender.name || 'Người gửi'}
                               </Text>
-                              <Text className="text-xs text-gray-500">
-                                {sender.phone || ''}
-                              </Text>
+                              {sender.phone ? (
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    const phoneNumber = sender.phone.replace(/[^0-9+]/g, '');
+                                    if (phoneNumber) {
+                                      Linking.openURL(`tel:${phoneNumber}`).catch((err) => {
+                                        console.error('Error opening phone dialer:', err);
+                                        Alert.alert('Lỗi', 'Không thể mở ứng dụng gọi điện');
+                                      });
+                                    } else {
+                                      Alert.alert('Lỗi', 'Số điện thoại không hợp lệ');
+                                    }
+                                  }}
+                                  activeOpacity={0.7}
+                                >
+                                  <View className="flex-row items-center gap-1">
+                                    <Text className="text-xs text-primary font-medium">
+                                      {sender.phone}
+                                    </Text>
+                                    <MaterialIcons name="phone" size={14} color="#2563EB" />
+                                  </View>
+                                </TouchableOpacity>
+                              ) : (
+                                <Text className="text-xs text-gray-500">
+                                  Chưa có số điện thoại
+                                </Text>
+                              )}
                             </View>
                           </View>
                           <View className="flex-row items-center gap-2">
@@ -473,6 +500,35 @@ export default function FlightDetailScreen() {
                               </Text>
                             </View>
                           )}
+                          {/* Thông tin thời gian */}
+                          <View className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                            {req.created_at && (
+                              <View className="flex-row justify-between mb-1">
+                                <Text className="text-xs text-gray-500">Gửi lúc:</Text>
+                                <Text className="text-xs text-gray-600 dark:text-gray-400">
+                                  {formatTime(req.created_at)} - {formatDate(req.created_at)}
+                                </Text>
+                              </View>
+                            )}
+                            {req.expires_at && isPending && (
+                              <View className="flex-row justify-between mb-1">
+                                <Text className="text-xs text-gray-500">Hết hạn:</Text>
+                                <Text className="text-xs text-orange-600 dark:text-orange-400">
+                                  {formatTime(req.expires_at)} - {formatDate(req.expires_at)}
+                                </Text>
+                              </View>
+                            )}
+                            {req.responded_at && (isAccepted || isDeclined) && (
+                              <View className="flex-row justify-between">
+                                <Text className="text-xs text-gray-500">
+                                  {isAccepted ? 'Chấp nhận lúc:' : 'Từ chối lúc:'}
+                                </Text>
+                                <Text className="text-xs text-gray-600 dark:text-gray-400">
+                                  {formatTime(req.responded_at)} - {formatDate(req.responded_at)}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
                         </View>
 
                         {/* Action buttons - chỉ hiển thị cho pending requests */}
@@ -511,6 +567,48 @@ export default function FlightDetailScreen() {
                               Bạn đã từ chối yêu cầu này
                             </Text>
                           </View>
+                        )}
+
+                        {/* Thông báo cho requests đã hết hạn */}
+                        {isExpired && (
+                          <View className="mt-3 flex-row items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2">
+                            <MaterialIcons name="schedule" size={18} color="#6B7280" />
+                            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Yêu cầu này đã hết hạn
+                            </Text>
+                          </View>
+                        )}
+
+                        {/* Thông báo cho requests đã bị hủy */}
+                        {isCancelled && (
+                          <View className="mt-3 flex-row items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2">
+                            <MaterialIcons name="cancel" size={18} color="#6B7280" />
+                            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Yêu cầu này đã bị hủy
+                            </Text>
+                          </View>
+                        )}
+
+                        {/* Link đến đơn hàng nếu đã được chấp nhận và có order */}
+                        {hasOrder && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              const orderId = req.order?.id || req.order?.uuid || req.order_id;
+                              if (orderId) {
+                                router.push({
+                                  pathname: '/orders_details',
+                                  params: { orderId: String(orderId) }
+                                });
+                              }
+                            }}
+                            className="mt-3 flex-row items-center justify-center gap-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 px-3 py-2"
+                          >
+                            <MaterialIcons name="local-shipping" size={18} color="#2563EB" />
+                            <Text className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                              Xem đơn hàng
+                            </Text>
+                            <MaterialIcons name="arrow-forward" size={16} color="#2563EB" />
+                          </TouchableOpacity>
                         )}
                       </View>
                     );
