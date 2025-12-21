@@ -262,6 +262,31 @@ export default function OrderDetailContent({
                     /> */}
                 </View>
 
+                {/* Hình ảnh kiện hàng */}
+                {request.item_images && Array.isArray(request.item_images) && request.item_images.length > 0 && (
+                    <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
+                        <Text className="text-lg font-bold mb-3">Hình ảnh kiện hàng ({request.item_images.length})</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                            <View className="flex-row gap-3">
+                                {request.item_images.map((imageUrl: string, index: number) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        onPress={() => {
+                                            // Có thể mở modal xem ảnh lớn ở đây
+                                        }}
+                                    >
+                                        <Image
+                                            source={{ uri: imageUrl }}
+                                            className="w-32 h-32 rounded-lg"
+                                            resizeMode="cover"
+                                        />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
+                    </View>
+                )}
+
                 {/* Thông tin chuyến bay */}
                 {flight.flight_number && (
                     <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
@@ -286,6 +311,31 @@ export default function OrderDetailContent({
                             </Text>
                             <Text className="font-semibold text-base">{flight.flight_number}</Text>
                         </View>
+                    </View>
+                )}
+
+                {/* Hình ảnh vé máy bay */}
+                {flight.item_images && Array.isArray(flight.item_images) && flight.item_images.length > 0 && (
+                    <View className="bg-card-light dark:bg-card-dark rounded-xl p-4 shadow-sm mb-4">
+                        <Text className="text-lg font-bold mb-3">Hình ảnh vé máy bay ({flight.item_images.length})</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                            <View className="flex-row gap-3">
+                                {flight.item_images.map((imageUrl: string, index: number) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        onPress={() => {
+                                            // Có thể mở modal xem ảnh lớn ở đây
+                                        }}
+                                    >
+                                        <Image
+                                            source={{ uri: imageUrl }}
+                                            className="w-32 h-32 rounded-lg"
+                                            resizeMode="cover"
+                                        />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
                     </View>
                 )}
 

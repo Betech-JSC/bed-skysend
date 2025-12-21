@@ -6,6 +6,17 @@ import { PersistGate } from "redux-persist/integration/react";
 import { usePushNotifications } from "@/notifications/usePushNotifications";
 import * as Notifications from 'expo-notifications';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { LogBox } from 'react-native';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Ẩn console errors trên màn hình
+// Có thể ignore specific errors bằng cách thêm patterns vào mảng
+LogBox.ignoreAllLogs(true); // Ẩn tất cả logs
+// Hoặc ignore specific errors:
+// LogBox.ignoreLogs([
+//   'Warning: ...',
+//   'Error: ...',
+// ]);
 
 function AppContent() {
   return (
@@ -78,14 +89,16 @@ function PushNotificationsWrapper() {
 
 export default function Layout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <NotificationHandler />
-          <PushNotificationsWrapper />
-          <AppContent />
-        </PersistGate>
-      </Provider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <NotificationHandler />
+            <PushNotificationsWrapper />
+            <AppContent />
+          </PersistGate>
+        </Provider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

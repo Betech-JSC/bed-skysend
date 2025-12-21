@@ -22,9 +22,11 @@ import DatePickerInput from '../../components/DatePickerInput';
 import ItemTypeSelect from '../../components/ItemTypeSelect';
 import FlightNumberSelect from '../../components/FlightNumberSelect';
 import UserProfileInfo from '../../components/UserProfileInfo';
+import RequestItemImagesUpload from '../../components/RequestItemImagesUpload';
 import api from '@/api/api';
 import { getAvatarUrl } from '@/constants/avatars';
 import BannerSlider from "app/components/BannerSlider";
+import { getAirportWithCity } from '../../utils/airportUtils';
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -48,6 +50,7 @@ export default function HomeScreen() {
     const [flightCode, setFlightCode] = useState('');
     const [allowedWeight, setAllowedWeight] = useState('');
     const [itemType, setItemType] = useState('');
+    const [itemImages, setItemImages] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // State cho Priority Requests từ API
@@ -181,6 +184,20 @@ export default function HomeScreen() {
         if (!allowedWeight || isNaN(parseFloat(allowedWeight))) {
             return Alert.alert('Thông báo', 'Vui lòng nhập khối lượng hợp lệ (số)');
         }
+        
+        // Validate hình ảnh vé máy bay - bắt buộc
+        if (!itemImages || itemImages.length === 0) {
+            return Alert.alert('Thông báo', 'Vui lòng chụp hoặc chọn ít nhất một hình ảnh vé máy bay');
+        }
+        
+        // Kiểm tra itemImages có ít nhất một URL hợp lệ
+        const validImages = itemImages.filter((img: string) => img && typeof img === 'string' && img.trim() !== '');
+        if (validImages.length === 0) {
+            return Alert.alert('Thông báo', 'Vui lòng chụp hoặc chọn ít nhất một hình ảnh vé máy bay hợp lệ');
+        }
+
+        // Normalize item_images - đảm bảo là array hoặc null
+        const normalizedItemImages = validImages.length > 0 ? validImages : null;
 
         const flightData = {
             from_airport: departureAirport.value,
@@ -189,6 +206,7 @@ export default function HomeScreen() {
             airline: airline.trim(),
             flight_number: flightCode.trim(),
             max_weight: parseFloat(allowedWeight),
+            item_images: normalizedItemImages,
         };
 
         setIsSubmitting(true);
@@ -222,6 +240,7 @@ export default function HomeScreen() {
             setAirline('');
             setFlightCode('');
             setAllowedWeight('');
+            setItemImages([]);
 
             // Refetch dữ liệu mới nhất
             fetchPriorityRequests();
@@ -372,6 +391,16 @@ export default function HomeScreen() {
                         />
                     </View>
 
+                    {/* Upload ảnh vé máy bay */}
+                    <View className="mb-6">
+                        <RequestItemImagesUpload
+                            images={itemImages}
+                            onImagesChange={setItemImages}
+                            maxImages={10}
+                            role="customer"
+                        />
+                    </View>
+
                     <TouchableOpacity
                         onPress={handlePostFlight}
                         disabled={isSubmitting}
@@ -410,7 +439,7 @@ export default function HomeScreen() {
                                         size="medium"
                                     />
                                     <Text className="mt-4 font-semibold text-lg text-text-dark-gray dark:text-white">
-                                        {item.route || `${item.from_airport || 'SGN'} → ${item.to_airport || 'HAN'}`}
+                                        {item.route || `${getAirportWithCity(item.from_airport || 'SGN')} → ${getAirportWithCity(item.to_airport || 'HAN')}`}
                                     </Text>
                                     <Text className="text-base font-bold text-primary mt-1">
                                         + {item.reward || item.price || '0đ'}
@@ -457,7 +486,7 @@ export default function HomeScreen() {
                                     <View className="flex-row items-center justify-between mt-4">
                                         <View>
                                             <Text className="font-semibold text-text-dark-gray dark:text-white">
-                                                {req.from_airport || 'SGN'} → {req.to_airport || 'HAN'}
+                                                {getAirportWithCity(req.from_airport || 'SGN')} → {getAirportWithCity(req.to_airport || 'HAN')}
                                             </Text>
                                             <Text className="text-sm font-bold text-primary">
                                                 + {req.price || req.reward || '0đ'}

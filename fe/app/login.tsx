@@ -85,10 +85,6 @@ export default function LoginScreen() {
 
   // Hàm lấy Expo Push Token
   const registerForPushNotificationsAsync = async (): Promise<string | null> => {
-    if (!Constants.isDevice) {
-      Alert.alert("Lỗi", "Push notifications chỉ hoạt động trên thiết bị thật!");
-      return null;
-    }
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;

@@ -28,16 +28,14 @@ const DateTimePickerInput: React.FC<DateTimePickerInputProps> = ({
 
   const selectedDate = value || new Date();
 
-  // Format date to display
+  // Format date to display (dd/mm/yyyy HH:MM)
   const formatDateTime = (date: Date): string => {
-    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    const dayName = days[date.getDay()];
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${dayName}, ${day}/${month}/${year} ${hours}:${minutes}`;
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
   // Handle date change

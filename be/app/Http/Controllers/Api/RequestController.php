@@ -15,6 +15,7 @@ use App\Services\ExpoPushService;
 use App\Services\RequestMatchingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class RequestController extends Controller
@@ -865,6 +866,7 @@ class RequestController extends Controller
             'reward'            => (int) $request->reward,
             'item_value'        => (int) $request->item_value,
             'item_description'  => $request->item_description,
+            'item_images'       => $request->item_images ?? [],
             'note'              => $request->note,
 
             // Thông tin matching (nếu đang chờ match)
@@ -1052,6 +1054,8 @@ class RequestController extends Controller
             'desired_weight' => 'nullable|numeric|min:0.5|max:50',
             'item_type' => 'required|string|in:document,contract,package,gift,other',
             'item_description' => 'required|string|max:1000',
+            'item_images' => 'nullable|array',
+            'item_images.*' => 'nullable|string|url',
             'item_value' => 'required|numeric|min:100000',
             'reward' => 'required|numeric|min:50000|max:10000000',
             'note' => 'nullable|string|max:500',
@@ -1076,6 +1080,7 @@ class RequestController extends Controller
                     'desired_weight' => $validated['desired_weight'] ?? null,
                     'item_type' => $validated['item_type'],
                     'item_description' => $validated['item_description'],
+                    'item_images' => $validated['item_images'] ?? null,
                     'item_value' => $validated['item_value'],
                     'reward' => $validated['reward'],
                     'note' => $validated['note'] ?? null,
@@ -1131,6 +1136,8 @@ class RequestController extends Controller
             'desired_weight' => 'nullable|numeric|min:0.5|max:50',
             'item_type' => 'required|string|in:document,contract,package,gift,other',
             'item_description' => 'required|string|max:1000',
+            'item_images' => 'nullable|array',
+            'item_images.*' => 'nullable|string|url',
             'item_value' => 'required|numeric|min:100000',
             'reward' => 'required|numeric|min:50000|max:10000000',
             'note' => 'nullable|string|max:500',
@@ -1161,6 +1168,7 @@ class RequestController extends Controller
             'desired_weight' => $validated['desired_weight'] ?? null,
             'item_type' => $validated['item_type'],
             'item_description' => $validated['item_description'],
+            'item_images' => $validated['item_images'] ?? null,
             'item_value' => $validated['item_value'],
             'reward' => $validated['reward'],
             'note' => $validated['note'] ?? null,

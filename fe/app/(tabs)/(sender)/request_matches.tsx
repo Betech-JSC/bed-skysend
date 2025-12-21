@@ -7,6 +7,8 @@ import {
     RefreshControl,
     ActivityIndicator,
     Alert,
+    Image,
+    ScrollView,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -14,6 +16,7 @@ import { useColorScheme } from 'react-native';
 import api from '@/api/api';
 import BackButton from 'app/components/BackButton';
 import { formatVND, parseVND } from '@/utils/currencyFormatter';
+import { getAirportWithCity } from '../../utils/airportUtils';
 
 interface Request {
     id: number;
@@ -24,6 +27,7 @@ interface Request {
     reward: number;
     status: string;
     match_count?: number;
+    item_images?: string[];
 }
 
 export default function RequestMatchesScreen() {
@@ -130,7 +134,7 @@ export default function RequestMatchesScreen() {
                 <View className="mb-2 flex-row items-center justify-between">
                     <View className="flex-1">
                         <Text className="text-base font-semibold text-text-primary dark:text-white">
-                            {item.from_airport} → {item.to_airport}
+                            {getAirportWithCity(item.from_airport)} → {getAirportWithCity(item.to_airport)}
                         </Text>
                         <Text className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                             Ngày: {item.desired_date ? new Date(item.desired_date).toLocaleDateString('vi-VN') : 'N/A'}
@@ -150,6 +154,32 @@ export default function RequestMatchesScreen() {
                     </Text>
                     <MaterialIcons name="chevron-right" size={20} color={isDark ? '#9ca3af' : '#6b7280'} />
                 </View>
+
+                {/* Hiển thị ảnh kiện hàng */}
+                {item.item_images && item.item_images.length > 0 && (
+                    <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                            Ảnh kiện hàng ({item.item_images.length})
+                        </Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
+                            {item.item_images.slice(0, 4).map((imageUrl, index) => (
+                                <Image
+                                    key={index}
+                                    source={{ uri: imageUrl }}
+                                    className="h-16 w-16 rounded-lg"
+                                    resizeMode="cover"
+                                />
+                            ))}
+                            {item.item_images.length > 4 && (
+                                <View className="h-16 w-16 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700">
+                                    <Text className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                        +{item.item_images.length - 4}
+                                    </Text>
+                                </View>
+                            )}
+                        </ScrollView>
+                    </View>
+                )}
             </TouchableOpacity>
 
             {/* Action Buttons */}

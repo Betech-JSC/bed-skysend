@@ -19,6 +19,7 @@ import BackButton from 'app/components/BackButton';
 import DatePickerInput from 'app/components/DatePickerInput';
 import ItemTypeSelect from 'app/components/ItemTypeSelect';
 import CurrencyInput from 'app/components/CurrencyInput';
+import RequestItemImagesUpload from 'app/components/RequestItemImagesUpload';
 import { parseVND } from '@/utils/currencyFormatter';
 
 const TIME_SLOTS = [
@@ -59,6 +60,7 @@ export default function CreateRequestWaitingScreen() {
         desired_weight: '',
         item_type: '',
         item_description: '',
+        item_images: [] as string[],
         item_value: '',
         reward: '',
         note: '',
@@ -77,6 +79,7 @@ export default function CreateRequestWaitingScreen() {
             desired_weight: '',
             item_type: '',
             item_description: '',
+            item_images: [],
             item_value: '',
             reward: '',
             note: '',
@@ -106,6 +109,22 @@ export default function CreateRequestWaitingScreen() {
             const request = response.data?.data;
 
             if (request) {
+                // Normalize item_images - đảm bảo luôn là array
+                let itemImages: string[] = [];
+                if (request.item_images) {
+                    if (Array.isArray(request.item_images)) {
+                        itemImages = request.item_images;
+                    } else if (typeof request.item_images === 'string') {
+                        // Nếu là string, thử parse JSON
+                        try {
+                            const parsed = JSON.parse(request.item_images);
+                            itemImages = Array.isArray(parsed) ? parsed : [];
+                        } catch {
+                            itemImages = [];
+                        }
+                    }
+                }
+
                 setFormData({
                     from_airport: request.from_airport || '',
                     to_airport: request.to_airport || '',
@@ -114,6 +133,7 @@ export default function CreateRequestWaitingScreen() {
                     desired_weight: request.desired_weight ? request.desired_weight.toString() : '',
                     item_type: request.item_type || '',
                     item_description: request.item_description || '',
+                    item_images: itemImages,
                     item_value: request.item_value ? Number(request.item_value).toLocaleString('vi-VN') : '',
                     reward: request.reward ? Number(request.reward).toLocaleString('vi-VN') : '',
                     note: request.note || '',
@@ -174,6 +194,11 @@ export default function CreateRequestWaitingScreen() {
 
         setLoading(true);
         try {
+            // Normalize item_images - đảm bảo là array hoặc null
+            const itemImages = Array.isArray(formData.item_images) && formData.item_images.length > 0
+                ? formData.item_images.filter((img: string) => img && img.trim() !== '') // Lọc bỏ các URL rỗng
+                : null;
+
             const payload = {
                 from_airport: formData.from_airport,
                 to_airport: formData.to_airport,
@@ -182,6 +207,7 @@ export default function CreateRequestWaitingScreen() {
                 desired_weight: formData.desired_weight ? parseFloat(formData.desired_weight) : null,
                 item_type: formData.item_type,
                 item_description: formData.item_description,
+                item_images: itemImages,
                 item_value: itemValueNum,
                 reward: rewardNum,
                 note: formData.note || null,
@@ -243,174 +269,191 @@ export default function CreateRequestWaitingScreen() {
                     <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
                 </View>
 
-                <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
-                    <Text className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                        Điền thông tin để hệ thống tự động tìm khách hàng phù hợp
-                    </Text>
-
-                    {/* From Airport */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Sân bay đi *
-                        </Text>
-                        <CitySelectModal
-                            placeholder="Chọn sân bay đi"
-                            iconName="flight-takeoff"
-                            value={formData.from_airport}
-                            onValueChange={(value) => setFormData({ ...formData, from_airport: value })}
-                        />
+                {loadingData ? (
+                    <View className="flex-1 items-center justify-center">
+                        <ActivityIndicator size="large" color="#2563EB" />
+                        <Text className="mt-4 text-gray-600 dark:text-gray-400">Đang tải thông tin request...</Text>
                     </View>
-
-                    {/* To Airport */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Sân bay đến *
+                ) : (
+                    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
+                        <Text className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                            Điền thông tin để hệ thống tự động tìm khách hàng phù hợp
                         </Text>
-                        <CitySelectModal
-                            placeholder="Chọn sân bay đến"
-                            iconName="flight-land"
-                            value={formData.to_airport}
-                            onValueChange={(value) => setFormData({ ...formData, to_airport: value })}
-                        />
-                    </View>
 
-                    {/* Desired Date */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Ngày mong muốn *
-                        </Text>
-                        <DatePickerInput
-                            value={formData.desired_date}
-                            onValueChange={(date) => setFormData({ ...formData, desired_date: date })}
-                            placeholder="Chọn ngày"
-                            minimumDate={new Date()}
-                        />
-                    </View>
+                        {/* From Airport */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Sân bay đi *
+                            </Text>
+                            <CitySelectModal
+                                placeholder="Chọn sân bay đi"
+                                iconName="flight-takeoff"
+                                value={formData.from_airport}
+                                onValueChange={(value) => setFormData({ ...formData, from_airport: value })}
+                            />
+                        </View>
 
-                    {/* Time Slot */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Khung giờ
-                        </Text>
+                        {/* To Airport */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Sân bay đến *
+                            </Text>
+                            <CitySelectModal
+                                placeholder="Chọn sân bay đến"
+                                iconName="flight-land"
+                                value={formData.to_airport}
+                                onValueChange={(value) => setFormData({ ...formData, to_airport: value })}
+                            />
+                        </View>
+
+                        {/* Desired Date */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Ngày mong muốn *
+                            </Text>
+                            <DatePickerInput
+                                value={formData.desired_date}
+                                onValueChange={(date) => setFormData({ ...formData, desired_date: date })}
+                                placeholder="Chọn ngày"
+                                minimumDate={new Date()}
+                            />
+                        </View>
+
+                        {/* Time Slot */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Khung giờ
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => setShowTimeSlotModal(true)}
+                                className="h-14 flex-row items-center justify-between rounded-lg border border-gray-200 bg-background-light px-4 dark:border-gray-600 dark:bg-gray-700">
+                                <Text className="text-text-primary dark:text-white">
+                                    {TIME_SLOTS.find((s) => s.value === formData.desired_time_slot)?.label || 'Bất kỳ'}
+                                </Text>
+                                <MaterialIcons name="arrow-drop-down" size={24} color={isDark ? '#9ca3af' : '#6b7280'} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Desired Weight */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Khối lượng (kg)
+                            </Text>
+                            <TextInput
+                                value={formData.desired_weight}
+                                onChangeText={(text) => setFormData({ ...formData, desired_weight: text })}
+                                placeholder="Ví dụ: 2.5"
+                                keyboardType="decimal-pad"
+                                className="h-14 rounded-lg border border-gray-200 bg-background-light px-4 text-text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            />
+                        </View>
+
+                        {/* Item Type */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Loại hàng hóa *
+                            </Text>
+                            <ItemTypeSelect
+                                placeholder="Chọn loại hàng hóa"
+                                value={formData.item_type}
+                                onValueChange={(value) => setFormData({ ...formData, item_type: value })}
+                            />
+                        </View>
+
+                        {/* Item Description */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Mô tả hàng hóa *
+                            </Text>
+                            <TextInput
+                                value={formData.item_description}
+                                onChangeText={(text) => setFormData({ ...formData, item_description: text })}
+                                placeholder="Mô tả chi tiết về hàng hóa"
+                                multiline
+                                numberOfLines={4}
+                                className="min-h-[100px] rounded-lg border border-gray-200 bg-background-light px-4 py-3 text-text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                textAlignVertical="top"
+                            />
+                        </View>
+
+                        {/* Item Images */}
+                        <View className="mb-4">
+                            <RequestItemImagesUpload
+                                images={formData.item_images}
+                                onImagesChange={(newImages) => setFormData({ ...formData, item_images: newImages })}
+                                maxImages={10}
+                                role="sender"
+                            />
+                        </View>
+
+                        {/* Item Value */}
+                        <View className="mb-4">
+                            <CurrencyInput
+                                label="Giá trị hàng hóa (VNĐ) *"
+                                value={formData.item_value}
+                                onChangeText={(text) => setFormData({ ...formData, item_value: text })}
+                                placeholder="Ví dụ: 1,000,000"
+                                showUnit={true}
+                            />
+                        </View>
+
+                        {/* Reward */}
+                        <View className="mb-4">
+                            <CurrencyInput
+                                label="Phần thưởng (VNĐ) *"
+                                value={formData.reward}
+                                onChangeText={(text) => setFormData({ ...formData, reward: text })}
+                                placeholder="Ví dụ: 500,000"
+                                showUnit={true}
+                            />
+                        </View>
+
+                        {/* Priority Level */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Mức độ ưu tiên
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => setShowPriorityModal(true)}
+                                className="h-14 flex-row items-center justify-between rounded-lg border border-gray-200 bg-background-light px-4 dark:border-gray-600 dark:bg-gray-700">
+                                <Text className="text-text-primary dark:text-white">
+                                    {PRIORITY_LEVELS.find((p) => p.value === formData.priority_level)?.label || 'Thường'}
+                                </Text>
+                                <MaterialIcons name="arrow-drop-down" size={24} color={isDark ? '#9ca3af' : '#6b7280'} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Note */}
+                        <View className="mb-4">
+                            <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
+                                Ghi chú
+                            </Text>
+                            <TextInput
+                                value={formData.note}
+                                onChangeText={(text) => setFormData({ ...formData, note: text })}
+                                placeholder="Ghi chú thêm (tùy chọn)"
+                                multiline
+                                numberOfLines={3}
+                                className="min-h-[80px] rounded-lg border border-gray-200 bg-background-light px-4 py-3 text-text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                textAlignVertical="top"
+                            />
+                        </View>
+
+                        {/* Submit Button */}
                         <TouchableOpacity
-                            onPress={() => setShowTimeSlotModal(true)}
-                            className="h-14 flex-row items-center justify-between rounded-lg border border-gray-200 bg-background-light px-4 dark:border-gray-600 dark:bg-gray-700">
-                            <Text className="text-text-primary dark:text-white">
-                                {TIME_SLOTS.find((s) => s.value === formData.desired_time_slot)?.label || 'Bất kỳ'}
-                            </Text>
-                            <MaterialIcons name="arrow-drop-down" size={24} color={isDark ? '#9ca3af' : '#6b7280'} />
+                            onPress={handleSubmit}
+                            disabled={loading}
+                            className="mb-8 h-14 items-center justify-center rounded-lg bg-blue-600">
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text className="text-base font-semibold text-white">
+                                    {isEditMode ? 'Cập nhật request' : 'Tạo request'}
+                                </Text>
+                            )}
                         </TouchableOpacity>
-                    </View>
-
-                    {/* Desired Weight */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Khối lượng (kg)
-                        </Text>
-                        <TextInput
-                            value={formData.desired_weight}
-                            onChangeText={(text) => setFormData({ ...formData, desired_weight: text })}
-                            placeholder="Ví dụ: 2.5"
-                            keyboardType="decimal-pad"
-                            className="h-14 rounded-lg border border-gray-200 bg-background-light px-4 text-text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                        />
-                    </View>
-
-                    {/* Item Type */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Loại hàng hóa *
-                        </Text>
-                        <ItemTypeSelect
-                            placeholder="Chọn loại hàng hóa"
-                            value={formData.item_type}
-                            onValueChange={(value) => setFormData({ ...formData, item_type: value })}
-                        />
-                    </View>
-
-                    {/* Item Description */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Mô tả hàng hóa *
-                        </Text>
-                        <TextInput
-                            value={formData.item_description}
-                            onChangeText={(text) => setFormData({ ...formData, item_description: text })}
-                            placeholder="Mô tả chi tiết về hàng hóa"
-                            multiline
-                            numberOfLines={4}
-                            className="min-h-[100px] rounded-lg border border-gray-200 bg-background-light px-4 py-3 text-text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                            textAlignVertical="top"
-                        />
-                    </View>
-
-                    {/* Item Value */}
-                    <View className="mb-4">
-                        <CurrencyInput
-                            label="Giá trị hàng hóa (VNĐ) *"
-                            value={formData.item_value}
-                            onChangeText={(text) => setFormData({ ...formData, item_value: text })}
-                            placeholder="Ví dụ: 1,000,000"
-                            showUnit={true}
-                        />
-                    </View>
-
-                    {/* Reward */}
-                    <View className="mb-4">
-                        <CurrencyInput
-                            label="Phần thưởng (VNĐ) *"
-                            value={formData.reward}
-                            onChangeText={(text) => setFormData({ ...formData, reward: text })}
-                            placeholder="Ví dụ: 500,000"
-                            showUnit={true}
-                        />
-                    </View>
-
-                    {/* Priority Level */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Mức độ ưu tiên
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => setShowPriorityModal(true)}
-                            className="h-14 flex-row items-center justify-between rounded-lg border border-gray-200 bg-background-light px-4 dark:border-gray-600 dark:bg-gray-700">
-                            <Text className="text-text-primary dark:text-white">
-                                {PRIORITY_LEVELS.find((p) => p.value === formData.priority_level)?.label || 'Thường'}
-                            </Text>
-                            <MaterialIcons name="arrow-drop-down" size={24} color={isDark ? '#9ca3af' : '#6b7280'} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Note */}
-                    <View className="mb-4">
-                        <Text className="mb-2 text-sm font-medium text-text-primary dark:text-white">
-                            Ghi chú
-                        </Text>
-                        <TextInput
-                            value={formData.note}
-                            onChangeText={(text) => setFormData({ ...formData, note: text })}
-                            placeholder="Ghi chú thêm (tùy chọn)"
-                            multiline
-                            numberOfLines={3}
-                            className="min-h-[80px] rounded-lg border border-gray-200 bg-background-light px-4 py-3 text-text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                            textAlignVertical="top"
-                        />
-                    </View>
-
-                    {/* Submit Button */}
-                    <TouchableOpacity
-                        onPress={handleSubmit}
-                        disabled={loading}
-                        className="mb-8 h-14 items-center justify-center rounded-lg bg-blue-600">
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text className="text-base font-semibold text-white">
-                                {isEditMode ? 'Cập nhật request' : 'Tạo request'}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                </ScrollView>
+                    </ScrollView>
+                )}
 
                 {/* Time Slot Modal */}
                 {showTimeSlotModal && (

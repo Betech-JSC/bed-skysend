@@ -9,12 +9,14 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Image,
 } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import api from '@/api/api';
 import { formatDateTime } from '../../utils/dateUtils';
+import { getAirportWithCity } from '../../utils/airportUtils';
 
 interface Flight {
   id: number;
@@ -26,6 +28,7 @@ interface Flight {
   airline: string;
   flight_number: string;
   boarding_pass_url: string | null;
+  item_images?: string[];
   verified: boolean;
   verified_at: string | null;
   verified_by: number | null;
@@ -395,6 +398,9 @@ export default function FlightHistoryScreen() {
                         <Text className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">
                           {flight.from_airport}
                         </Text>
+                        <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {getAirportWithCity(flight.from_airport).split(' - ')[1] || ''}
+                        </Text>
                       </View>
 
                       <View className="flex-1 flex-row items-center px-3">
@@ -408,6 +414,9 @@ export default function FlightHistoryScreen() {
                       <View className="items-center flex-1">
                         <Text className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">
                           {flight.to_airport}
+                        </Text>
+                        <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {getAirportWithCity(flight.to_airport).split(' - ')[1] || ''}
                         </Text>
                       </View>
                     </View>
@@ -432,6 +441,32 @@ export default function FlightHistoryScreen() {
                         </View>
                       )}
                     </View>
+
+                    {/* Hiển thị ảnh vé máy bay */}
+                    {flight.item_images && flight.item_images.length > 0 && (
+                      <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                          Ảnh vé máy bay ({flight.item_images.length})
+                        </Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
+                          {flight.item_images.slice(0, 4).map((imageUrl, index) => (
+                            <Image
+                              key={index}
+                              source={{ uri: imageUrl }}
+                              className="h-16 w-16 rounded-lg"
+                              resizeMode="cover"
+                            />
+                          ))}
+                          {flight.item_images.length > 4 && (
+                            <View className="h-16 w-16 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700">
+                              <Text className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                +{flight.item_images.length - 4}
+                              </Text>
+                            </View>
+                          )}
+                        </ScrollView>
+                      </View>
+                    )}
 
                     {/* Thông báo chuyến bay hoàn thành và nút xem đơn hàng */}
                     {(() => {

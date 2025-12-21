@@ -9,22 +9,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import CustomerHeader from './components/CustomerHeader';
 
 export default function OrderDetailScreen() {
     const router = useRouter();
 
     return (
         <View className="flex-1 bg-background-light dark:bg-background-dark">
-            {/* Top App Bar - Blur effect */}
-            <View className="sticky top-0 z-50 flex-row items-center bg-background-light/80 dark:bg-background-dark/80 px-4 py-4 backdrop-blur-sm">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={28} color="#1E293B" className="dark:text-white" />
-                </TouchableOpacity>
-                <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white pr-10">
-                    Chi tiết yêu cầu
-                </Text>
-                <View className="w-10" />
-            </View>
+            {/* Top App Bar */}
+            <CustomerHeader title="Chi tiết yêu cầu" />
 
             <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
                 <View className="px-4 pt-2 pb-32 gap-y-6">

@@ -95,6 +95,8 @@ class FlightController extends Controller
             'flight_number' => 'required|string|max:20',
             'max_weight' => 'required|numeric|min:0.1',
             'note' => 'nullable|string|max:1000',
+            'item_images' => 'nullable|array',
+            'item_images.*' => 'nullable|string|url',
             'attachments' => 'nullable|array',
             'attachments.*' => 'required|integer|exists:attachments,id',
         ]);
@@ -118,6 +120,15 @@ class FlightController extends Controller
         }
 
         return DB::transaction(function () use ($request) {
+            // Normalize item_images - đảm bảo là array hoặc null
+            $itemImages = null;
+            if ($request->has('item_images') && is_array($request->item_images)) {
+                $itemImages = array_filter($request->item_images, function ($img) {
+                    return !empty($img) && is_string($img);
+                });
+                $itemImages = !empty($itemImages) ? array_values($itemImages) : null;
+            }
+
             $flight = Flight::create([
                 'uuid'           => Str::uuid(),
                 'customer_id'    => auth()->id(),
@@ -129,6 +140,7 @@ class FlightController extends Controller
                 'flight_number'  => strtoupper($request->flight_number),
                 'max_weight'     => $request->max_weight,
                 'booked_weight'  => 0.00,
+                'item_images'    => $itemImages,
                 'note'           => $request->note,
                 'verified'       => false,
             ]);
@@ -194,6 +206,19 @@ class FlightController extends Controller
 
             $oldStatus = $flight->status;
 
+            // Normalize item_images nếu có
+            $itemImages = $flight->item_images; // Giữ nguyên nếu không có update
+            if ($request->has('item_images')) {
+                if (is_array($request->item_images)) {
+                    $itemImages = array_filter($request->item_images, function ($img) {
+                        return !empty($img) && is_string($img);
+                    });
+                    $itemImages = !empty($itemImages) ? array_values($itemImages) : null;
+                } else {
+                    $itemImages = null;
+                }
+            }
+
             $flight->update([
                 'from_airport'   => strtoupper($request->filled('from_airport') ? $request->from_airport : $flight->from_airport),
                 'to_airport'     => strtoupper($request->filled('to_airport') ? $request->to_airport : $flight->to_airport),
@@ -204,6 +229,7 @@ class FlightController extends Controller
                 'item_value'     => $request->filled('item_value') ? $request->item_value : $flight->item_value,
                 'status'         => $request->filled('status') ? $request->status : $flight->status,
                 'item_type'      => $request->filled('item_type') ? $request->item_type : $flight->item_type,
+                'item_images'    => $itemImages,
                 'note'           => $request->filled('note') ? $request->note : $flight->note,
             ]);
 

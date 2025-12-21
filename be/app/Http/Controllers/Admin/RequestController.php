@@ -93,6 +93,8 @@ class RequestController extends Controller
                 'reward' => $request->reward,
                 'item_type' => $request->item_type,
                 'item_value' => $request->item_value,
+                'item_description' => $request->item_description,
+                'item_images' => $request->item_images ?? [],
                 'expires_at' => $request->expires_at?->format('Y-m-d H:i:s'),
                 'is_expired' => $request->is_expired,
                 'has_order' => $request->order !== null,

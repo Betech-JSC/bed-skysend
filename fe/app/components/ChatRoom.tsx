@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
     Alert,
     SafeAreaView,
+    Linking,
 } from 'react-native';
 import { getDatabase, ref, onValue, push, serverTimestamp, get, set, onDisconnect } from 'firebase/database';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -631,22 +632,39 @@ export default function ChatRoom({ chatId }: ChatRoomProps) {
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
-            <View className="px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
-                <View className="flex-row items-center justify-between mb-2">
-                    <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
-                    <View className="flex-1 ml-3">
-                        <View className="flex-row items-center">
-                            <Text className="text-lg font-bold text-text-primary dark:text-white">
+            <View className="px-4 pt-3 pb-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+                <View className="flex-row items-center gap-3">
+                    <BackButton className="bg-gray-100 dark:bg-gray-700 shadow-sm" />
+                    <View className="flex-1">
+                        <View className="flex-row items-center gap-2 mb-1">
+                            <Text className="text-base font-bold text-text-primary dark:text-white flex-1">
                                 {otherUserName || 'Người dùng'}
                             </Text>
                             {otherUserOnline && (
-                                <View className="ml-2 w-2 h-2 bg-green-500 rounded-full" />
+                                <View className="w-2 h-2 bg-green-500 rounded-full" />
                             )}
                         </View>
                         {otherUserPhone && (
-                            <Text className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                📱 {otherUserPhone}
-                            </Text>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    const phoneNumber = otherUserPhone.replace(/[^0-9+]/g, '');
+                                    if (phoneNumber) {
+                                        Linking.openURL(`tel:${phoneNumber}`).catch((err) => {
+                                            console.error('Error opening phone dialer:', err);
+                                            Alert.alert('Lỗi', 'Không thể mở ứng dụng gọi điện');
+                                        });
+                                    } else {
+                                        Alert.alert('Lỗi', 'Số điện thoại không hợp lệ');
+                                    }
+                                }}
+                                activeOpacity={0.7}
+                                className="flex-row items-center gap-1.5"
+                            >
+                                <MaterialIcons name="phone" size={14} color="#2563EB" />
+                                <Text className="text-xs text-primary font-medium">
+                                    {otherUserPhone}
+                                </Text>
+                            </TouchableOpacity>
                         )}
                     </View>
                 </View>

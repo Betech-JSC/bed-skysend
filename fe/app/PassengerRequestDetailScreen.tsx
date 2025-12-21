@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import CustomerHeader from "./components/CustomerHeader";
 
 export default function RequestDetailScreen() {
     const router = useRouter();
@@ -17,19 +18,14 @@ export default function RequestDetailScreen() {
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
             {/* Top App Bar */}
-            <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark sticky top-0 z-10">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={28} color="#1F2937" className="dark:text-white" />
-                </TouchableOpacity>
-
-                <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
-                    Chi tiết yêu cầu
-                </Text>
-
-                <TouchableOpacity>
-                    <MaterialIcons name="more-horiz" size={28} color="#1F2937" className="dark:text-white" />
-                </TouchableOpacity>
-            </View>
+            <CustomerHeader 
+                title="Chi tiết yêu cầu"
+                rightComponent={
+                    <TouchableOpacity>
+                        <MaterialIcons name="more-horiz" size={24} color="#1F2937" className="dark:text-white" />
+                    </TouchableOpacity>
+                }
+            />
 
             <ScrollView className="flex-1 px-4 pb-32">
                 <View className="gap-y-4">

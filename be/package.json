@@ -9,7 +9,8 @@
         "dev": "vite",
         "build": "vite build && vite build --ssr",
         "socket": "php artisan reverb:start",
-        "rematch": "php artisan requests:rematch"
+        "rematch": "php artisan requests:rematch",
+        "migrate:fresh:seed": "php artisan migrate:fresh --seed"
     },
     "devDependencies": {
         "@inertiajs/vue3": "^1.0.15",

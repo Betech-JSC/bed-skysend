@@ -97,6 +97,8 @@ class FlightController extends Controller
                 'max_weight' => $flight->max_weight,
                 'booked_weight' => $flight->booked_weight,
                 'available_weight' => $flight->available_weight,
+                'boarding_pass_url' => $flight->boarding_pass_url,
+                'item_images' => $flight->item_images ?? [],
                 'requests_count' => $flight->requests->count(),
                 'orders_count' => $flight->orders->count(),
                 'created_at' => $flight->created_at->format('Y-m-d H:i:s'),

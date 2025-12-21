@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import CustomerHeader from '../../components/CustomerHeader';
 
 export default function WalletScreen() {
     const router = useRouter();
@@ -19,15 +20,7 @@ export default function WalletScreen() {
     return (
         <View className="flex-1 bg-background-light dark:bg-background-dark">
             {/* Top App Bar */}
-            <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light dark:bg-background-dark px-4 py-4">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={28} color="#1F2937" className="dark:text-white" />
-                </TouchableOpacity>
-                <Text className="absolute left-0 right-0 text-center text-xl font-bold text-text-primary dark:text-white">
-                    Ví tiền
-                </Text>
-                <View className="w-10" />
-            </View>
+            <CustomerHeader title="Ví tiền" />
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Balance Card */}

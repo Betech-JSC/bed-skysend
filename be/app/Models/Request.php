@@ -20,6 +20,7 @@ class Request extends Model
         'time_slot',
         'item_description',
         'item_type',
+        'item_images',
         'item_value',
         'reward',
         'status',
@@ -49,6 +50,7 @@ class Request extends Model
         'item_value'    => 'decimal:2',
         'reward'        => 'decimal:2',
         'desired_weight' => 'decimal:2',
+        'item_images'   => 'array',
     ];
 
     protected $appends = [

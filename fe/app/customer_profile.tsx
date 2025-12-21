@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import CustomerHeader from './components/CustomerHeader';
 
 export default function SenderProfileScreen() {
     const router = useRouter();
@@ -16,15 +17,7 @@ export default function SenderProfileScreen() {
     return (
         <View className="flex-1 bg-background-light dark:bg-background-dark">
             {/* Top App Bar */}
-            <View className="sticky top-0 z-50 flex-row items-center justify-between bg-card-light dark:bg-card-dark px-4 py-4 shadow-sm">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={28} color="#1F2937" className="dark:text-white" />
-                </TouchableOpacity>
-                <Text className="absolute left-0 right-0 text-center text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
-                    Hồ sơ Đối tác
-                </Text>
-                <View className="w-10" />
-            </View>
+            <CustomerHeader title="Hồ sơ Đối tác" />
 
             <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
                 <View className="px-4 pt-4 pb-32 gap-y-4">

@@ -24,6 +24,7 @@ class Flight extends Model
         'status',
         'flight_number',
         'boarding_pass_url',
+        'item_images',
         'verified',
         'verified_at',
         'verified_by',
@@ -38,6 +39,7 @@ class Flight extends Model
         'verified'    => 'boolean',
         'max_weight'  => 'decimal:2',
         'booked_weight' => 'decimal:2',
+        'item_images' => 'array',
     ];
 
     protected $appends = [

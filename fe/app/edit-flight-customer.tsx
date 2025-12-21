@@ -16,6 +16,8 @@ import CitySelectModal from './components/CitySelectModal';
 import DatePickerInput from './components/DatePickerInput';
 import ItemTypeSelect from './components/ItemTypeSelect'; // ĐÃ THÊM LẠI
 import FlightNumberSelect from './components/FlightNumberSelect';
+import RequestItemImagesUpload from './components/RequestItemImagesUpload';
+import CustomerHeader from './components/CustomerHeader';
 import api from "@/api/api";
 
 export default function EditFlightScreen() {
@@ -25,6 +27,7 @@ export default function EditFlightScreen() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [isVerified, setIsVerified] = useState(false); // Trạng thái xác thực
+    const [isCancelled, setIsCancelled] = useState(false); // Trạng thái đã hủy
 
     // Form states
     const [departureAirport, setDepartureAirport] = useState({ value: '', label: '' });
@@ -34,6 +37,7 @@ export default function EditFlightScreen() {
     const [flightCode, setFlightCode] = useState('');
     const [allowedWeight, setAllowedWeight] = useState('');
     const [itemType, setItemType] = useState(''); // ĐÃ THÊM LẠI – QUAN TRỌNG!!!
+    const [itemImages, setItemImages] = useState<string[]>([]);
 
     // Lấy ID an toàn
     const flightId = React.useMemo(() => {
@@ -65,6 +69,10 @@ export default function EditFlightScreen() {
             // Kiểm tra trạng thái xác thực
             const verified = data.verified === true || data.verified === 1 || data.status === 'verified';
             setIsVerified(verified);
+            
+            // Kiểm tra trạng thái đã hủy
+            const cancelled = data.status === 'cancelled' || data.status === 'canceled';
+            setIsCancelled(cancelled);
 
             setDepartureAirport({ value: data.from_airport, label: data.from_airport });
             setArrivalAirport({ value: data.to_airport, label: data.to_airport });
@@ -73,12 +81,33 @@ export default function EditFlightScreen() {
             setFlightCode(data.flight_number || '');
             setAllowedWeight(data.max_weight?.toString() || '');
             setItemType(data.item_type || ''); // ĐÃ THÊM – BẮT BUỘC
+            
+            // Load item_images
+            if (data.item_images) {
+                const images = Array.isArray(data.item_images)
+                    ? data.item_images.filter((url: string | null) => url && typeof url === 'string')
+                    : (typeof data.item_images === 'string' && data.item_images.trim() !== '')
+                        ? JSON.parse(data.item_images)
+                        : [];
+                setItemImages(images);
+            } else {
+                setItemImages([]);
+            }
 
             // Nếu đã xác thực, hiển thị thông báo
             if (verified) {
                 Alert.alert(
                     'Chuyến bay đã được xác thực',
                     'Chuyến bay này đã được xác thực và không thể chỉnh sửa. Bạn chỉ có thể xem thông tin.',
+                    [{ text: 'OK' }]
+                );
+            }
+            
+            // Nếu đã hủy, hiển thị thông báo
+            if (cancelled) {
+                Alert.alert(
+                    'Chuyến bay đã bị hủy',
+                    'Chuyến bay này đã bị hủy và không thể chỉnh sửa. Bạn chỉ có thể xem thông tin.',
                     [{ text: 'OK' }]
                 );
             }
@@ -98,6 +127,12 @@ export default function EditFlightScreen() {
             Alert.alert('Không thể chỉnh sửa', 'Chuyến bay đã được xác thực và không thể chỉnh sửa.');
             return;
         }
+        
+        // Kiểm tra nếu đã hủy thì không cho phép chỉnh sửa
+        if (isCancelled) {
+            Alert.alert('Không thể chỉnh sửa', 'Chuyến bay đã bị hủy và không thể chỉnh sửa.');
+            return;
+        }
 
         if (!departureAirport.value) return Alert.alert('Lỗi', 'Vui lòng chọn sân bay đi');
         if (!arrivalAirport.value) return Alert.alert('Lỗi', 'Vui lòng chọn sân bay đến');
@@ -115,6 +150,9 @@ export default function EditFlightScreen() {
             flight_number: flightCode.trim(),
             max_weight: parseFloat(allowedWeight),
             item_type: itemType, // ĐÃ GỬI LÊN → HẾT LỖI 1048 NGAY!!!
+            item_images: itemImages && itemImages.length > 0
+                ? itemImages.filter(url => url && typeof url === 'string')
+                : null,
         };
 
         setSubmitting(true);
@@ -146,6 +184,12 @@ export default function EditFlightScreen() {
         // Kiểm tra nếu đã xác thực thì không cho phép hủy
         if (isVerified) {
             Alert.alert('Không thể hủy', 'Chuyến bay đã được xác thực và không thể hủy.');
+            return;
+        }
+        
+        // Kiểm tra nếu đã hủy rồi thì không cho phép hủy lại
+        if (isCancelled) {
+            Alert.alert('Không thể hủy', 'Chuyến bay này đã bị hủy.');
             return;
         }
 
@@ -196,15 +240,7 @@ export default function EditFlightScreen() {
     return (
         <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
             {/* Header */}
-            <View className="h-16 flex-row items-center justify-between border-b border-gray-200 bg-white px-4 dark:bg-gray-800 dark:border-gray-700">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="arrow-back" size={24} color="#1F2937" className="dark:text-white" />
-                </TouchableOpacity>
-                <Text className="flex-1 text-center text-lg font-bold text-text-dark-gray dark:text-white -ml-10">
-                    Chỉnh sửa chuyến bay
-                </Text>
-                <View className="w-10" />
-            </View>
+            <CustomerHeader title="Chỉnh sửa chuyến bay" />
 
             <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140 }}>
                 <View className="p-4 gap-6">
@@ -226,7 +262,18 @@ export default function EditFlightScreen() {
                             </View>
                         )}
 
-                        <View className="gap-5" pointerEvents={isVerified ? 'none' : 'auto'} style={{ opacity: isVerified ? 0.6 : 1 }}>
+                        {isCancelled && (
+                            <View className="mb-4 rounded-xl bg-red-50 border border-red-200 p-4 dark:bg-red-900/20 dark:border-red-800">
+                                <View className="flex-row items-center gap-2">
+                                    <MaterialIcons name="cancel" size={20} color="#DC2626" />
+                                    <Text className="flex-1 text-sm font-semibold text-red-800 dark:text-red-300">
+                                        Chuyến bay đã bị hủy - Không thể chỉnh sửa
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
+                        <View className="gap-5" pointerEvents={isVerified || isCancelled ? 'none' : 'auto'} style={{ opacity: isVerified || isCancelled ? 0.6 : 1 }}>
 
                             {/* Sân bay đi / đến */}
                             <View className="grid grid-cols-2 gap-4">
@@ -299,6 +346,16 @@ export default function EditFlightScreen() {
                                 value={allowedWeight}
                                 onChangeText={setAllowedWeight}
                             />
+
+                            {/* Upload ảnh vé máy bay */}
+                            <View>
+                                <RequestItemImagesUpload
+                                    images={itemImages}
+                                    onImagesChange={setItemImages}
+                                    maxImages={10}
+                                    role="customer"
+                                />
+                            </View>
                         </View>
                     </View>
 
@@ -318,12 +375,29 @@ export default function EditFlightScreen() {
                             </View>
                         </View>
                     )}
+
+                    {/* Chuyến bay đã hủy - chỉ hiển thị khi đã cancelled */}
+                    {isCancelled && (
+                        <View className="bg-red-50 rounded-2xl p-5 dark:bg-red-900/20">
+                            <View className="flex-row items-center gap-3">
+                                <MaterialIcons name="cancel" size={28} color="#DC2626" />
+                                <View>
+                                    <Text className="font-semibold text-text-dark-gray dark:text-white">
+                                        Chuyến bay đã bị hủy
+                                    </Text>
+                                    <Text className="text-sm text-gray-600 dark:text-gray-400">
+                                        Chuyến bay này đã bị hủy và không thể chỉnh sửa
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
                 </View>
             </ScrollView>
 
             {/* Nút cố định */}
             <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 px-4 py-4 shadow-2xl border-t border-gray-200 dark:border-gray-700">
-                {!isVerified ? (
+                {!isVerified && !isCancelled ? (
                     <>
                         <TouchableOpacity
                             onPress={handleUpdateFlight}
@@ -345,6 +419,12 @@ export default function EditFlightScreen() {
                             <Text className="text-red-600 font-bold text-base">Hủy chuyến bay</Text>
                         </TouchableOpacity>
                     </>
+                ) : isCancelled ? (
+                    <View className="h-14 rounded-xl bg-gray-200 dark:bg-gray-700 justify-center items-center">
+                        <Text className="text-gray-600 dark:text-gray-400 font-bold text-base">
+                            Chuyến bay đã bị hủy - Không thể chỉnh sửa
+                        </Text>
+                    </View>
                 ) : (
                     <View className="h-14 rounded-xl bg-gray-200 dark:bg-gray-700 justify-center items-center">
                         <Text className="text-gray-600 dark:text-gray-400 font-bold text-base">

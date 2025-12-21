@@ -12,6 +12,8 @@ import {
   Alert,
   RefreshControl,
   Linking,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,6 +24,7 @@ import { getAirlineLogo } from '@/constants/airlines';
 import BackButton from './components/BackButton';
 import { getRequestStatusLabel } from './utils/orderStatusUtils';
 import { formatDate, formatTime } from './utils/dateUtils';
+import { getAirportWithCity } from './utils/airportUtils';
 
 interface FlightDetail {
   id: number;
@@ -32,6 +35,8 @@ interface FlightDetail {
   flight_number: string;
   max_weight: number;
   boarding_pass?: string;
+  boarding_pass_url?: string;
+  item_images?: string[];
   status: string;
   verified?: boolean;
   departure_time?: string;
@@ -49,6 +54,8 @@ export default function FlightDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
 
   const flightId = React.useMemo(() => (Array.isArray(id) ? id[0] : id), [id]);
 
@@ -237,9 +244,9 @@ export default function FlightDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-        <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light/80 px-4 py-4 backdrop-blur-sm dark:bg-background-dark/80">
-          <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
-          <Text className="text-lg font-bold text-text-dark-gray -ml-10 flex-1 text-center dark:text-white">
+        <View className="h-16 flex-row items-center justify-between border-b border-gray-200 bg-white px-4 dark:bg-gray-800 dark:border-gray-700">
+          <BackButton />
+          <Text className="flex-1 text-center text-lg font-bold text-text-dark-gray dark:text-white -ml-10">
             Chi tiết chuyến bay
           </Text>
           <View className="w-10" />
@@ -261,9 +268,9 @@ export default function FlightDetailScreen() {
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
-      <View className="sticky top-0 z-10 flex-row items-center justify-between bg-background-light/80 px-4 py-4 backdrop-blur-sm dark:bg-background-dark/80">
-        <BackButton className="bg-white dark:bg-gray-800 shadow-sm" />
-        <Text className="text-lg font-bold text-text-dark-gray -ml-10 flex-1 text-center dark:text-white">
+      <View className="h-16 flex-row items-center justify-between border-b border-gray-200 bg-white px-4 dark:bg-gray-800 dark:border-gray-700">
+        <BackButton />
+        <Text className="flex-1 text-center text-lg font-bold text-text-dark-gray dark:text-white -ml-10">
           Chuyến bay #{flightDetail.id}
         </Text>
         <View className="w-10" />
@@ -299,7 +306,10 @@ export default function FlightDetailScreen() {
             <View className="relative flex-row items-center justify-between py-4">
               <View className="items-start flex-1">
                 <Text className="text-3xl font-bold text-text-dark-gray dark:text-white">{flightDetail.from_airport}</Text>
-                <Text className="text-sm text-gray-500">
+                <Text className="text-sm text-gray-500 mt-1">
+                  {getAirportWithCity(flightDetail.from_airport)}
+                </Text>
+                <Text className="text-sm text-gray-500 mt-1">
                   {flightDetail.departure_time ? formatTime(flightDetail.departure_time) : formatTime(flightDetail.flight_date)}
                 </Text>
               </View>
@@ -310,15 +320,13 @@ export default function FlightDetailScreen() {
               </View>
               <View className="items-end flex-1">
                 <Text className="text-3xl font-bold text-text-dark-gray dark:text-white">{flightDetail.to_airport}</Text>
-                <Text className="text-sm text-gray-500">
+                <Text className="text-sm text-gray-500 mt-1 text-right">
+                  {getAirportWithCity(flightDetail.to_airport)}
+                </Text>
+                <Text className="text-sm text-gray-500 mt-1 text-right">
                   {flightDetail.arrival_time ? formatTime(flightDetail.arrival_time) : '--:--'}
                 </Text>
               </View>
-            </View>
-
-            <View className="mt-1 flex-row justify-between">
-              <Text className="text-xs text-gray-400">{flightDetail.from_city || flightDetail.from_airport}</Text>
-              <Text className="text-xs text-gray-400">{flightDetail.to_city || flightDetail.to_airport}</Text>
             </View>
 
             <View className="mt-4 border-t border-dashed border-gray-200 pt-4 dark:border-gray-700">
@@ -326,6 +334,40 @@ export default function FlightDetailScreen() {
               <Text className="font-bold text-text-dark-gray dark:text-white">{formatDate(flightDetail.flight_date)}</Text>
             </View>
           </View>
+
+          {/* Ảnh vé máy bay */}
+          {(flightDetail.item_images && flightDetail.item_images.length > 0) && (
+            <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
+              <Text className="text-base font-bold text-text-dark-gray dark:text-white mb-4">
+                Ảnh vé máy bay ({flightDetail.item_images.length})
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="w-full">
+                <View className="flex-row gap-3">
+                  {flightDetail.item_images.map((imageUrl, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => {
+                        setSelectedImage(imageUrl);
+                        setImageModalVisible(true);
+                      }}
+                      className="relative"
+                    >
+                      <Image
+                        source={{ uri: imageUrl }}
+                        className="h-32 w-32 rounded-lg"
+                        resizeMode="cover"
+                      />
+                      <View className="absolute inset-0 items-center justify-center rounded-lg bg-black/0">
+                        <View className="bg-black/50 rounded-full p-2">
+                          <MaterialIcons name="zoom-in" size={20} color="#FFFFFF" />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
 
           {/* Boarding Pass */}
           {/* <View className="rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800">
@@ -498,6 +540,32 @@ export default function FlightDetailScreen() {
                               <Text className="text-sm text-text-dark-gray dark:text-white">
                                 {req.note}
                               </Text>
+                            </View>
+                          )}
+                          {/* Hình ảnh kiện hàng */}
+                          {req.item_images && Array.isArray(req.item_images) && req.item_images.length > 0 && (
+                            <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                              <Text className="text-xs text-gray-500 mb-2">Hình ảnh kiện hàng ({req.item_images.length})</Text>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View className="flex-row gap-2">
+                                  {req.item_images.map((imageUrl: string, index: number) => (
+                                    <TouchableOpacity
+                                      key={index}
+                                      onPress={() => {
+                                        setSelectedImage(imageUrl);
+                                        setImageModalVisible(true);
+                                      }}
+                                      activeOpacity={0.8}
+                                    >
+                                      <Image
+                                        source={{ uri: imageUrl }}
+                                        className="w-20 h-20 rounded-lg"
+                                        resizeMode="cover"
+                                      />
+                                    </TouchableOpacity>
+                                  ))}
+                                </View>
+                              </ScrollView>
                             </View>
                           )}
                           {/* Thông tin thời gian */}
@@ -694,6 +762,41 @@ export default function FlightDetailScreen() {
           </View>
         )}
       </View>
+
+      {/* Modal xem ảnh full size */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/90 items-center justify-center">
+          <TouchableOpacity
+            className="absolute top-12 right-4 z-10"
+            onPress={() => setImageModalVisible(false)}
+          >
+            <View className="bg-white/20 rounded-full p-2">
+              <MaterialIcons name="close" size={28} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage }}
+              style={{
+                width: Dimensions.get('window').width - 40,
+                height: Dimensions.get('window').height - 200,
+              }}
+              resizeMode="contain"
+            />
+          )}
+          <TouchableOpacity
+            className="absolute bottom-8 bg-primary px-6 py-3 rounded-lg"
+            onPress={() => setImageModalVisible(false)}
+          >
+            <Text className="text-white font-semibold">Đóng</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
