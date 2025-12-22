@@ -38,6 +38,7 @@ export default function EditFlightScreen() {
     const [allowedWeight, setAllowedWeight] = useState('');
     const [itemType, setItemType] = useState(''); // ĐÃ THÊM LẠI – QUAN TRỌNG!!!
     const [itemImages, setItemImages] = useState<string[]>([]);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     // Lấy ID an toàn
     const flightId = React.useMemo(() => {
@@ -141,6 +142,7 @@ export default function EditFlightScreen() {
         if (!flightCode.trim()) return Alert.alert('Lỗi', 'Vui lòng nhập mã chuyến bay');
         if (!allowedWeight || isNaN(parseFloat(allowedWeight))) return Alert.alert('Lỗi', 'Khối lượng phải là số');
         if (!itemType) return Alert.alert('Lỗi', 'Vui lòng chọn loại tài liệu'); // BẮT BUỘC
+        if (!termsAccepted) return Alert.alert('Thông báo', 'Vui lòng đọc và đồng ý với các điều khoản trước khi cập nhật chuyến bay');
 
         const updateData = {
             from_airport: departureAirport.value,
@@ -392,6 +394,45 @@ export default function EditFlightScreen() {
                             </View>
                         </View>
                     )}
+
+                    {/* Điều khoản và điều kiện - chỉ hiển thị khi chưa verified và chưa cancelled */}
+                    {!isVerified && !isCancelled && (
+                        <View className="mt-6 mb-4 rounded-lg bg-gray-50 dark:bg-gray-900/50 p-4 border border-gray-200 dark:border-gray-700">
+                            <TouchableOpacity
+                                onPress={() => setTermsAccepted(!termsAccepted)}
+                                className="flex-row items-start gap-3 mb-3"
+                                activeOpacity={0.7}
+                            >
+                                <View className={`h-5 w-5 rounded border-2 mt-0.5 items-center justify-center ${
+                                    termsAccepted 
+                                        ? 'bg-primary border-primary' 
+                                        : 'border-gray-300 dark:border-gray-600 bg-transparent'
+                                }`}>
+                                    {termsAccepted && <MaterialIcons name="check" size={16} color="white" />}
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="text-sm text-text-primary dark:text-white leading-5">
+                                        Tôi đã đọc và đồng ý với các{' '}
+                                        <Text 
+                                            className="text-primary font-semibold underline"
+                                            onPress={() => router.push('/terms-and-conditions')}
+                                        >
+                                            điều khoản và điều kiện
+                                        </Text>
+                                        {' '}của dịch vụ. Tôi hiểu rằng việc cập nhật chuyến bay có nghĩa là tôi cam kết thực hiện dịch vụ gửi hàng một cách trách nhiệm và tuân thủ các quy định của nền tảng.
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => router.push('/terms-and-conditions')}
+                                className="mt-2"
+                            >
+                                <Text className="text-xs text-primary font-semibold underline">
+                                    Xem chi tiết điều khoản và điều kiện
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
             </ScrollView>
 
@@ -401,8 +442,12 @@ export default function EditFlightScreen() {
                     <>
                         <TouchableOpacity
                             onPress={handleUpdateFlight}
-                            disabled={submitting}
-                            className={`h-14 rounded-xl justify-center items-center mb-3 ${submitting ? 'bg-gray-400' : 'bg-primary'}`}
+                            disabled={submitting || !termsAccepted}
+                            className={`h-14 rounded-xl justify-center items-center mb-3 ${
+                                submitting || !termsAccepted 
+                                    ? 'bg-gray-400 dark:bg-gray-600' 
+                                    : 'bg-primary'
+                            }`}
                         >
                             {submitting ? (
                                 <ActivityIndicator color="white" />

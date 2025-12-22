@@ -126,19 +126,19 @@ export default function ProfileScreen() {
     const toggleRole = async () => {
         if (!user) return;
         const newRole = isSender ? 'customer' : 'sender';
-        
+
         try {
             const response = await api.post('user/switch-role', { role: newRole });
-            
+
             if (response.data?.success) {
                 // Cập nhật Redux store với role mới
                 dispatch(setUser({ ...user, role: newRole }));
-                
+
                 // Cập nhật profile state
                 if (profile) {
                     setProfile({ ...profile, role: newRole });
                 }
-                
+
                 Alert.alert(
                     'Thành công',
                     `Đã chuyển sang vai trò ${newRole === 'sender' ? 'Người gửi' : 'Hành khách'}`,
@@ -211,12 +211,12 @@ export default function ProfileScreen() {
                                         try {
                                             setLoading(true);
                                             const response = await api.delete('user/account');
-                                            
+
                                             if (response.data?.success) {
                                                 // Xóa dữ liệu local và Redux state
                                                 await AsyncStorage.removeItem('user');
                                                 dispatch(setUser(null));
-                                                
+
                                                 Alert.alert(
                                                     'Thành công',
                                                     'Tài khoản của bạn đã được xóa vĩnh viễn.',
@@ -516,10 +516,10 @@ export default function ProfileScreen() {
                                 onPress={toggleRole}
                                 className="flex-row items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 shadow-lg active:opacity-90"
                             >
-                                <MaterialIcons 
-                                    name={isSender ? "person" : "local-shipping"} 
-                                    size={20} 
-                                    color="#FFFFFF" 
+                                <MaterialIcons
+                                    name={isSender ? "person" : "local-shipping"}
+                                    size={20}
+                                    color="#FFFFFF"
                                 />
                                 <Text className="text-base font-bold text-white">
                                     Chuyển sang {isSender ? 'Hành khách' : 'Người gửi'}
@@ -528,20 +528,20 @@ export default function ProfileScreen() {
                             </TouchableOpacity>
                             <View className="mt-2 flex-row items-center justify-center gap-2">
                                 <View className={`flex-row items-center gap-1 rounded-full px-3 py-1 ${isSender ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                                    <MaterialIcons 
-                                        name="local-shipping" 
-                                        size={14} 
-                                        color={isSender ? "#2563EB" : "#6B7280"} 
+                                    <MaterialIcons
+                                        name="local-shipping"
+                                        size={14}
+                                        color={isSender ? "#2563EB" : "#6B7280"}
                                     />
                                     <Text className={`text-xs font-semibold ${isSender ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
                                         Người gửi
                                     </Text>
                                 </View>
                                 <View className={`flex-row items-center gap-1 rounded-full px-3 py-1 ${!isSender ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                                    <MaterialIcons 
-                                        name="person" 
-                                        size={14} 
-                                        color={!isSender ? "#10B981" : "#6B7280"} 
+                                    <MaterialIcons
+                                        name="person"
+                                        size={14}
+                                        color={!isSender ? "#10B981" : "#6B7280"}
                                     />
                                     <Text className={`text-xs font-semibold ${!isSender ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                                         Hành khách

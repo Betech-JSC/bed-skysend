@@ -17,10 +17,7 @@ import api from "@/api/api";
 import UserProfileInfo from "./components/UserProfileInfo";
 import CitySelectModal from "./components/CitySelectModal";
 import DatePickerInput from "./components/DatePickerInput";
-import ItemTypeSelect from "./components/ItemTypeSelect";
 import BackButton from "./components/BackButton";
-import CurrencyInput from "./components/CurrencyInput";
-import { parseVND } from "@/utils/currencyFormatter";
 
 export default function PassengerSearchResultsScreen() {
     const router = useRouter();
@@ -43,8 +40,6 @@ export default function PassengerSearchResultsScreen() {
     });
     const [filterDate, setFilterDate] = useState(params.date as string || '');
     const [filterTimeSlot, setFilterTimeSlot] = useState(params.timeSlot as string || '');
-    const [filterItemType, setFilterItemType] = useState(params.item_type as string || '');
-    const [filterItemValue, setFilterItemValue] = useState(params.item_value as string || '');
 
     // Extract params (for initial display)
     const departureCode = filterDepartureCity.value || params.departureCode as string || '';
@@ -143,8 +138,6 @@ export default function PassengerSearchResultsScreen() {
                 if (filterArrivalCity.value) searchParams.to_airport = filterArrivalCity.value;
                 if (filterDate) searchParams.date = filterDate;
                 if (filterTimeSlot) searchParams.time_slot = filterTimeSlot;
-                if (filterItemType) searchParams.item_type = filterItemType;
-                if (filterItemValue) searchParams.item_value = parseVND(filterItemValue);
             } else {
                 // Use initial params or filter values
                 if (filterDepartureCity.value || params.departureCode) {
@@ -158,12 +151,6 @@ export default function PassengerSearchResultsScreen() {
                 }
                 if (filterTimeSlot || params.timeSlot) {
                     searchParams.time_slot = filterTimeSlot || params.timeSlot;
-                }
-                if (filterItemType || params.item_type) {
-                    searchParams.item_type = filterItemType || params.item_type;
-                }
-                if (filterItemValue || params.item_value) {
-                    searchParams.item_value = filterItemValue ? parseVND(filterItemValue) : (params.item_value as string);
                 }
             }
 
@@ -211,8 +198,6 @@ export default function PassengerSearchResultsScreen() {
                 arrival: filterArrivalCity.value,
                 date: filterDate,
                 timeSlot: filterTimeSlot,
-                itemType: filterItemType,
-                itemValue: filterItemValue,
             });
             setFilterModalOpen(false);
 
@@ -227,15 +212,11 @@ export default function PassengerSearchResultsScreen() {
             const initialArrivalLabel = params.arrivalLabel as string || '';
             const initialDate = params.date as string || '';
             const initialTimeSlot = params.timeSlot as string || '';
-            const initialItemType = params.item_type as string || '';
-            const initialItemValue = params.item_value as string || '';
 
             setFilterDepartureCity({ value: initialDeparture, label: initialDepartureLabel });
             setFilterArrivalCity({ value: initialArrival, label: initialArrivalLabel });
             setFilterDate(initialDate);
             setFilterTimeSlot(initialTimeSlot);
-            setFilterItemType(initialItemType);
-            setFilterItemValue(initialItemValue);
         } catch (error) {
             console.error('Error applying filter:', error);
             setFilterModalOpen(false);
@@ -250,15 +231,11 @@ export default function PassengerSearchResultsScreen() {
         const initialArrivalLabel = params.arrivalLabel as string || '';
         const initialDate = params.date as string || '';
         const initialTimeSlot = params.timeSlot as string || '';
-        const initialItemType = params.item_type as string || '';
-        const initialItemValue = params.item_value as string || '';
 
         setFilterDepartureCity({ value: initialDeparture, label: initialDepartureLabel });
         setFilterArrivalCity({ value: initialArrival, label: initialArrivalLabel });
         setFilterDate(initialDate);
         setFilterTimeSlot(initialTimeSlot);
-        setFilterItemType(initialItemType);
-        setFilterItemValue(initialItemValue);
 
         // Fetch lại với giá trị ban đầu
         setTimeout(async () => {
@@ -312,14 +289,6 @@ export default function PassengerSearchResultsScreen() {
                                     <MaterialIcons name="schedule" size={16} color="#2563EB" />
                                     <Text className="text-xs font-medium text-text-dark-gray dark:text-gray-200" numberOfLines={1}>
                                         {filterTimeSlot}
-                                    </Text>
-                                </View>
-                            )}
-                            {filterItemType && (
-                                <View className="flex-row items-center h-10 rounded-full bg-primary/10 dark:bg-primary/20 px-3 gap-2">
-                                    <MaterialIcons name="category" size={16} color="#2563EB" />
-                                    <Text className="text-xs font-medium text-text-dark-gray dark:text-gray-200" numberOfLines={1}>
-                                        {filterItemType}
                                     </Text>
                                 </View>
                             )}
@@ -563,30 +532,6 @@ export default function PassengerSearchResultsScreen() {
                                     </View>
                                 </View>
 
-                                {/* Loại tài liệu */}
-                                <View>
-                                    <Text className="text-sm font-medium text-text-dark-gray dark:text-white/90 pb-2">
-                                        Loại tài liệu
-                                    </Text>
-                                    <ItemTypeSelect
-                                        placeholder="Chọn loại tài liệu"
-                                        value={filterItemType}
-                                        onValueChange={setFilterItemType}
-                                    />
-                                </View>
-
-                                {/* Giá trị ước tính */}
-                                <View>
-                                    <CurrencyInput
-                                        label="Giá trị ước tính tài liệu (VND)"
-                                        value={filterItemValue}
-                                        onChangeText={setFilterItemValue}
-                                        placeholder="Ví dụ: 5,000,000"
-                                        showUnit={true}
-                                        leftIcon="payments"
-                                        className="border-gray-200 dark:border-gray-600 bg-background-light dark:bg-gray-700 text-base"
-                                    />
-                                </View>
                             </View>
                         </ScrollView>
 

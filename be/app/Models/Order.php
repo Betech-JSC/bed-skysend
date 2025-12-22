@@ -29,6 +29,7 @@ class Order extends Model
         'pickup_photos',
         'delivered_at',
         'delivery_photos',
+        'item_images',
         'completed_at',
         'cancelled_at',
         'cancelled_by',
@@ -70,6 +71,7 @@ class Order extends Model
         'metadata'            => 'array',
         'pickup_photos'       => 'array',
         'delivery_photos'     => 'array',
+        'item_images'         => 'array',
         'sender_rating'       => 'integer',
         'customer_rating'     => 'integer',
     ];

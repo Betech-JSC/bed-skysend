@@ -379,53 +379,66 @@ function ListOrder() {
 
                                         <View className="h-px bg-gray-100 dark:bg-gray-700" />
 
-                                        {/* Hình ảnh kiện hàng */}
-                                        {order.request?.item_images && Array.isArray(order.request.item_images) && order.request.item_images.length > 0 && (
-                                            <View className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                                                <Text className="text-xs text-gray-500 mb-2">Hình ảnh kiện hàng ({order.request.item_images.length})</Text>
+                                        {/* Hình ảnh - Gộp tất cả ảnh lại */}
+                                        {((order.request?.item_images && order.request.item_images.length > 0) || 
+                                          (flight.item_images && flight.item_images.length > 0) ||
+                                          (order.item_images && order.item_images.length > 0)) && (
+                                            <View className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
+                                                <View className="flex-row items-center gap-2 mb-2">
+                                                    <MaterialIcons name="photo-library" size={14} color="#6B7280" />
+                                                    <Text className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                        Hình ảnh
+                                                    </Text>
+                                                </View>
                                                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                    <View className="flex-row gap-2">
-                                                        {order.request.item_images.slice(0, 4).map((imageUrl: string, index: number) => (
+                                                    <View className="flex-row gap-1.5">
+                                                        {/* Ảnh kiện hàng */}
+                                                        {order.request?.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
                                                             <Image
-                                                                key={index}
+                                                                key={`request-${index}`}
                                                                 source={{ uri: imageUrl }}
-                                                                className="w-16 h-16 rounded-lg"
+                                                                className="w-12 h-12 rounded-md"
                                                                 resizeMode="cover"
                                                             />
                                                         ))}
-                                                        {order.request.item_images.length > 4 && (
-                                                            <View className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 items-center justify-center">
-                                                                <Text className="text-xs text-gray-600 dark:text-gray-400">
-                                                                    +{order.request.item_images.length - 4}
-                                                                </Text>
-                                                            </View>
-                                                        )}
-                                                    </View>
-                                                </ScrollView>
-                                            </View>
-                                        )}
-
-                                        {/* Hình ảnh vé máy bay */}
-                                        {flight.item_images && Array.isArray(flight.item_images) && flight.item_images.length > 0 && (
-                                            <View className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                                                <Text className="text-xs text-gray-500 mb-2">Hình ảnh vé máy bay ({flight.item_images.length})</Text>
-                                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                    <View className="flex-row gap-2">
-                                                        {flight.item_images.slice(0, 4).map((imageUrl: string, index: number) => (
+                                                        {/* Ảnh vé máy bay */}
+                                                        {flight.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
                                                             <Image
-                                                                key={index}
+                                                                key={`flight-${index}`}
                                                                 source={{ uri: imageUrl }}
-                                                                className="w-16 h-16 rounded-lg"
+                                                                className="w-12 h-12 rounded-md"
                                                                 resizeMode="cover"
                                                             />
                                                         ))}
-                                                        {flight.item_images.length > 4 && (
-                                                            <View className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 items-center justify-center">
-                                                                <Text className="text-xs text-gray-600 dark:text-gray-400">
-                                                                    +{flight.item_images.length - 4}
-                                                                </Text>
-                                                            </View>
-                                                        )}
+                                                        {/* Ảnh đơn hàng */}
+                                                        {order.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
+                                                            <Image
+                                                                key={`order-${index}`}
+                                                                source={{ uri: imageUrl }}
+                                                                className="w-12 h-12 rounded-md"
+                                                                resizeMode="cover"
+                                                            />
+                                                        ))}
+                                                        {/* Đếm tổng số ảnh còn lại */}
+                                                        {(() => {
+                                                            const requestCount = order.request?.item_images?.length || 0;
+                                                            const flightCount = flight.item_images?.length || 0;
+                                                            const orderCount = order.item_images?.length || 0;
+                                                            const totalCount = requestCount + flightCount + orderCount;
+                                                            const shownCount = Math.min(3, requestCount) + Math.min(3, flightCount) + Math.min(3, orderCount);
+                                                            const remaining = totalCount - shownCount;
+                                                            
+                                                            if (remaining > 0) {
+                                                                return (
+                                                                    <View className="w-12 h-12 rounded-md bg-gray-100 dark:bg-gray-700 items-center justify-center border border-gray-200 dark:border-gray-600">
+                                                                        <Text className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                                            +{remaining}
+                                                                        </Text>
+                                                                    </View>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
                                                     </View>
                                                 </ScrollView>
                                             </View>

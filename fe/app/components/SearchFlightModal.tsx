@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import CurrencyInput from './CurrencyInput';
-import { parseVND } from '@/utils/currencyFormatter';
 import {
   View,
   Text,
   Modal,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,9 +12,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import CitySelectModal from './CitySelectModal';
-import ItemTypeSelect from './ItemTypeSelect';
 import DatePickerInput from './DatePickerInput';
 
 interface SearchFlightModalProps {
@@ -46,16 +41,12 @@ export default function SearchFlightModal({
   const [arrivalCity, setArrivalCity] = useState({ value: '', label: '' });
   const [date, setDate] = useState(getTodayDateString()); // Mặc định là ngày hiện tại
   const [timeSlot, setTimeSlot] = useState('');
-  const [itemType, setItemType] = useState('');
-  const [itemValue, setItemValue] = useState('');
 
   const handleReset = () => {
     setDepartureCity({ value: '', label: '' });
     setArrivalCity({ value: '', label: '' });
     setDate(getTodayDateString()); // Reset về ngày hiện tại
     setTimeSlot('');
-    setItemType('');
-    setItemValue('');
   };
 
   // Reset form khi modal mở lại
@@ -85,8 +76,6 @@ export default function SearchFlightModal({
       to_airport: arrivalCity.value,
       date: date,
       time_slot: timeSlot,
-      item_type: itemType,
-      item_value: itemValue ? parseVND(itemValue) : null,
       departureLabel: departureCity.label,
       arrivalLabel: arrivalCity.label,
     };
@@ -164,31 +153,6 @@ export default function SearchFlightModal({
                   value={date}
                   onValueChange={setDate}
                   minimumDate={new Date()}
-                />
-              </View>
-
-              {/* Loại tài liệu */}
-              <View>
-                <Text className="text-text-primary pb-2 text-sm font-medium dark:text-gray-300">
-                  Loại tài liệu
-                </Text>
-                <ItemTypeSelect
-                  placeholder="Chọn loại tài liệu"
-                  value={itemType}
-                  onValueChange={(value, label) => setItemType(value)}
-                />
-              </View>
-
-              {/* Giá trị ước tính */}
-              <View>
-                <CurrencyInput
-                  label="Giá trị ước tính tài liệu (VND)"
-                  value={itemValue}
-                  onChangeText={setItemValue}
-                  placeholder="Ví dụ: 5,000,000"
-                  showUnit={true}
-                  leftIcon="payments"
-                  className="border-gray-200 dark:border-gray-600 bg-background-light dark:bg-gray-700 text-base"
                 />
               </View>
             </View>

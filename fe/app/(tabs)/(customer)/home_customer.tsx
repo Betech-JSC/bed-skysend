@@ -52,6 +52,7 @@ export default function HomeScreen() {
     const [itemType, setItemType] = useState('');
     const [itemImages, setItemImages] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     // State cho Priority Requests từ API
     const [priorityRequestsAPI, setPriorityRequestsAPI] = useState([]);
@@ -196,6 +197,11 @@ export default function HomeScreen() {
             return Alert.alert('Thông báo', 'Vui lòng chụp hoặc chọn ít nhất một hình ảnh vé máy bay hợp lệ');
         }
 
+        // Validate điều khoản
+        if (!termsAccepted) {
+            return Alert.alert('Thông báo', 'Vui lòng đọc và đồng ý với các điều khoản trước khi đăng chuyến bay');
+        }
+
         // Normalize item_images - đảm bảo là array hoặc null
         const normalizedItemImages = validImages.length > 0 ? validImages : null;
 
@@ -241,6 +247,7 @@ export default function HomeScreen() {
             setFlightCode('');
             setAllowedWeight('');
             setItemImages([]);
+            setTermsAccepted(false);
 
             // Refetch dữ liệu mới nhất
             fetchPriorityRequests();
@@ -401,10 +408,51 @@ export default function HomeScreen() {
                         />
                     </View>
 
+                    {/* Điều khoản và điều kiện */}
+                    <View className="mb-6 rounded-lg bg-gray-50 dark:bg-gray-900/50 p-4 border border-gray-200 dark:border-gray-700">
+                        <TouchableOpacity
+                            onPress={() => setTermsAccepted(!termsAccepted)}
+                            className="flex-row items-start gap-3 mb-3"
+                            activeOpacity={0.7}
+                        >
+                            <View className={`h-5 w-5 rounded border-2 mt-0.5 items-center justify-center ${
+                                termsAccepted 
+                                    ? 'bg-primary border-primary' 
+                                    : 'border-gray-300 dark:border-gray-600 bg-transparent'
+                            }`}>
+                                {termsAccepted && <MaterialIcons name="check" size={16} color="white" />}
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-sm text-text-primary dark:text-white leading-5">
+                                    Tôi đã đọc và đồng ý với các{' '}
+                                    <Text 
+                                        className="text-primary font-semibold underline"
+                                        onPress={() => router.push('/terms-and-conditions')}
+                                    >
+                                        điều khoản và điều kiện
+                                    </Text>
+                                    {' '}của dịch vụ. Tôi hiểu rằng việc đăng chuyến bay có nghĩa là tôi cam kết thực hiện dịch vụ gửi hàng một cách trách nhiệm và tuân thủ các quy định của nền tảng.
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => router.push('/terms-and-conditions')}
+                            className="mt-2"
+                        >
+                            <Text className="text-xs text-primary font-semibold underline">
+                                Xem chi tiết điều khoản và điều kiện
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity
                         onPress={handlePostFlight}
-                        disabled={isSubmitting}
-                        className={`h-14 rounded-lg justify-center items-center ${isSubmitting ? 'bg-gray-400' : 'bg-primary'}`}
+                        disabled={isSubmitting || !termsAccepted}
+                        className={`h-14 rounded-lg justify-center items-center ${
+                            isSubmitting || !termsAccepted 
+                                ? 'bg-gray-400 dark:bg-gray-600' 
+                                : 'bg-primary'
+                        }`}
                     >
                         {isSubmitting ? (
                             <ActivityIndicator color="#fff" size="small" />

@@ -43,10 +43,43 @@
         <a-descriptions-item label="Ngày tạo">{{ request.created_at }}</a-descriptions-item>
       </a-descriptions>
     </a-card>
+
+    <!-- Hình ảnh kiện hàng -->
+    <a-card v-if="getItemImages().length > 0" :bordered="false" style="margin-top: 24px;" title="Hình ảnh kiện hàng">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+        <div
+          v-for="(imageUrl, index) in getItemImages()"
+          :key="index"
+          style="position: relative; cursor: pointer;"
+          @click="openImagePreview(getImageUrl(imageUrl))"
+        >
+          <img
+            :src="getImageUrl(imageUrl)"
+            :alt="`Ảnh kiện hàng ${index + 1}`"
+            style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid #d9d9d9;"
+          />
+        </div>
+      </div>
+    </a-card>
+
+    <!-- Modal preview ảnh -->
+    <a-modal
+      v-model:open="imagePreviewVisible"
+      :footer="null"
+      :width="800"
+      centered
+    >
+      <img
+        :src="previewImageUrl"
+        alt="Preview"
+        style="width: 100%; height: auto;"
+      />
+    </a-modal>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import AdminLayoutAntd from '@/Shared/AdminLayoutAntd.vue'
 import { ArrowLeftOutlined } from '@ant-design/icons-vue'
@@ -59,6 +92,35 @@ const props = defineProps({
   request: Object,
   admin: Object,
 })
+
+const imagePreviewVisible = ref(false)
+const previewImageUrl = ref('')
+
+const getImageUrl = (photoPath) => {
+  if (!photoPath) return ''
+  // Nếu đã là full URL thì trả về luôn
+  if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+    return photoPath
+  }
+  // Nếu là relative path, thêm base URL
+  if (photoPath.startsWith('/storage/')) {
+    return `${window.location.origin}${photoPath}`
+  }
+  // Nếu là path không có /storage/, thêm vào
+  return `${window.location.origin}/storage/${photoPath.replace(/^\/+/, '')}`
+}
+
+const openImagePreview = (imageUrl) => {
+  previewImageUrl.value = imageUrl
+  imagePreviewVisible.value = true
+}
+
+const getItemImages = () => {
+  if (props.request.item_images && Array.isArray(props.request.item_images)) {
+    return props.request.item_images
+  }
+  return []
+}
 
 const getStatusColor = (status) => {
   const colors = {

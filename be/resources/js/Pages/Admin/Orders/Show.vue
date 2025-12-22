@@ -100,7 +100,7 @@
                 style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid #d9d9d9;"
               />
               <div style="margin-top: 4px; color: #8c8c8c; font-size: 11px; text-align: center;">
-                {{ formatDateTime(photo.uploaded_at || order.picked_up_at) }}
+                {{ formatDateTime(photo.uploaded_at || props.order.picked_up_at) }}
               </div>
             </div>
           </div>
@@ -123,15 +123,35 @@
                 style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid #d9d9d9;"
               />
               <div style="margin-top: 4px; color: #8c8c8c; font-size: 11px; text-align: center;">
-                {{ formatDateTime(photo.uploaded_at || order.delivered_at) }}
+                {{ formatDateTime(photo.uploaded_at || props.order.delivered_at) }}
               </div>
             </div>
           </div>
         </a-card>
       </a-col>
 
+      <!-- Ảnh đơn hàng (Item Images) -->
+      <a-col :xs="24" :md="12" v-if="getItemImages().length > 0">
+        <a-card :title="`Ảnh đơn hàng (${getItemImages().length})`" :bordered="false">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <div
+              v-for="(imageUrl, index) in getItemImages()"
+              :key="index"
+              style="position: relative; cursor: pointer;"
+              @click="openImagePreview(getImageUrl(imageUrl))"
+            >
+              <img
+                :src="getImageUrl(imageUrl)"
+                :alt="`Ảnh đơn hàng ${index + 1}`"
+                style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid #d9d9d9;"
+              />
+            </div>
+          </div>
+        </a-card>
+      </a-col>
+
       <!-- Thông báo nếu chưa có ảnh -->
-      <a-col :xs="24" v-if="getPickupPhotos().length === 0 && getDeliveryPhotos().length === 0">
+      <a-col :xs="24" v-if="getPickupPhotos().length === 0 && getDeliveryPhotos().length === 0 && getItemImages().length === 0">
         <a-card :bordered="false">
           <a-empty description="Chưa có ảnh được upload" />
         </a-card>
@@ -228,21 +248,28 @@ const openImagePreview = (imageUrl) => {
 }
 
 const getPickupPhotos = () => {
-  if (order.pickup_photos && Array.isArray(order.pickup_photos)) {
-    return order.pickup_photos
+  if (props.order.pickup_photos && Array.isArray(props.order.pickup_photos)) {
+    return props.order.pickup_photos
   }
-  if (order.pickup_photo) {
-    return [{ url: order.pickup_photo }]
+  if (props.order.pickup_photo) {
+    return [{ url: props.order.pickup_photo }]
   }
   return []
 }
 
 const getDeliveryPhotos = () => {
-  if (order.delivery_photos && Array.isArray(order.delivery_photos)) {
-    return order.delivery_photos
+  if (props.order.delivery_photos && Array.isArray(props.order.delivery_photos)) {
+    return props.order.delivery_photos
   }
-  if (order.delivery_photo) {
-    return [{ url: order.delivery_photo }]
+  if (props.order.delivery_photo) {
+    return [{ url: props.order.delivery_photo }]
+  }
+  return []
+}
+
+const getItemImages = () => {
+  if (props.order.item_images && Array.isArray(props.order.item_images)) {
+    return props.order.item_images
   }
   return []
 }

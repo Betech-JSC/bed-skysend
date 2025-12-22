@@ -97,11 +97,11 @@ function ListOrdersCustomer() {
                 const bPriority = b.request?.priority_level || 'normal';
                 const aPriorityOrder = priorityOrder[aPriority] || 3;
                 const bPriorityOrder = priorityOrder[bPriority] || 3;
-                
+
                 if (aPriorityOrder !== bPriorityOrder) {
                     return aPriorityOrder - bPriorityOrder;
                 }
-                
+
                 // Secondary sort by created_at desc
                 const aDate = new Date(a.created_at || 0).getTime();
                 const bDate = new Date(b.created_at || 0).getTime();
@@ -123,7 +123,7 @@ function ListOrdersCustomer() {
         fetchOrders();
     };
 
-    const handleUpdateStatus = async (orderId: string, orderUuid: string, currentStatus: string) => {
+    const handleUpdateStatus = async (orderId: string, orderUuid: string, currentStatus: string, orderItemImages?: string[]) => {
         const normalizedCurrent = normalizeOrderStatus(currentStatus);
         const nextStatus = getNextOrderStatus(normalizedCurrent);
         if (!nextStatus) {
@@ -132,6 +132,27 @@ function ListOrdersCustomer() {
         }
 
         const backendStatus = mapToBackendStatus(nextStatus, currentStatus);
+
+        // Check if item_images is required (for delivered or completed status)
+        if ((backendStatus === 'delivered' || backendStatus === 'completed') && (!orderItemImages || orderItemImages.length === 0)) {
+            Alert.alert(
+                'Cần upload ảnh đơn hàng',
+                'Vui lòng chụp hoặc upload ít nhất một hình ảnh đơn hàng trước khi cập nhật trạng thái. Vui lòng vào chi tiết đơn hàng để upload ảnh.',
+                [
+                    { text: 'Hủy', style: 'cancel' },
+                    {
+                        text: 'Vào chi tiết',
+                        onPress: () => {
+                            router.push({
+                                pathname: '/orders_details',
+                                params: { orderId: orderId || orderId }
+                            });
+                        },
+                    },
+                ]
+            );
+            return;
+        }
 
         const nextStatusLabel = getOrderStatusLabel(nextStatus);
         const statusLabels: { [key: string]: string } = {
@@ -149,9 +170,16 @@ function ListOrdersCustomer() {
                     onPress: async () => {
                         try {
                             const orderIdentifier = orderUuid || orderId;
-                            await api.put(`orders/${orderIdentifier}/status`, {
+                            const payload: any = {
                                 status: backendStatus,
-                            });
+                            };
+
+                            // Include item_images if updating to delivered or completed
+                            if ((backendStatus === 'delivered' || backendStatus === 'completed') && orderItemImages && orderItemImages.length > 0) {
+                                payload.item_images = orderItemImages;
+                            }
+
+                            await api.put(`orders/${orderIdentifier}/status`, payload);
                             Alert.alert('Thành công', 'Đã cập nhật trạng thái đơn hàng');
                             fetchOrders();
                         } catch (err: any) {
@@ -333,57 +361,70 @@ function ListOrdersCustomer() {
                                         </View>
                                     )}
 
-                                    {/* Hình ảnh kiện hàng */}
-                                    {request.item_images && Array.isArray(request.item_images) && request.item_images.length > 0 && (
-                                        <View className="px-4 py-3 border-t border-gray-100 dark:border-gray-700">
-                                            <Text className="text-xs text-gray-500 mb-2">Hình ảnh kiện hàng ({request.item_images.length})</Text>
-                                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                <View className="flex-row gap-2">
-                                                    {request.item_images.slice(0, 4).map((imageUrl: string, index: number) => (
-                                                        <Image
-                                                            key={index}
-                                                            source={{ uri: imageUrl }}
-                                                            className="w-16 h-16 rounded-lg"
-                                                            resizeMode="cover"
-                                                        />
-                                                    ))}
-                                                    {request.item_images.length > 4 && (
-                                                        <View className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 items-center justify-center">
-                                                            <Text className="text-xs text-gray-600 dark:text-gray-400">
-                                                                +{request.item_images.length - 4}
-                                                            </Text>
-                                                        </View>
-                                                    )}
+                                    {/* Hình ảnh - Gộp tất cả ảnh lại */}
+                                    {((request.item_images && request.item_images.length > 0) ||
+                                        (flight.item_images && flight.item_images.length > 0) ||
+                                        (order.item_images && order.item_images.length > 0)) && (
+                                            <View className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700">
+                                                <View className="flex-row items-center gap-2 mb-2">
+                                                    <MaterialIcons name="photo-library" size={14} color="#6B7280" />
+                                                    <Text className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                        Hình ảnh
+                                                    </Text>
                                                 </View>
-                                            </ScrollView>
-                                        </View>
-                                    )}
+                                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                                    <View className="flex-row gap-1.5">
+                                                        {/* Ảnh kiện hàng */}
+                                                        {request.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
+                                                            <Image
+                                                                key={`request-${index}`}
+                                                                source={{ uri: imageUrl }}
+                                                                className="w-12 h-12 rounded-md"
+                                                                resizeMode="cover"
+                                                            />
+                                                        ))}
+                                                        {/* Ảnh vé máy bay */}
+                                                        {flight.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
+                                                            <Image
+                                                                key={`flight-${index}`}
+                                                                source={{ uri: imageUrl }}
+                                                                className="w-12 h-12 rounded-md"
+                                                                resizeMode="cover"
+                                                            />
+                                                        ))}
+                                                        {/* Ảnh đơn hàng */}
+                                                        {order.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
+                                                            <Image
+                                                                key={`order-${index}`}
+                                                                source={{ uri: imageUrl }}
+                                                                className="w-12 h-12 rounded-md"
+                                                                resizeMode="cover"
+                                                            />
+                                                        ))}
+                                                        {/* Đếm tổng số ảnh còn lại */}
+                                                        {(() => {
+                                                            const requestCount = request.item_images?.length || 0;
+                                                            const flightCount = flight.item_images?.length || 0;
+                                                            const orderCount = order.item_images?.length || 0;
+                                                            const totalCount = requestCount + flightCount + orderCount;
+                                                            const shownCount = Math.min(3, requestCount) + Math.min(3, flightCount) + Math.min(3, orderCount);
+                                                            const remaining = totalCount - shownCount;
 
-                                    {/* Hình ảnh vé máy bay */}
-                                    {flight.item_images && Array.isArray(flight.item_images) && flight.item_images.length > 0 && (
-                                        <View className="px-4 py-3 border-t border-gray-100 dark:border-gray-700">
-                                            <Text className="text-xs text-gray-500 mb-2">Hình ảnh vé máy bay ({flight.item_images.length})</Text>
-                                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                <View className="flex-row gap-2">
-                                                    {flight.item_images.slice(0, 4).map((imageUrl: string, index: number) => (
-                                                        <Image
-                                                            key={index}
-                                                            source={{ uri: imageUrl }}
-                                                            className="w-16 h-16 rounded-lg"
-                                                            resizeMode="cover"
-                                                        />
-                                                    ))}
-                                                    {flight.item_images.length > 4 && (
-                                                        <View className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 items-center justify-center">
-                                                            <Text className="text-xs text-gray-600 dark:text-gray-400">
-                                                                +{flight.item_images.length - 4}
-                                                            </Text>
-                                                        </View>
-                                                    )}
-                                                </View>
-                                            </ScrollView>
-                                        </View>
-                                    )}
+                                                            if (remaining > 0) {
+                                                                return (
+                                                                    <View className="w-12 h-12 rounded-md bg-gray-100 dark:bg-gray-700 items-center justify-center border border-gray-200 dark:border-gray-600">
+                                                                        <Text className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                                            +{remaining}
+                                                                        </Text>
+                                                                    </View>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
+                                                    </View>
+                                                </ScrollView>
+                                            </View>
+                                        )}
 
                                     {/* Action Buttons */}
                                     <View className="px-4 pb-4 pt-0 gap-2">
@@ -424,7 +465,7 @@ function ListOrdersCustomer() {
 
                                         {nextStatus && (
                                             <TouchableOpacity
-                                                onPress={() => handleUpdateStatus(order.id, order.uuid, order.status)}
+                                                onPress={() => handleUpdateStatus(order.id, order.uuid, order.status, order.item_images)}
                                                 className="bg-green-600 dark:bg-green-700 h-11 rounded-lg items-center justify-center flex-row gap-2"
                                             >
                                                 <MaterialIcons name="update" size={18} color="white" />

@@ -147,6 +147,8 @@ class OrderController extends Controller
                 ])
             ],
             'cancel_reason' => 'required_if:status,cancelled|string|max:500',
+            'item_images' => 'required_if:status,delivered,completed|array|min:1',
+            'item_images.*' => 'required|string|url',
         ]);
 
         $newStatus = $request->status;
@@ -182,11 +184,35 @@ class OrderController extends Controller
             ], 403);
         }
 
+        // Kiểm tra bắt buộc item_images khi chuyển sang delivered hoặc completed
+        if (in_array($newStatus, ['delivered', 'completed'])) {
+            $itemImages = $request->input('item_images', []);
+            if (empty($itemImages) || !is_array($itemImages) || count($itemImages) === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng chụp hoặc upload ít nhất một hình ảnh đơn hàng để xác nhận giao hàng.'
+                ], 422);
+            }
+        }
+
         // Bắt đầu transaction
         return DB::transaction(function () use ($order, $newStatus, $request, $user) {
 
             // Dùng hàm tiện ích có sẵn trong model Order của bạn
             $order->updateStatus($newStatus, $user);
+
+            // Lưu item_images khi chuyển sang delivered hoặc completed
+            if (in_array($newStatus, ['delivered', 'completed'])) {
+                $itemImages = $request->input('item_images', []);
+                if (!empty($itemImages) && is_array($itemImages)) {
+                    // Normalize item_images - đảm bảo là array of strings
+                    $normalizedImages = array_filter($itemImages, function ($img) {
+                        return !empty($img) && is_string($img);
+                    });
+                    $order->item_images = !empty($normalizedImages) ? array_values($normalizedImages) : null;
+                    $order->save();
+                }
+            }
 
             // Nếu hủy đơn
             if ($newStatus === 'cancelled') {
@@ -347,13 +373,22 @@ class OrderController extends Controller
             ], 403);
         }
 
-        // Validate status: chỉ upload khi order ở trạng thái confirmed hoặc pending
-        if (!in_array($order->status, ['confirmed', 'pending'])) {
+        // Validate status: cho phép upload pickup photo khi order ở các trạng thái có thể chụp ảnh
+        // Cho phép upload khi đã confirmed/pending (chưa picked_up) hoặc đã picked_up trở đi (để thêm ảnh)
+        if (!in_array($order->status, ['confirmed', 'pending', 'picked_up', 'in_transit', 'arrived', 'delivered'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chỉ có thể chụp ảnh khi đơn hàng ở trạng thái đã xác nhận'
+                'message' => 'Không thể chụp ảnh ở trạng thái này'
             ], 400);
         }
+
+        Log::info('📤 [Pickup Photo Upload] Bắt đầu upload', [
+            'order_id' => $order->id,
+            'order_status' => $order->status,
+            'user_id' => $user->id,
+            'has_photo' => $request->hasFile('photo'),
+            'all_input_keys' => array_keys($request->all()),
+        ]);
 
         $request->validate([
             'photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // Max 5MB
@@ -362,6 +397,12 @@ class OrderController extends Controller
         try {
             // Upload ảnh
             $photo = $request->file('photo');
+
+            Log::info('📄 [Pickup Photo Upload] File nhận được', [
+                'original_name' => $photo->getClientOriginalName(),
+                'mime_type' => $photo->getMimeType(),
+                'size' => $photo->getSize(),
+            ]);
             $filename = 'orders/' . $order->uuid . '/pickup_' . time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
             $path = $photo->storeAs('public', $filename);
             $photoUrl = Storage::url($filename);
@@ -387,6 +428,12 @@ class OrderController extends Controller
 
             $order->save();
 
+            Log::info('✅ [Pickup Photo Upload] Upload thành công', [
+                'order_id' => $order->id,
+                'photo_url' => $photoUrl,
+                'total_photos' => count($photos),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Đã chụp ảnh giao hàng thành công',
@@ -395,8 +442,20 @@ class OrderController extends Controller
                     'status' => $order->status
                 ]
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('❌ [Pickup Photo Upload] Validation error', [
+                'errors' => $e->errors(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ: ' . implode(', ', array_map(function ($errors) {
+                    return implode(', ', $errors);
+                }, $e->errors()))
+            ], 422);
         } catch (\Exception $e) {
-            Log::error('Error uploading pickup photo: ' . $e->getMessage());
+            Log::error('❌ [Pickup Photo Upload] Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Không thể upload ảnh. Vui lòng thử lại.'
@@ -421,6 +480,14 @@ class OrderController extends Controller
             ], 403);
         }
 
+        Log::info('📤 [Delivery Photo Upload] Bắt đầu upload', [
+            'order_id' => $order->id,
+            'order_status' => $order->status,
+            'user_id' => $user->id,
+            'has_photo' => $request->hasFile('photo'),
+            'all_input_keys' => array_keys($request->all()),
+        ]);
+
         $request->validate([
             'photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // Max 5MB
         ]);
@@ -428,6 +495,13 @@ class OrderController extends Controller
         try {
             // Upload ảnh
             $photo = $request->file('photo');
+
+            Log::info('📄 [Delivery Photo Upload] File nhận được', [
+                'original_name' => $photo->getClientOriginalName(),
+                'mime_type' => $photo->getMimeType(),
+                'size' => $photo->getSize(),
+            ]);
+
             $filename = 'orders/' . $order->uuid . '/delivery_' . time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
             $path = $photo->storeAs('public', $filename);
             $photoUrl = Storage::url($filename);
@@ -453,6 +527,12 @@ class OrderController extends Controller
 
             $order->save();
 
+            Log::info('✅ [Delivery Photo Upload] Upload thành công', [
+                'order_id' => $order->id,
+                'photo_url' => $photoUrl,
+                'total_photos' => count($photos),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Đã chụp ảnh nhận hàng thành công',
@@ -461,8 +541,20 @@ class OrderController extends Controller
                     'status' => $order->status
                 ]
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('❌ [Delivery Photo Upload] Validation error', [
+                'errors' => $e->errors(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ: ' . implode(', ', array_map(function ($errors) {
+                    return implode(', ', $errors);
+                }, $e->errors()))
+            ], 422);
         } catch (\Exception $e) {
-            Log::error('Error uploading delivery photo: ' . $e->getMessage());
+            Log::error('❌ [Delivery Photo Upload] Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Không thể upload ảnh. Vui lòng thử lại.'

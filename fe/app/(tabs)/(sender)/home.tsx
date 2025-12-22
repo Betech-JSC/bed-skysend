@@ -225,8 +225,6 @@ const Home = () => {
           to_airport: searchParams.to_airport,
           date: searchParams.date,
           time_slot: searchParams.time_slot,
-          item_type: searchParams.item_type,
-          item_value: searchParams.item_value,
         },
       });
 

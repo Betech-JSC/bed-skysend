@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -20,6 +20,12 @@ interface RequestItemImagesUploadProps {
     maxImages?: number;
     title?: string; // Custom title, nếu không có sẽ tự động detect theo role
     role?: 'sender' | 'customer'; // Role để tự động set title
+    // Custom upload handler - nếu có thì dùng thay vì upload mặc định
+    customUploadHandler?: (uri: string) => Promise<string>;
+    // Custom delete handler - nếu có thì dùng thay vì chỉ xóa local
+    customDeleteHandler?: (imageUrl: string) => Promise<void>;
+    // Callback khi upload thành công (dùng cho order photos để refresh data)
+    onUploadSuccess?: () => void;
 }
 
 const RequestItemImagesUpload: React.FC<RequestItemImagesUploadProps> = ({
@@ -28,6 +34,9 @@ const RequestItemImagesUpload: React.FC<RequestItemImagesUploadProps> = ({
     maxImages = 10,
     title,
     role,
+    customUploadHandler,
+    customDeleteHandler,
+    onUploadSuccess,
 }) => {
     const [uploading, setUploading] = useState(false);
     const [uploadingIndexes, setUploadingIndexes] = useState<Set<number>>(new Set());
@@ -198,27 +207,36 @@ const RequestItemImagesUpload: React.FC<RequestItemImagesUploadProps> = ({
                     uri: uri.substring(0, 50) + '...',
                 });
 
-                // Upload to server
-                const response = await api.post('upload', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
+                // Use custom upload handler if provided, otherwise use default upload endpoint
+                let fileUrl: string | null = null;
 
-                // API returns: { success: true, data: [{ file_url: '...' }] }
-                let fileUrl = null;
-                if (response.data?.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
-                    fileUrl = response.data.data[0].file_url;
-                } else if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-                    // Fallback: direct array response
-                    fileUrl = response.data[0].file_url;
+                if (customUploadHandler) {
+                    // Use custom upload handler (for order photos)
+                    fileUrl = await customUploadHandler(uri);
+                } else {
+                    // Default upload endpoint (for request/flight images)
+                    const response = await api.post('upload', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+
+                    // API returns: { success: true, data: [{ file_url: '...' }] }
+                    if (response.data?.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+                        fileUrl = response.data.data[0].file_url;
+                    } else if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+                        // Fallback: direct array response
+                        fileUrl = response.data[0].file_url;
+                    }
+
+                    if (!fileUrl) {
+                        console.error('Upload response structure:', JSON.stringify(response.data, null, 2));
+                        throw new Error('Upload failed - no file URL returned');
+                    }
                 }
 
                 if (fileUrl) {
                     uploadedUrls.push(fileUrl);
-                } else {
-                    console.error('Upload response structure:', JSON.stringify(response.data, null, 2));
-                    throw new Error('Upload failed - no file URL returned');
                 }
             } catch (error: any) {
                 console.error(`Error uploading image ${i + 1}:`, error);
@@ -239,8 +257,17 @@ const RequestItemImagesUpload: React.FC<RequestItemImagesUploadProps> = ({
 
         // Update images with all successfully uploaded URLs
         if (uploadedUrls.length > 0) {
-            const newImages = [...images, ...uploadedUrls];
-            onImagesChange(newImages);
+            if (customUploadHandler) {
+                // When using custom upload handler, don't update local state
+                // Instead, call onUploadSuccess to refresh data from server
+                if (onUploadSuccess) {
+                    onUploadSuccess();
+                }
+            } else {
+                // Default behavior: update local state
+                const newImages = [...images, ...uploadedUrls];
+                onImagesChange(newImages);
+            }
         }
 
         setUploading(false);
@@ -264,12 +291,35 @@ const RequestItemImagesUpload: React.FC<RequestItemImagesUploadProps> = ({
         }
     };
 
-    const removeImage = (index: number) => {
-        const newImages = images.filter((_, i) => i !== index);
-        onImagesChange(newImages);
+    const removeImage = async (index: number) => {
+        const imageToRemove = images[index];
+
+        // If custom delete handler is provided, use it (for order photos)
+        if (customDeleteHandler && imageToRemove) {
+            try {
+                await customDeleteHandler(imageToRemove);
+                // After successful delete, update local state
+                const newImages = images.filter((_, i) => i !== index);
+                onImagesChange(newImages);
+                // Call onUploadSuccess to refresh data
+                if (onUploadSuccess) {
+                    onUploadSuccess();
+                }
+            } catch (error: any) {
+                console.error('Error deleting image:', error);
+                Alert.alert(
+                    'Lỗi',
+                    error.message || 'Không thể xóa ảnh. Vui lòng thử lại.'
+                );
+            }
+        } else {
+            // Default behavior: just remove from local state
+            const newImages = images.filter((_, i) => i !== index);
+            onImagesChange(newImages);
+        }
     };
 
-    const removeAllImages = () => {
+    const removeAllImages = async () => {
         Alert.alert(
             'Xác nhận xóa',
             `Bạn có chắc chắn muốn xóa tất cả ${images.length} ảnh?`,
@@ -278,8 +328,28 @@ const RequestItemImagesUpload: React.FC<RequestItemImagesUploadProps> = ({
                 {
                     text: 'Xóa tất cả',
                     style: 'destructive',
-                    onPress: () => {
-                        onImagesChange([]);
+                    onPress: async () => {
+                        // If custom delete handler is provided, delete all one by one
+                        if (customDeleteHandler) {
+                            try {
+                                for (const imageUrl of images) {
+                                    await customDeleteHandler(imageUrl);
+                                }
+                                onImagesChange([]);
+                                if (onUploadSuccess) {
+                                    onUploadSuccess();
+                                }
+                            } catch (error: any) {
+                                console.error('Error deleting all images:', error);
+                                Alert.alert(
+                                    'Lỗi',
+                                    error.message || 'Không thể xóa tất cả ảnh. Vui lòng thử lại.'
+                                );
+                            }
+                        } else {
+                            // Default behavior: just clear local state
+                            onImagesChange([]);
+                        }
                     },
                 },
             ]

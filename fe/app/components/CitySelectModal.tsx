@@ -1,5 +1,5 @@
 // CitySelectModal.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   useColorScheme,
@@ -9,6 +9,7 @@ import {
   Pressable,
   TouchableOpacity,
   Platform,
+  TextInput,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import api from '@/api/api';
@@ -32,6 +33,7 @@ const CitySelectModal = ({
   const [cities, setCities] = useState<{ label: string; value: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   let selectedLabel = cities.find((c) => c.value === value)?.label ?? '';
   if (!value && loading) selectedLabel = 'Đang tải...';
@@ -62,6 +64,11 @@ const CitySelectModal = ({
             .map((airport: any) => ({
               label: airport.display_vi || airport.name_vi || airport.name || '',
               value: airport.code || airport.city_code || airport.airport_code || '',
+              // Thêm các field để search
+              code: airport.code || airport.city_code || airport.airport_code || '',
+              name_vi: airport.name_vi || airport.name || '',
+              name_en: airport.name_en || '',
+              city_code: airport.city_code || '',
             }))
             .filter((item: any) => item.value && item.label);
 
@@ -109,7 +116,40 @@ const CitySelectModal = ({
       onValueChange(itemValue, selectedCity.label);
     }
     setOpen(false);
+    setSearchQuery(''); // Reset search khi đóng
   };
+
+  // Filter cities based on search query
+  const filteredCities = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return cities;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    return cities.filter((city: any) => {
+      // Search theo code (VD: SGN, HAN)
+      if (city.code?.toLowerCase().includes(query)) {
+        return true;
+      }
+      // Search theo city_code (mã thành phố)
+      if (city.city_code?.toLowerCase().includes(query)) {
+        return true;
+      }
+      // Search theo label (tên hiển thị - đã bao gồm tên sân bay + code)
+      if (city.label?.toLowerCase().includes(query)) {
+        return true;
+      }
+      // Search theo name_vi (tên tiếng Việt)
+      if (city.name_vi?.toLowerCase().includes(query)) {
+        return true;
+      }
+      // Search theo name_en (tên tiếng Anh)
+      if (city.name_en?.toLowerCase().includes(query)) {
+        return true;
+      }
+      return false;
+    });
+  }, [cities, searchQuery]);
 
   return (
     <View className="relative">
@@ -144,27 +184,61 @@ const CitySelectModal = ({
           <View className="rounded-t-xl bg-white p-4 dark:bg-gray-800" style={{ maxHeight: '60%' }}>
             <View className="mb-2 flex-row items-center justify-between">
               <Text className="text-text-primary text-base font-semibold dark:text-white">
-                Chọn thành phố
+                Chọn sân bay
               </Text>
-              <TouchableOpacity onPress={() => setOpen(false)}>
+              <TouchableOpacity onPress={() => {
+                setOpen(false);
+                setSearchQuery('');
+              }}>
                 <Text className="text-primary">Đóng</Text>
               </TouchableOpacity>
             </View>
 
+            {/* Search Input */}
+            <View className="mb-3">
+              <View className="flex-row items-center border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700">
+                <MaterialIcons name="search" size={20} color={isDark ? '#9ca3af' : '#6b7280'} />
+                <TextInput
+                  placeholder="Tìm kiếm theo tên sân bay, mã sân bay hoặc thành phố..."
+                  placeholderTextColor={isDark ? '#9ca3af' : '#9ca3af'}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  className="flex-1 ml-2 text-text-primary dark:text-white"
+                  style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}
+                  autoFocus={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <MaterialIcons name="clear" size={20} color={isDark ? '#9ca3af' : '#6b7280'} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
             <FlatList
-              data={cities}
+              data={filteredCities}
               keyExtractor={(item) => item.value}
               keyboardShouldPersistTaps="handled"
               ListEmptyComponent={
                 <View className="py-8 items-center">
-                  <Text className="text-gray-500 dark:text-gray-400">Không có dữ liệu</Text>
+                  <MaterialIcons name="search-off" size={48} color={isDark ? '#6b7280' : '#9ca3af'} />
+                  <Text className="mt-2 text-gray-500 dark:text-gray-400">
+                    {searchQuery.trim() ? `Không tìm thấy kết quả cho "${searchQuery}"` : 'Không có dữ liệu'}
+                  </Text>
                 </View>
               }
               renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => handleSelect(item.value)}
-                  className="border-b border-gray-100 py-3 dark:border-gray-700">
-                  <Text className="text-text-primary text-base dark:text-white">{item.label}</Text>
+                  className={`border-b border-gray-100 py-3 dark:border-gray-700 ${item.value === value ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+                  <Text className="text-text-primary text-base font-medium dark:text-white">
+                    {item.label}
+                  </Text>
+                  {item.name_en && item.name_en !== item.name_vi && (
+                    <Text className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                      {item.name_en}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               )}
             />
