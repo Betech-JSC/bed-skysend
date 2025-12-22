@@ -55,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('user/switch-role', [UserController::class, 'switchRole']);
     Route::post('user/change-password', [UserController::class, 'changePassword']);
     Route::post('user/upload-avatar', [UserController::class, 'uploadAvatar']);
+    Route::delete('user/account', [UserController::class, 'deleteAccount']);
 
     // Public user profile (lấy thông tin user khác)
     Route::get('users/{id}', [UserController::class, 'showById']);

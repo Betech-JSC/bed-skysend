@@ -188,6 +188,69 @@ export default function ProfileScreen() {
         );
     };
 
+    const deleteAccount = async () => {
+        Alert.alert(
+            'Xác nhận xóa tài khoản',
+            'Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn?\n\nHành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                {
+                    text: 'Xóa tài khoản',
+                    style: 'destructive',
+                    onPress: async () => {
+                        // Xác nhận lần 2
+                        Alert.alert(
+                            'Cảnh báo cuối cùng',
+                            'Đây là lần xác nhận cuối cùng. Tài khoản của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.',
+                            [
+                                { text: 'Hủy', style: 'cancel' },
+                                {
+                                    text: 'Xác nhận xóa',
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                        try {
+                                            setLoading(true);
+                                            const response = await api.delete('user/account');
+                                            
+                                            if (response.data?.success) {
+                                                // Xóa dữ liệu local và Redux state
+                                                await AsyncStorage.removeItem('user');
+                                                dispatch(setUser(null));
+                                                
+                                                Alert.alert(
+                                                    'Thành công',
+                                                    'Tài khoản của bạn đã được xóa vĩnh viễn.',
+                                                    [
+                                                        {
+                                                            text: 'OK',
+                                                            onPress: () => {
+                                                                router.replace('/login');
+                                                            }
+                                                        }
+                                                    ]
+                                                );
+                                            } else {
+                                                throw new Error(response.data?.message || 'Xóa tài khoản thất bại');
+                                            }
+                                        } catch (error: any) {
+                                            console.error('Error deleting account:', error);
+                                            Alert.alert(
+                                                'Lỗi',
+                                                error.response?.data?.message || error.message || 'Không thể xóa tài khoản. Vui lòng thử lại.'
+                                            );
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    },
+                                },
+                            ]
+                        );
+                    },
+                },
+            ]
+        );
+    };
+
     const getAvatarUri = () => {
         return getAvatarUrl(profile?.avatar, API_URL);
     };
@@ -677,15 +740,34 @@ export default function ProfileScreen() {
                             </TouchableOpacity>
                         </View>
 
+                        {/* Xóa tài khoản */}
+                        <TouchableOpacity
+                            onPress={deleteAccount}
+                            disabled={loading}
+                            className="flex-row items-center gap-4 rounded-xl bg-white px-4 py-4 shadow-sm dark:bg-slate-800/50"
+                        >
+                            <View className="h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/20">
+                                <MaterialIcons name="delete-forever" size={24} color="#DC2626" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-base font-medium text-red-600 dark:text-red-400">
+                                    Xóa tài khoản vĩnh viễn
+                                </Text>
+                                <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Hành động này không thể hoàn tác
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+
                         {/* Đăng xuất */}
                         <TouchableOpacity
                             onPress={logout}
                             className="flex-row items-center gap-4 rounded-xl bg-white px-4 py-4 shadow-sm dark:bg-slate-800/50"
                         >
-                            <View className="h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/20">
-                                <MaterialIcons name="logout" size={24} color="#DC2626" />
+                            <View className="h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-500/20">
+                                <MaterialIcons name="logout" size={24} color="#EA580C" />
                             </View>
-                            <Text className="text-base font-medium text-red-600 dark:text-red-400">
+                            <Text className="text-base font-medium text-orange-600 dark:text-orange-400">
                                 Đăng xuất
                             </Text>
                         </TouchableOpacity>

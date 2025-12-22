@@ -206,4 +206,43 @@ class UserController extends Controller
             'avatar_url' => asset('storage/' . $path),
         ]);
     }
+
+    /**
+     * Xóa tài khoản vĩnh viễn (user tự xóa tài khoản của mình)
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+
+        // Kiểm tra xem user có đơn hàng đang xử lý không
+        $activeOrders = Order::where(function ($q) use ($user) {
+            $q->where('sender_id', $user->id)
+                ->orWhere('customer_id', $user->id);
+        })
+            ->whereIn('status', ['confirmed', 'picked_up', 'in_transit', 'arrived', 'delivered'])
+            ->count();
+
+        if ($activeOrders > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa tài khoản vì có đơn hàng đang xử lý. Vui lòng hoàn thành hoặc hủy các đơn hàng trước.',
+            ], 400);
+        }
+
+        // Xóa avatar nếu có
+        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        // Xóa tất cả tokens của user
+        $user->tokens()->delete();
+
+        // Xóa vĩnh viễn tài khoản
+        $user->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tài khoản đã được xóa vĩnh viễn',
+        ]);
+    }
 }
