@@ -236,9 +236,20 @@ export default function LoginScreen() {
 
               {/* Password */}
               <View>
-                <Text className="text-sm font-semibold text-text-primary dark:text-white mb-2">
-                  Mật khẩu <Text className="text-red-500">*</Text>
-                </Text>
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-sm font-semibold text-text-primary dark:text-white">
+                    Mật khẩu <Text className="text-red-500">*</Text>
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push("/forgot-password")}
+                    disabled={loading}
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-sm font-medium text-primary dark:text-blue-400">
+                      Quên mật khẩu?
+                    </Text>
+                  </TouchableOpacity>
+                </View>
                 <View className="relative">
                   <TextInput
                     className={`border rounded-2xl px-4 py-4 pr-12 text-base bg-white dark:bg-slate-800 text-text-primary dark:text-white ${errors.password
@@ -258,6 +269,7 @@ export default function LoginScreen() {
                   <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-4"
+                    activeOpacity={0.7}
                   >
                     <MaterialIcons
                       name={showPassword ? "visibility" : "visibility-off"}
@@ -274,14 +286,43 @@ export default function LoginScreen() {
               {/* Submit Button */}
               <TouchableOpacity
                 onPress={handleLogin}
-                disabled={loading}
-                className={`mt-2 py-4 rounded-2xl ${loading ? "bg-gray-400" : "bg-primary"} shadow-lg`}
+                disabled={loading || !formData.email.trim() || !formData.password}
+                activeOpacity={0.8}
+                className={`mt-6 py-4 rounded-2xl ${loading || !formData.email.trim() || !formData.password
+                  ? "bg-gray-400 dark:bg-gray-600"
+                  : "bg-primary"
+                  } shadow-lg active:opacity-90`}
               >
                 {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <View className="flex-row items-center justify-center gap-2">
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text className="text-white text-center text-lg font-bold">Đang đăng nhập...</Text>
+                  </View>
                 ) : (
                   <Text className="text-white text-center text-lg font-bold">Đăng nhập</Text>
                 )}
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View className="flex-row items-center my-6">
+                <View className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+                <Text className="px-4 text-sm text-gray-500 dark:text-gray-400">hoặc</Text>
+                <View className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+              </View>
+
+              {/* Register Button */}
+              <TouchableOpacity
+                onPress={() => router.push("/register")}
+                disabled={loading}
+                activeOpacity={0.7}
+                className="py-4 rounded-2xl border-2 border-primary bg-transparent active:bg-primary/5 dark:active:bg-primary/10"
+              >
+                <View className="flex-row items-center justify-center gap-2">
+                  <MaterialIcons name="person-add" size={20} color="#2563EB" />
+                  <Text className="text-primary dark:text-blue-400 text-center text-lg font-bold">
+                    Đăng ký tài khoản mới
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>

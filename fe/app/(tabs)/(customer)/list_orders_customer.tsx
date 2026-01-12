@@ -9,6 +9,9 @@ import {
     ActivityIndicator,
     Alert,
     RefreshControl,
+    Modal,
+    KeyboardAvoidingView,
+    Platform,
 } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import api from "@/api/api";
@@ -26,6 +29,7 @@ import {
 } from "../../utils/orderStatusUtils";
 import { getAirportWithCity } from "../../utils/airportUtils";
 import { formatDateOnly } from "../../utils/dateUtils";
+import RequestItemImagesUpload from "../../components/RequestItemImagesUpload";
 
 function ListOrdersCustomer() {
     const router = useRouter();
@@ -36,6 +40,12 @@ function ListOrdersCustomer() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    
+    // Modal upload images state
+    const [uploadModalVisible, setUploadModalVisible] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+    const [uploading, setUploading] = useState(false);
 
     // Fetch data khi filter thay đổi
     useEffect(() => {
@@ -135,48 +145,38 @@ function ListOrdersCustomer() {
 
         // Check if item_images is required (for delivered or completed status)
         if ((backendStatus === 'delivered' || backendStatus === 'completed') && (!orderItemImages || orderItemImages.length === 0)) {
-            Alert.alert(
-                'Cần upload ảnh đơn hàng',
-                'Vui lòng chụp hoặc upload ít nhất một hình ảnh đơn hàng trước khi cập nhật trạng thái. Vui lòng vào chi tiết đơn hàng để upload ảnh.',
-                [
-                    { text: 'Hủy', style: 'cancel' },
-                    {
-                        text: 'Vào chi tiết',
-                        onPress: () => {
-                            router.push({
-                                pathname: '/orders_details',
-                                params: { orderId: orderId || orderId }
-                            });
-                        },
-                    },
-                ]
-            );
+            // Mở modal upload ảnh thay vì yêu cầu vào chi tiết
+            const order = orders.find((o: any) => (o.id === orderId || o.uuid === orderUuid));
+            if (order) {
+                setSelectedOrder({ id: orderId, uuid: orderUuid, status: backendStatus, nextStatusLabel: getOrderStatusLabel(nextStatus) });
+                setUploadedImages([]);
+                setUploadModalVisible(true);
+            }
             return;
         }
 
+        // Nếu đã có ảnh hoặc không cần ảnh, xác nhận và cập nhật
         const nextStatusLabel = getOrderStatusLabel(nextStatus);
-        const statusLabels: { [key: string]: string } = {
-            'in_transit': 'Đang vận chuyển',
-            'completed': 'Hoàn thành',
-        };
+        confirmAndUpdateStatus(orderUuid || orderId, backendStatus, orderItemImages || [], nextStatusLabel.label);
+    };
 
+    const confirmAndUpdateStatus = async (orderIdentifier: string, backendStatus: string, itemImages: string[], statusLabel: string) => {
         Alert.alert(
             'Xác nhận cập nhật trạng thái',
-            `Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng thành "${nextStatusLabel.label}"?\n\nĐiều này sẽ thay đổi trạng thái hiện tại của đơn hàng.`,
+            `Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng thành "${statusLabel}"?\n\nĐiều này sẽ thay đổi trạng thái hiện tại của đơn hàng.`,
             [
                 { text: 'Hủy', style: 'cancel' },
                 {
                     text: 'Xác nhận',
                     onPress: async () => {
                         try {
-                            const orderIdentifier = orderUuid || orderId;
                             const payload: any = {
                                 status: backendStatus,
                             };
 
                             // Include item_images if updating to delivered or completed
-                            if ((backendStatus === 'delivered' || backendStatus === 'completed') && orderItemImages && orderItemImages.length > 0) {
-                                payload.item_images = orderItemImages;
+                            if ((backendStatus === 'delivered' || backendStatus === 'completed') && itemImages && itemImages.length > 0) {
+                                payload.item_images = itemImages;
                             }
 
                             await api.put(`orders/${orderIdentifier}/status`, payload);
@@ -189,6 +189,33 @@ function ListOrdersCustomer() {
                 },
             ]
         );
+    };
+
+    const handleUploadAndComplete = async () => {
+        if (!selectedOrder || uploadedImages.length === 0) {
+            Alert.alert('Thông báo', 'Vui lòng upload ít nhất một hình ảnh đơn hàng');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const orderIdentifier = selectedOrder.uuid || selectedOrder.id;
+            const payload: any = {
+                status: selectedOrder.status,
+                item_images: uploadedImages,
+            };
+
+            await api.put(`orders/${orderIdentifier}/status`, payload);
+            Alert.alert('Thành công', 'Đã cập nhật trạng thái đơn hàng');
+            setUploadModalVisible(false);
+            setSelectedOrder(null);
+            setUploadedImages([]);
+            fetchOrders();
+        } catch (err: any) {
+            Alert.alert('Lỗi', err.response?.data?.message || 'Không thể cập nhật trạng thái');
+        } finally {
+            setUploading(false);
+        }
     };
 
     if (loading && !refreshing) {
@@ -222,7 +249,7 @@ function ListOrdersCustomer() {
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         className="flex-row"
-                        contentContainerStyle={{ paddingHorizontal: 16 }}
+                        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
                     >
                         {ORDER_FILTER_TABS.map((tab) => {
                             const isActive = orderStatusFilter === tab.status;
@@ -230,16 +257,19 @@ function ListOrdersCustomer() {
                                 <TouchableOpacity
                                     key={tab.status || 'all'}
                                     onPress={() => setOrderStatusFilter(tab.status)}
-                                    className={`items-center py-3 px-4 mr-2 rounded-lg ${isActive
-                                        ? "bg-primary/10"
-                                        : ""
-                                        }`}
+                                    activeOpacity={0.7}
+                                    className={`items-center justify-center py-2.5 px-5 mr-2 rounded-full ${
+                                        isActive
+                                            ? "bg-gray-900 dark:bg-gray-100"
+                                            : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                                    }`}
                                 >
                                     <Text
-                                        className={`text-sm font-semibold ${isActive
-                                            ? "text-primary"
-                                            : "text-text-secondary dark:text-gray-400"
-                                            }`}
+                                        className={`text-sm font-semibold ${
+                                            isActive
+                                                ? "text-white dark:text-gray-900"
+                                                : "text-gray-900 dark:text-gray-200"
+                                        }`}
                                     >
                                         {tab.label}
                                     </Text>
@@ -427,20 +457,34 @@ function ListOrdersCustomer() {
                                         )}
 
                                     {/* Action Buttons */}
-                                    <View className="px-4 pb-4 pt-0 gap-2">
-                                        <View className="flex-row gap-2">
-                                            <TouchableOpacity
-                                                onPress={() => {
-                                                    const orderIdentifier = order.id || order.uuid;
-                                                    router.push({
-                                                        pathname: '/orders_details',
-                                                        params: { orderId: String(orderIdentifier) }
-                                                    });
-                                                }}
-                                                className="bg-primary flex-1 h-11 rounded-lg items-center justify-center"
-                                            >
-                                                <Text className="text-white font-bold text-sm">Xem chi tiết</Text>
-                                            </TouchableOpacity>
+                                    <View className="px-4 pb-4 pt-0">
+                                        <View className="flex-row gap-2 items-center">
+                                            <View className="flex-row gap-2 flex-1">
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        const orderIdentifier = order.id || order.uuid;
+                                                        router.push({
+                                                            pathname: '/orders_details',
+                                                            params: { orderId: String(orderIdentifier) }
+                                                        });
+                                                    }}
+                                                    className="bg-primary flex-1 h-11 rounded-lg items-center justify-center"
+                                                >
+                                                    <Text className="text-white font-bold text-sm">Xem chi tiết</Text>
+                                                </TouchableOpacity>
+
+                                                {nextStatus && (
+                                                    <TouchableOpacity
+                                                        onPress={() => handleUpdateStatus(order.id, order.uuid, order.status, order.item_images)}
+                                                        className="bg-green-600 dark:bg-green-700 h-11 flex-1 rounded-lg items-center justify-center flex-row gap-1.5 px-2"
+                                                    >
+                                                        <MaterialIcons name="update" size={16} color="white" />
+                                                        <Text className="text-white font-bold text-xs" numberOfLines={1}>
+                                                            {getOrderStatusLabel(nextStatus).label}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
 
                                             {sender.name && (
                                                 <TouchableOpacity
@@ -456,25 +500,12 @@ function ListOrdersCustomer() {
                                                             }
                                                         } as any);
                                                     }}
-                                                    className="bg-blue-600 h-11 rounded-lg items-center justify-center px-4"
+                                                    className="bg-blue-600 h-11 w-11 rounded-lg items-center justify-center"
                                                 >
                                                     <MaterialIcons name="chat" size={20} color="white" />
                                                 </TouchableOpacity>
                                             )}
                                         </View>
-
-                                        {nextStatus && (
-                                            <TouchableOpacity
-                                                onPress={() => handleUpdateStatus(order.id, order.uuid, order.status, order.item_images)}
-                                                className="bg-green-600 dark:bg-green-700 h-11 rounded-lg items-center justify-center flex-row gap-2"
-                                            >
-                                                <MaterialIcons name="update" size={18} color="white" />
-                                                <Text className="text-white font-bold text-sm">
-                                                    Cập nhật: {getOrderStatusLabel(nextStatus).label}
-                                                </Text>
-                                                <MaterialIcons name="arrow-forward" size={16} color="white" />
-                                            </TouchableOpacity>
-                                        )}
                                     </View>
                                 </View>
                             );
@@ -482,6 +513,94 @@ function ListOrdersCustomer() {
                     )}
                 </ScrollView>
             </SafeAreaView>
+
+            {/* Modal Upload Images */}
+            <Modal
+                visible={uploadModalVisible}
+                animationType="slide"
+                transparent={false}
+                onRequestClose={() => {
+                    if (!uploading) {
+                        setUploadModalVisible(false);
+                        setSelectedOrder(null);
+                        setUploadedImages([]);
+                    }
+                }}
+            >
+                <SafeAreaView className="flex-1 bg-white dark:bg-gray-800">
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        className="flex-1"
+                    >
+                        {/* Header */}
+                        <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                            <Text className="text-xl font-bold text-text-primary dark:text-white">
+                                Upload ảnh đơn hàng
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (!uploading) {
+                                        setUploadModalVisible(false);
+                                        setSelectedOrder(null);
+                                        setUploadedImages([]);
+                                    }
+                                }}
+                                disabled={uploading}
+                                className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+                            >
+                                <MaterialIcons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Content */}
+                        <ScrollView
+                            className="flex-1 px-4"
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={{ paddingBottom: 20 }}
+                        >
+                            <View className="py-4">
+                                <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                    Vui lòng chụp hoặc upload ít nhất một hình ảnh đơn hàng để hoàn thành đơn hàng.
+                                </Text>
+                                
+                                <RequestItemImagesUpload
+                                    images={uploadedImages}
+                                    onImagesChange={setUploadedImages}
+                                    maxImages={10}
+                                    title="Ảnh đơn hàng"
+                                    role="customer"
+                                />
+                            </View>
+                        </ScrollView>
+
+                        {/* Footer */}
+                        <View className="px-4 pb-4 pt-3 border-t border-gray-200 dark:border-gray-700 gap-2 bg-white dark:bg-gray-800">
+                            <TouchableOpacity
+                                onPress={handleUploadAndComplete}
+                                disabled={uploading || uploadedImages.length === 0}
+                                className={`h-12 items-center justify-center rounded-lg flex-row gap-2 ${
+                                    uploading || uploadedImages.length === 0
+                                        ? 'bg-gray-400'
+                                        : 'bg-green-600 dark:bg-green-700'
+                                }`}
+                            >
+                                {uploading ? (
+                                    <>
+                                        <ActivityIndicator color="#fff" />
+                                        <Text className="text-white font-bold text-base">Đang xử lý...</Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <MaterialIcons name="check-circle" size={20} color="white" />
+                                        <Text className="text-white font-bold text-base">Hoàn thành đơn hàng</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
+            </Modal>
         </>
     );
 }

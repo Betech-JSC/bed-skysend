@@ -271,7 +271,6 @@ export default function FlightHistoryScreen() {
             fontSize: 16,
             fontWeight: 'bold',
             color: '#111318',
-            textAlign: 'center',
           },
         }}
       />
@@ -282,7 +281,7 @@ export default function FlightHistoryScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             className="flex-row"
-            contentContainerStyle={{ paddingHorizontal: 16 }}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
           >
             {FLIGHT_FILTER_TABS.map((tab) => {
               const isActive = statusFilter === tab.status;
@@ -290,15 +289,16 @@ export default function FlightHistoryScreen() {
                 <TouchableOpacity
                   key={tab.status || 'all'}
                   onPress={() => setStatusFilter(tab.status)}
-                  className={`items-center py-3 px-4 mr-2 rounded-lg ${isActive
-                    ? "bg-primary/10"
-                    : ""
+                  activeOpacity={0.7}
+                  className={`items-center justify-center py-2.5 px-5 mr-2 rounded-full ${isActive
+                    ? "bg-gray-900 dark:bg-gray-100"
+                    : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                     }`}
                 >
                   <Text
                     className={`text-sm font-semibold ${isActive
-                      ? "text-primary"
-                      : "text-text-secondary dark:text-gray-400"
+                      ? "text-white dark:text-gray-900"
+                      : "text-gray-900 dark:text-gray-200"
                       }`}
                   >
                     {tab.label}
@@ -318,13 +318,26 @@ export default function FlightHistoryScreen() {
         >
           {filteredFlights.length === 0 ? (
             <View className="mt-20 items-center justify-center px-6">
-              <MaterialIcons name="flight" size={64} color="#9CA3AF" />
-              <Text className="mt-4 text-center text-lg font-semibold text-gray-700 dark:text-gray-300">
+              <View className="h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4">
+                <MaterialIcons name="flight" size={48} color="#2563EB" />
+              </View>
+              <Text className="mt-2 text-center text-lg font-semibold text-gray-700 dark:text-gray-300">
                 {statusFilter ? 'Không có chuyến bay nào phù hợp' : 'Chưa có chuyến bay nào'}
               </Text>
-              <Text className="mt-2 text-center text-sm text-gray-500">
-                {statusFilter ? 'Thử chọn bộ lọc khác hoặc' : ''} Thêm chuyến bay đầu tiên của bạn
+              <Text className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400 mb-6">
+                {statusFilter ? 'Thử chọn bộ lọc khác hoặc' : 'Thêm chuyến bay đầu tiên của bạn'}
               </Text>
+              {!statusFilter && (
+                <TouchableOpacity
+                  onPress={() => router.push('/home_customer')}
+                  className="rounded-xl bg-primary px-6 py-4 shadow-lg active:opacity-90"
+                >
+                  <View className="flex-row items-center gap-2">
+                    <MaterialIcons name="add" size={20} color="#FFFFFF" />
+                    <Text className="text-base font-bold text-white">Thêm chuyến bay</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View className="gap-3 py-3">
@@ -522,16 +535,18 @@ export default function FlightHistoryScreen() {
           )}
         </ScrollView>
 
-        {/* FAB */}
-        <View className="absolute bottom-6 right-6">
-          <TouchableOpacity
-            onPress={() => router.push('/home_customer')}
-            className="flex-row items-center gap-2 rounded-full bg-primary px-5 py-3.5 shadow-xl active:opacity-90"
-          >
-            <MaterialIcons name="add" size={24} color="white" />
-            <Text className="text-base font-bold text-white">Thêm chuyến bay</Text>
-          </TouchableOpacity>
-        </View>
+        {/* FAB - Chỉ hiển thị khi có chuyến bay */}
+        {filteredFlights.length > 0 && (
+          <View className="absolute bottom-6 right-6">
+            <TouchableOpacity
+              onPress={() => router.push('/home_customer')}
+              className="flex-row items-center gap-2 rounded-full bg-primary px-5 py-3.5 shadow-xl active:opacity-90"
+            >
+              <MaterialIcons name="add" size={24} color="white" />
+              <Text className="text-base font-bold text-white">Thêm chuyến bay</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </>
   );

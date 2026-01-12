@@ -185,12 +185,12 @@ export default function HomeScreen() {
         if (!allowedWeight || isNaN(parseFloat(allowedWeight))) {
             return Alert.alert('Thông báo', 'Vui lòng nhập khối lượng hợp lệ (số)');
         }
-        
+
         // Validate hình ảnh vé máy bay - bắt buộc
         if (!itemImages || itemImages.length === 0) {
             return Alert.alert('Thông báo', 'Vui lòng chụp hoặc chọn ít nhất một hình ảnh vé máy bay');
         }
-        
+
         // Kiểm tra itemImages có ít nhất một URL hợp lệ
         const validImages = itemImages.filter((img: string) => img && typeof img === 'string' && img.trim() !== '');
         if (validImages.length === 0) {
@@ -297,7 +297,7 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                 </View>
                 <Text className="text-text-secondary mt-1 dark:text-gray-400">
-                    Bạn cần gửi tài liệu đi đâu hôm nay?
+                    Bạn cần nhận hàng đi đâu hôm nay?
                 </Text>
             </View>
 
@@ -415,17 +415,16 @@ export default function HomeScreen() {
                             className="flex-row items-start gap-3 mb-3"
                             activeOpacity={0.7}
                         >
-                            <View className={`h-5 w-5 rounded border-2 mt-0.5 items-center justify-center ${
-                                termsAccepted 
-                                    ? 'bg-primary border-primary' 
+                            <View className={`h-5 w-5 rounded border-2 mt-0.5 items-center justify-center ${termsAccepted
+                                    ? 'bg-primary border-primary'
                                     : 'border-gray-300 dark:border-gray-600 bg-transparent'
-                            }`}>
+                                }`}>
                                 {termsAccepted && <MaterialIcons name="check" size={16} color="white" />}
                             </View>
                             <View className="flex-1">
                                 <Text className="text-sm text-text-primary dark:text-white leading-5">
                                     Tôi đã đọc và đồng ý với các{' '}
-                                    <Text 
+                                    <Text
                                         className="text-primary font-semibold underline"
                                         onPress={() => router.push('/terms-and-conditions')}
                                     >
@@ -448,11 +447,10 @@ export default function HomeScreen() {
                     <TouchableOpacity
                         onPress={handlePostFlight}
                         disabled={isSubmitting || !termsAccepted}
-                        className={`h-14 rounded-lg justify-center items-center ${
-                            isSubmitting || !termsAccepted 
-                                ? 'bg-gray-400 dark:bg-gray-600' 
+                        className={`h-14 rounded-lg justify-center items-center ${isSubmitting || !termsAccepted
+                                ? 'bg-gray-400 dark:bg-gray-600'
                                 : 'bg-primary'
-                        }`}
+                            }`}
                     >
                         {isSubmitting ? (
                             <ActivityIndicator color="#fff" size="small" />

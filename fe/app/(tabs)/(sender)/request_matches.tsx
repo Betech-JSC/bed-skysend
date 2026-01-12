@@ -126,90 +126,126 @@ export default function RequestMatchesScreen() {
         });
     };
 
-    const renderRequestItem = ({ item }: { item: Request }) => (
-        <View className="mb-3 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-            <TouchableOpacity
-                onPress={() => router.push(`/request_matches/${item.id}`)}
-                className="p-4">
-                <View className="mb-2 flex-row items-center justify-between">
-                    <View className="flex-1">
-                        <Text className="text-base font-semibold text-text-primary dark:text-white">
-                            {getAirportWithCity(item.from_airport)} → {getAirportWithCity(item.to_airport)}
-                        </Text>
-                        <Text className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            Ngày: {item.desired_date ? new Date(item.desired_date).toLocaleDateString('vi-VN') : 'N/A'}
-                        </Text>
-                    </View>
-                    {item.match_count !== undefined && item.match_count > 0 && (
-                        <View className="ml-2 rounded-full bg-blue-100 px-3 py-1 dark:bg-blue-900">
-                            <Text className="text-sm font-semibold text-blue-600 dark:text-blue-300">
-                                {item.match_count} matches
-                            </Text>
-                        </View>
-                    )}
-                </View>
-                <View className="mt-2 flex-row items-center justify-between">
-                    <Text className="text-sm font-medium text-green-600 dark:text-green-400">
-                        {formatVND(item.reward)} VNĐ
-                    </Text>
-                    <MaterialIcons name="chevron-right" size={20} color={isDark ? '#9ca3af' : '#6b7280'} />
-                </View>
+    const renderRequestItem = ({ item }: { item: Request }) => {
+        const thumbnailImage = item.item_images && item.item_images.length > 0 ? item.item_images[0] : null;
+        const formattedDate = item.desired_date ? new Date(item.desired_date).toLocaleDateString('vi-VN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        }) : 'N/A';
 
-                {/* Hiển thị ảnh kiện hàng */}
-                {item.item_images && item.item_images.length > 0 && (
-                    <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                            Ảnh kiện hàng ({item.item_images.length})
-                        </Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
-                            {item.item_images.slice(0, 4).map((imageUrl, index) => (
+        return (
+            <View className="mb-4 rounded-xl bg-white shadow-sm dark:bg-gray-800 overflow-hidden border border-gray-100 dark:border-gray-700">
+                <TouchableOpacity
+                    onPress={() => router.push(`/request_matches/${item.id}`)}
+                    activeOpacity={0.9}
+                >
+                    {/* Main Content: Thumbnail + Info */}
+                    <View className="flex-row p-4">
+                        {/* Thumbnail - Left Side */}
+                        <View className="mr-4">
+                            {thumbnailImage ? (
                                 <Image
-                                    key={index}
-                                    source={{ uri: imageUrl }}
-                                    className="h-16 w-16 rounded-lg"
+                                    source={{ uri: thumbnailImage }}
+                                    className="h-20 w-20 rounded-lg"
                                     resizeMode="cover"
                                 />
-                            ))}
-                            {item.item_images.length > 4 && (
-                                <View className="h-16 w-16 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700">
-                                    <Text className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                                        +{item.item_images.length - 4}
+                            ) : (
+                                <View className="h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
+                                    <MaterialIcons name="local-shipping" size={32} color="#2563EB" />
+                                </View>
+                            )}
+                        </View>
+
+                        {/* Content - Right Side */}
+                        <View className="flex-1">
+                            {/* Route + Status Badge */}
+                            <View className="flex-row items-start justify-between mb-2">
+                                <View className="flex-1 mr-2">
+                                    <Text className="text-base font-bold text-gray-900 dark:text-white" numberOfLines={2}>
+                                        {getAirportWithCity(item.from_airport)} → {getAirportWithCity(item.to_airport)}
+                                    </Text>
+                                </View>
+                                {item.match_count !== undefined && item.match_count > 0 && (
+                                    <View className="rounded-full bg-blue-100 px-2.5 py-1 dark:bg-blue-900/30 flex-shrink-0">
+                                        <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                            {item.match_count} matches
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+
+                            {/* Date */}
+                            <View className="flex-row items-center mb-2">
+                                <MaterialIcons name="calendar-today" size={14} color="#6B7280" />
+                                <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">
+                                    {formattedDate}
+                                </Text>
+                            </View>
+
+                            {/* Reward */}
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <MaterialIcons name="attach-money" size={16} color="#10B981" />
+                                    <Text className="ml-1 text-base font-bold text-green-600 dark:text-green-400">
+                                        {formatVND(item.reward)} VNĐ
+                                    </Text>
+                                </View>
+                                <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+                            </View>
+
+                            {/* Image count indicator */}
+                            {item.item_images && item.item_images.length > 1 && (
+                                <View className="mt-2 flex-row items-center">
+                                    <MaterialIcons name="photo-library" size={14} color="#6B7280" />
+                                    <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                                        {item.item_images.length} ảnh
                                     </Text>
                                 </View>
                             )}
-                        </ScrollView>
+                        </View>
                     </View>
-                )}
-            </TouchableOpacity>
+                </TouchableOpacity>
 
-            {/* Action Buttons */}
-            <View className="flex-row border-t border-gray-200 dark:border-gray-700">
-                <TouchableOpacity
-                    onPress={() => handleEditRequest(item.id)}
-                    className="flex-1 flex-row items-center justify-center py-3 border-r border-gray-200 dark:border-gray-700">
-                    <MaterialIcons name="edit" size={18} color="#2563EB" />
-                    <Text className="ml-2 text-sm font-medium text-blue-600 dark:text-blue-400">
-                        Chỉnh sửa
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => handleCancelRequest(item.id, item.uuid)}
-                    disabled={cancelling === item.id}
-                    className="flex-1 flex-row items-center justify-center py-3">
-                    {cancelling === item.id ? (
-                        <ActivityIndicator size="small" color="#EF4444" />
-                    ) : (
-                        <>
-                            <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
-                            <Text className="ml-2 text-sm font-medium text-red-600 dark:text-red-400">
-                                Hủy
+                {/* Action Buttons - Vertical layout like View messages/Booking details */}
+                <View className="border-t border-gray-200 dark:border-gray-700">
+                    <TouchableOpacity
+                        onPress={() => handleEditRequest(item.id)}
+                        activeOpacity={0.7}
+                        className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700"
+                    >
+                        <View className="flex-row items-center flex-1">
+                            <MaterialIcons name="edit" size={20} color="#2563EB" />
+                            <Text className="ml-3 text-base font-medium text-gray-900 dark:text-white">
+                                Chỉnh sửa
                             </Text>
-                        </>
-                    )}
-                </TouchableOpacity>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => handleCancelRequest(item.id, item.uuid)}
+                        disabled={cancelling === item.id}
+                        activeOpacity={0.7}
+                        className="flex-row items-center justify-between px-4 py-4"
+                    >
+                        <View className="flex-row items-center flex-1">
+                            {cancelling === item.id ? (
+                                <ActivityIndicator size="small" color="#EF4444" />
+                            ) : (
+                                <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
+                            )}
+                            <Text className={`ml-3 text-base font-medium ${cancelling === item.id ? 'text-gray-400' : 'text-red-600 dark:text-red-400'}`}>
+                                Hủy request
+                            </Text>
+                        </View>
+                        {!cancelling && (
+                            <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
-        </View>
-    );
+        );
+    };
 
     if (loading) {
         return (
@@ -235,7 +271,7 @@ export default function RequestMatchesScreen() {
                 <View className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700">
                     <BackButton showText={true} className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 rounded-lg" />
                     <Text className="flex-1 text-center text-lg font-bold text-text-primary dark:text-white -ml-10">
-                        Requests đang chờ match
+                        Yêu cầu đang chờ match
                     </Text>
                     <TouchableOpacity
                         onPress={() => router.push('/create_request_waiting')}

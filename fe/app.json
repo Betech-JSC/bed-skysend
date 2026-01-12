@@ -56,7 +56,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.toannguyen112.reactnativeboilerplate",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "SkySend cần truy cập camera để bạn có thể chụp ảnh trực tiếp trong ứng dụng. Chúng tôi sử dụng camera để: (1) Chụp ảnh đơn hàng khi tạo đơn mới - giúp người nhận xem hàng hóa trước khi nhận; (2) Chụp ảnh giấy tờ tùy thân (CMND/CCCD) để xác minh danh tính KYC - đảm bảo an toàn giao dịch; (3) Chụp ảnh đại diện cho hồ sơ cá nhân; (4) Chụp ảnh gửi trong tin nhắn chat với người dùng khác. Tất cả ảnh được lưu trữ an toàn và chỉ được sử dụng cho mục đích cung cấp dịch vụ của ứng dụng.",
+        "NSPhotoLibraryUsageDescription": "SkySend cần truy cập thư viện ảnh để bạn có thể chọn và tải lên ảnh từ thiết bị. Chúng tôi sử dụng thư viện ảnh để: (1) Chọn ảnh đơn hàng từ thư viện khi tạo đơn - cho phép bạn chọn ảnh hàng hóa đã có sẵn; (2) Chọn ảnh giấy tờ tùy thân để xác minh KYC - bạn có thể chọn ảnh CMND/CCCD đã chụp trước đó; (3) Chọn ảnh đại diện từ thư viện cho hồ sơ cá nhân; (4) Chọn ảnh để gửi trong tin nhắn chat. Ảnh được tải lên máy chủ an toàn và chỉ được sử dụng trong phạm vi dịch vụ của ứng dụng.",
+        "NSPhotoLibraryAddUsageDescription": "SkySend cần quyền lưu ảnh vào thư viện để bạn có thể lưu lại các ảnh quan trọng từ ứng dụng. Ví dụ: lưu ảnh xác nhận đơn hàng, ảnh hợp đồng, hoặc ảnh từ tin nhắn chat vào album ảnh của bạn để tham khảo sau này."
       },
       "usesNonExemptEncryption": false,
       "config": {

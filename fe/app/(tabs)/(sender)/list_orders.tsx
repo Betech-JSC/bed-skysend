@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     Image,
     ActivityIndicator,
+    TextInput,
 } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { Alert } from "react-native";
@@ -38,6 +39,7 @@ function ListOrder() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingRequests, setLoadingRequests] = useState(false);
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
     // Fetch data khi filter thay đổi
     useEffect(() => {
@@ -97,11 +99,11 @@ function ListOrder() {
                 const bPriority = b.request?.priority_level || 'normal';
                 const aPriorityOrder = priorityOrder[aPriority] || 3;
                 const bPriorityOrder = priorityOrder[bPriority] || 3;
-                
+
                 if (aPriorityOrder !== bPriorityOrder) {
                     return aPriorityOrder - bPriorityOrder;
                 }
-                
+
                 // Secondary sort by created_at desc
                 const aDate = new Date(a.created_at || 0).getTime();
                 const bDate = new Date(b.created_at || 0).getTime();
@@ -161,6 +163,39 @@ function ListOrder() {
         );
     }
 
+    // Filter orders by search query
+    const filteredOrders = searchQuery.trim()
+        ? orders.filter((order: any) => {
+            const flight = order.flight || {};
+            const customer = order.customer || order.partner || {};
+            const searchLower = searchQuery.toLowerCase();
+            return (
+                (order.uuid || '').toLowerCase().includes(searchLower) ||
+                (order.id || '').toString().includes(searchLower) ||
+                (flight.from_airport || '').toLowerCase().includes(searchLower) ||
+                (flight.to_airport || '').toLowerCase().includes(searchLower) ||
+                (customer.name || '').toLowerCase().includes(searchLower) ||
+                (flight.flight_number || '').toLowerCase().includes(searchLower)
+            );
+        })
+        : orders;
+
+    // Filter requests by search query
+    const filteredRequests = searchQuery.trim()
+        ? requests.filter((request: any) => {
+            const flight = request.flight || {};
+            const customer = flight.customer || {};
+            const searchLower = searchQuery.toLowerCase();
+            return (
+                (request.uuid || '').toLowerCase().includes(searchLower) ||
+                (request.id || '').toString().includes(searchLower) ||
+                (flight.from_airport || '').toLowerCase().includes(searchLower) ||
+                (flight.to_airport || '').toLowerCase().includes(searchLower) ||
+                (customer.name || '').toLowerCase().includes(searchLower) ||
+                (flight.flight_number || '').toLowerCase().includes(searchLower)
+            );
+        })
+        : requests;
 
     return (
         <>
@@ -176,35 +211,49 @@ function ListOrder() {
                     },
                 }}
             />
-            <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-                {/* Main Tabs: Orders vs Requests */}
+            <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
+                {/* Search Bar */}
+                <View className="bg-white dark:bg-gray-900 px-6 pt-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <View className="flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700">
+                        <MaterialIcons name="search" size={20} color="#6B7280" />
+                        <TextInput
+                            className="flex-1 ml-3 text-base text-gray-900 dark:text-white"
+                            placeholder="Tìm kiếm đơn hàng hoặc yêu cầu..."
+                            placeholderTextColor="#9CA3AF"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity
+                                onPress={() => setSearchQuery('')}
+                                className="ml-2"
+                                activeOpacity={0.7}
+                            >
+                                <MaterialIcons name="close" size={20} color="#6B7280" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+
+                {/* Main Tabs: Orders vs Requests - Compact, left-aligned like Products/Stores */}
                 <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                    <View className="flex-row mx-4">
+                    <View className="flex-row px-6">
                         <TouchableOpacity
                             onPress={() => {
                                 setActiveTab('orders');
                                 // Reset request filter khi chuyển sang tab orders
                                 setRequestStatusFilter('');
                             }}
-                            className={`flex-1 items-center py-4 ${activeTab === 'orders' ? 'border-b-2 border-primary' : ''}`}
+                            activeOpacity={0.7}
+                            className={`items-center py-4 mr-6 ${activeTab === 'orders' ? 'border-b-2 border-gray-900 dark:border-white' : ''}`}
                         >
-                            <View className="flex-row items-center gap-2">
-                                <MaterialIcons
-                                    name="inventory-2"
-                                    size={20}
-                                    color={activeTab === 'orders' ? "#2563EB" : "#6B7280"}
-                                />
-                                <Text
-                                    className={`text-sm font-bold ${activeTab === 'orders'
-                                        ? "text-primary"
-                                        : "text-text-secondary dark:text-gray-400"
-                                        }`}
-                                >
-                                    Đơn hàng
-                                </Text>
-                            </View>
-                            <Text className="text-xs text-text-secondary dark:text-gray-400 mt-1">
-                                Đơn đã xác nhận
+                            <Text
+                                className={`text-base font-bold ${activeTab === 'orders'
+                                    ? "text-gray-900 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400"
+                                    }`}
+                            >
+                                Đơn hàng
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -213,38 +262,29 @@ function ListOrder() {
                                 // Reset order filter khi chuyển sang tab requests
                                 setOrderStatusFilter('');
                             }}
-                            className={`flex-1 items-center py-4 ${activeTab === 'requests' ? 'border-b-2 border-primary' : ''}`}
+                            activeOpacity={0.7}
+                            className={`items-center py-4 ${activeTab === 'requests' ? 'border-b-2 border-gray-900 dark:border-white' : ''}`}
                         >
-                            <View className="flex-row items-center gap-2">
-                                <MaterialIcons
-                                    name="send"
-                                    size={20}
-                                    color={activeTab === 'requests' ? "#2563EB" : "#6B7280"}
-                                />
-                                <Text
-                                    className={`text-sm font-bold ${activeTab === 'requests'
-                                        ? "text-primary"
-                                        : "text-text-secondary dark:text-gray-400"
-                                        }`}
-                                >
-                                    Yêu cầu đã gửi
-                                </Text>
-                            </View>
-                            <Text className="text-xs text-text-secondary dark:text-gray-400 mt-1">
-                                Yêu cầu gửi hàng
+                            <Text
+                                className={`text-base font-bold ${activeTab === 'requests'
+                                    ? "text-gray-900 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400"
+                                    }`}
+                            >
+                                Yêu cầu đã gửi
                             </Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* Status Filter Tabs for Orders */}
+                {/* Status Filter Tabs for Orders - Pill shaped like Popular/Fashion/Home */}
                 {activeTab === 'orders' && (
                     <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             className="flex-row"
-                            contentContainerStyle={{ paddingHorizontal: 16 }}
+                            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
                         >
                             {ORDER_FILTER_TABS.map((tab) => {
                                 const isActive = orderStatusFilter === tab.status;
@@ -252,15 +292,16 @@ function ListOrder() {
                                     <TouchableOpacity
                                         key={tab.status || 'all'}
                                         onPress={() => setOrderStatusFilter(tab.status)}
-                                        className={`items-center py-3 px-4 mr-2 rounded-lg ${isActive
-                                            ? "bg-primary/10"
-                                            : ""
+                                        activeOpacity={0.7}
+                                        className={`items-center justify-center py-2.5 px-5 mr-2 rounded-full ${isActive
+                                            ? "bg-gray-900 dark:bg-gray-100"
+                                            : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                                             }`}
                                     >
                                         <Text
                                             className={`text-sm font-semibold ${isActive
-                                                ? "text-primary"
-                                                : "text-text-secondary dark:text-gray-400"
+                                                ? "text-white dark:text-gray-900"
+                                                : "text-gray-900 dark:text-gray-200"
                                                 }`}
                                         >
                                             {tab.label}
@@ -272,14 +313,14 @@ function ListOrder() {
                     </View>
                 )}
 
-                {/* Status Filter Tabs for Requests */}
+                {/* Status Filter Tabs for Requests - Pill shaped like Popular/Fashion/Home */}
                 {activeTab === 'requests' && (
                     <View className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             className="flex-row"
-                            contentContainerStyle={{ paddingHorizontal: 16 }}
+                            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
                         >
                             {REQUEST_FILTER_TABS.map((tab) => {
                                 const isActive = requestStatusFilter === tab.status;
@@ -287,15 +328,16 @@ function ListOrder() {
                                     <TouchableOpacity
                                         key={tab.status || 'all'}
                                         onPress={() => setRequestStatusFilter(tab.status)}
-                                        className={`items-center py-3 px-4 mr-2 rounded-lg ${isActive
-                                            ? "bg-primary/10"
-                                            : ""
+                                        activeOpacity={0.7}
+                                        className={`items-center justify-center py-2.5 px-5 mr-2 rounded-full ${isActive
+                                            ? "bg-gray-900 dark:bg-gray-100"
+                                            : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                                             }`}
                                     >
                                         <Text
                                             className={`text-sm font-semibold ${isActive
-                                                ? "text-primary"
-                                                : "text-text-secondary dark:text-gray-400"
+                                                ? "text-white dark:text-gray-900"
+                                                : "text-gray-900 dark:text-gray-200"
                                                 }`}
                                         >
                                             {tab.label}
@@ -308,27 +350,29 @@ function ListOrder() {
                 )}
 
                 {/* Content List */}
-                <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
+                <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900 px-4 py-4" showsVerticalScrollIndicator={false}>
                     {activeTab === 'orders' ? (
                         // Orders List
                         loading ? (
                             <View className="items-center pt-16">
                                 <ActivityIndicator size="large" color="#2563EB" />
                             </View>
-                        ) : orders.length === 0 ? (
+                        ) : filteredOrders.length === 0 ? (
                             <View className="items-center pt-16">
                                 <View className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center">
                                     <MaterialIcons name="inventory-2" size={48} color="#9CA3AF" />
                                 </View>
                                 <Text className="mt-5 text-lg font-bold text-text-primary dark:text-white">
-                                    Chưa có đơn hàng nào
+                                    {searchQuery.trim() ? 'Không tìm thấy kết quả' : 'Chưa có đơn hàng nào'}
                                 </Text>
                                 <Text className="text-sm text-text-secondary dark:text-gray-400 mt-1 text-center px-8">
-                                    Khi bạn có đơn hàng, chúng sẽ xuất hiện ở đây.
+                                    {searchQuery.trim()
+                                        ? 'Thử tìm kiếm với từ khóa khác.'
+                                        : 'Khi bạn có đơn hàng, chúng sẽ xuất hiện ở đây.'}
                                 </Text>
                             </View>
                         ) : (
-                            orders.map((order: any) => {
+                            filteredOrders.map((order: any) => {
                                 const flight = order.flight || {};
                                 const customer = order.customer || order.partner || {};
                                 const statusInfo = getOrderStatusLabel(order.status || 'pending');
@@ -380,69 +424,69 @@ function ListOrder() {
                                         <View className="h-px bg-gray-100 dark:bg-gray-700" />
 
                                         {/* Hình ảnh - Gộp tất cả ảnh lại */}
-                                        {((order.request?.item_images && order.request.item_images.length > 0) || 
-                                          (flight.item_images && flight.item_images.length > 0) ||
-                                          (order.item_images && order.item_images.length > 0)) && (
-                                            <View className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
-                                                <View className="flex-row items-center gap-2 mb-2">
-                                                    <MaterialIcons name="photo-library" size={14} color="#6B7280" />
-                                                    <Text className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                                        Hình ảnh
-                                                    </Text>
-                                                </View>
-                                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                    <View className="flex-row gap-1.5">
-                                                        {/* Ảnh kiện hàng */}
-                                                        {order.request?.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
-                                                            <Image
-                                                                key={`request-${index}`}
-                                                                source={{ uri: imageUrl }}
-                                                                className="w-12 h-12 rounded-md"
-                                                                resizeMode="cover"
-                                                            />
-                                                        ))}
-                                                        {/* Ảnh vé máy bay */}
-                                                        {flight.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
-                                                            <Image
-                                                                key={`flight-${index}`}
-                                                                source={{ uri: imageUrl }}
-                                                                className="w-12 h-12 rounded-md"
-                                                                resizeMode="cover"
-                                                            />
-                                                        ))}
-                                                        {/* Ảnh đơn hàng */}
-                                                        {order.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
-                                                            <Image
-                                                                key={`order-${index}`}
-                                                                source={{ uri: imageUrl }}
-                                                                className="w-12 h-12 rounded-md"
-                                                                resizeMode="cover"
-                                                            />
-                                                        ))}
-                                                        {/* Đếm tổng số ảnh còn lại */}
-                                                        {(() => {
-                                                            const requestCount = order.request?.item_images?.length || 0;
-                                                            const flightCount = flight.item_images?.length || 0;
-                                                            const orderCount = order.item_images?.length || 0;
-                                                            const totalCount = requestCount + flightCount + orderCount;
-                                                            const shownCount = Math.min(3, requestCount) + Math.min(3, flightCount) + Math.min(3, orderCount);
-                                                            const remaining = totalCount - shownCount;
-                                                            
-                                                            if (remaining > 0) {
-                                                                return (
-                                                                    <View className="w-12 h-12 rounded-md bg-gray-100 dark:bg-gray-700 items-center justify-center border border-gray-200 dark:border-gray-600">
-                                                                        <Text className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                                                                            +{remaining}
-                                                                        </Text>
-                                                                    </View>
-                                                                );
-                                                            }
-                                                            return null;
-                                                        })()}
+                                        {((order.request?.item_images && order.request.item_images.length > 0) ||
+                                            (flight.item_images && flight.item_images.length > 0) ||
+                                            (order.item_images && order.item_images.length > 0)) && (
+                                                <View className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
+                                                    <View className="flex-row items-center gap-2 mb-2">
+                                                        <MaterialIcons name="photo-library" size={14} color="#6B7280" />
+                                                        <Text className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                            Hình ảnh
+                                                        </Text>
                                                     </View>
-                                                </ScrollView>
-                                            </View>
-                                        )}
+                                                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                                        <View className="flex-row gap-1.5">
+                                                            {/* Ảnh kiện hàng */}
+                                                            {order.request?.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
+                                                                <Image
+                                                                    key={`request-${index}`}
+                                                                    source={{ uri: imageUrl }}
+                                                                    className="w-12 h-12 rounded-md"
+                                                                    resizeMode="cover"
+                                                                />
+                                                            ))}
+                                                            {/* Ảnh vé máy bay */}
+                                                            {flight.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
+                                                                <Image
+                                                                    key={`flight-${index}`}
+                                                                    source={{ uri: imageUrl }}
+                                                                    className="w-12 h-12 rounded-md"
+                                                                    resizeMode="cover"
+                                                                />
+                                                            ))}
+                                                            {/* Ảnh đơn hàng */}
+                                                            {order.item_images?.slice(0, 3).map((imageUrl: string, index: number) => (
+                                                                <Image
+                                                                    key={`order-${index}`}
+                                                                    source={{ uri: imageUrl }}
+                                                                    className="w-12 h-12 rounded-md"
+                                                                    resizeMode="cover"
+                                                                />
+                                                            ))}
+                                                            {/* Đếm tổng số ảnh còn lại */}
+                                                            {(() => {
+                                                                const requestCount = order.request?.item_images?.length || 0;
+                                                                const flightCount = flight.item_images?.length || 0;
+                                                                const orderCount = order.item_images?.length || 0;
+                                                                const totalCount = requestCount + flightCount + orderCount;
+                                                                const shownCount = Math.min(3, requestCount) + Math.min(3, flightCount) + Math.min(3, orderCount);
+                                                                const remaining = totalCount - shownCount;
+
+                                                                if (remaining > 0) {
+                                                                    return (
+                                                                        <View className="w-12 h-12 rounded-md bg-gray-100 dark:bg-gray-700 items-center justify-center border border-gray-200 dark:border-gray-600">
+                                                                            <Text className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                                                +{remaining}
+                                                                            </Text>
+                                                                        </View>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })()}
+                                                        </View>
+                                                    </ScrollView>
+                                                </View>
+                                            )}
 
                                         {/* Customer Info + Price */}
                                         <View className="flex-row items-center justify-between px-4 py-4 gap-3">
@@ -520,20 +564,22 @@ function ListOrder() {
                             <View className="items-center pt-16">
                                 <ActivityIndicator size="large" color="#2563EB" />
                             </View>
-                        ) : requests.length === 0 ? (
+                        ) : filteredRequests.length === 0 ? (
                             <View className="items-center pt-16">
                                 <View className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center">
                                     <MaterialIcons name="send" size={48} color="#9CA3AF" />
                                 </View>
                                 <Text className="mt-5 text-lg font-bold text-text-primary dark:text-white">
-                                    Chưa có yêu cầu nào
+                                    {searchQuery.trim() ? 'Không tìm thấy kết quả' : 'Chưa có yêu cầu nào'}
                                 </Text>
                                 <Text className="text-sm text-text-secondary dark:text-gray-400 mt-1 text-center px-8">
-                                    Các yêu cầu bạn đã gửi tới hành khách sẽ xuất hiện ở đây.
+                                    {searchQuery.trim()
+                                        ? 'Thử tìm kiếm với từ khóa khác.'
+                                        : 'Các yêu cầu bạn đã gửi tới hành khách sẽ xuất hiện ở đây.'}
                                 </Text>
                             </View>
                         ) : (
-                            requests.map((request: any) => {
+                            filteredRequests.map((request: any) => {
                                 const flight = request.flight || {};
                                 const customer = flight.customer || {};
                                 const statusInfo = getRequestStatusLabel(request.status || 'pending');

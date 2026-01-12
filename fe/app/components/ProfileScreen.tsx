@@ -20,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { DEMO_AVATAR, getAvatarUrl } from '@/constants/avatars';
 import { formatVND } from '@/utils/currencyFormatter';
+import { showDeleteAccountConfirmation, executeDeleteAccount } from '../utils/deleteAccount';
 
 interface UserProfile {
     id: string;
@@ -189,66 +190,16 @@ export default function ProfileScreen() {
     };
 
     const deleteAccount = async () => {
-        Alert.alert(
-            'Xác nhận xóa tài khoản',
-            'Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn?\n\nHành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.',
-            [
-                { text: 'Hủy', style: 'cancel' },
-                {
-                    text: 'Xóa tài khoản',
-                    style: 'destructive',
-                    onPress: async () => {
-                        // Xác nhận lần 2
-                        Alert.alert(
-                            'Cảnh báo cuối cùng',
-                            'Đây là lần xác nhận cuối cùng. Tài khoản của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.',
-                            [
-                                { text: 'Hủy', style: 'cancel' },
-                                {
-                                    text: 'Xác nhận xóa',
-                                    style: 'destructive',
-                                    onPress: async () => {
-                                        try {
-                                            setLoading(true);
-                                            const response = await api.delete('user/account');
-
-                                            if (response.data?.success) {
-                                                // Xóa dữ liệu local và Redux state
-                                                await AsyncStorage.removeItem('user');
-                                                dispatch(setUser(null));
-
-                                                Alert.alert(
-                                                    'Thành công',
-                                                    'Tài khoản của bạn đã được xóa vĩnh viễn.',
-                                                    [
-                                                        {
-                                                            text: 'OK',
-                                                            onPress: () => {
-                                                                router.replace('/login');
-                                                            }
-                                                        }
-                                                    ]
-                                                );
-                                            } else {
-                                                throw new Error(response.data?.message || 'Xóa tài khoản thất bại');
-                                            }
-                                        } catch (error: any) {
-                                            console.error('Error deleting account:', error);
-                                            Alert.alert(
-                                                'Lỗi',
-                                                error.response?.data?.message || error.message || 'Không thể xóa tài khoản. Vui lòng thử lại.'
-                                            );
-                                        } finally {
-                                            setLoading(false);
-                                        }
-                                    },
-                                },
-                            ]
-                        );
-                    },
-                },
-            ]
-        );
+        showDeleteAccountConfirmation(async () => {
+            try {
+                setLoading(true);
+                await executeDeleteAccount(router, dispatch);
+            } catch (error) {
+                // Error already handled in executeDeleteAccount
+            } finally {
+                setLoading(false);
+            }
+        });
     };
 
     const getAvatarUri = () => {
@@ -670,18 +621,6 @@ export default function ProfileScreen() {
                         </View>
                     )}
 
-                    {/* Empty state for activities */}
-                    {!loadingActivities && recentActivities.length === 0 && (
-                        <View className="mt-6 px-4">
-                            <View className="items-center rounded-xl bg-white py-8 dark:bg-slate-800/50">
-                                <MaterialIcons name="history" size={48} color="#9CA3AF" />
-                                <Text className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                                    Chưa có hoạt động nào
-                                </Text>
-                            </View>
-                        </View>
-                    )}
-
                     {/* Menu List */}
                     <View className="mt-8 px-4 gap-y-4 pb-20">
                         {/* Group 1 - Tạm thời ẩn chức năng xác thực */}
@@ -754,9 +693,12 @@ export default function ProfileScreen() {
                                     Xóa tài khoản vĩnh viễn
                                 </Text>
                                 <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    Hành động này không thể hoàn tác
+                                    Xóa tất cả dữ liệu: hồ sơ, đơn hàng, chat, ví điện tử, KYC. Không thể khôi phục.
                                 </Text>
                             </View>
+                            {loading && (
+                                <ActivityIndicator size="small" color="#DC2626" />
+                            )}
                         </TouchableOpacity>
 
                         {/* Đăng xuất */}
