@@ -310,12 +310,13 @@ const Home = () => {
               className="flex-1 rounded-2xl bg-white dark:bg-gray-800 p-4 border border-gray-100 dark:border-gray-700 shadow-sm"
             >
               <View className="flex-row items-center justify-between mb-2">
-                <MaterialIcons name="shopping-bag" size={20} color="#2563EB" />
+                <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                  {stats.totalOrders}
+                </Text>
                 <MaterialIcons name="chevron-right" size={18} color="#9CA3AF" />
               </View>
-              <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {stats.totalOrders}
-              </Text>
+              <MaterialIcons name="shopping-bag" size={20} color="#2563EB" />
+
               <Text className="text-xs text-gray-500 dark:text-gray-400">
                 Tổng đơn hàng
               </Text>
@@ -328,12 +329,13 @@ const Home = () => {
               className="flex-1 rounded-2xl bg-white dark:bg-gray-800 p-4 border border-gray-100 dark:border-gray-700 shadow-sm"
             >
               <View className="flex-row items-center justify-between mb-2">
-                <MaterialIcons name="check-circle" size={20} color="#10B981" />
+
+                <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                  {stats.completedOrders}
+                </Text>
                 <MaterialIcons name="chevron-right" size={18} color="#9CA3AF" />
               </View>
-              <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {stats.completedOrders}
-              </Text>
+              <MaterialIcons name="check-circle" size={20} color="#10B981" />
               <Text className="text-xs text-gray-500 dark:text-gray-400">
                 Đã hoàn thành
               </Text>
@@ -346,12 +348,13 @@ const Home = () => {
               className="flex-1 rounded-2xl bg-white dark:bg-gray-800 p-4 border border-gray-100 dark:border-gray-700 shadow-sm"
             >
               <View className="flex-row items-center justify-between mb-2">
-                <MaterialIcons name="schedule" size={20} color="#F59E0B" />
+                <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                  {stats.pendingOrders}
+                </Text>
                 <MaterialIcons name="chevron-right" size={18} color="#9CA3AF" />
               </View>
-              <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {stats.pendingOrders}
-              </Text>
+              <MaterialIcons name="schedule" size={20} color="#F59E0B" />
+
               <Text className="text-xs text-gray-500 dark:text-gray-400">
                 Đang xử lý
               </Text>
