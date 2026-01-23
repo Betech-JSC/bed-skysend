@@ -1,4 +1,5 @@
 // app/(customer)/_layout.tsx
+import React from 'react';
 import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity, View, Text } from 'react-native';
@@ -80,12 +81,17 @@ export default function CustomerLayout() {
                 options={{
                     title: undefined,
                     tabBarLabel: ({ focused }) => (
-                        <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
-                            Trang chủ
-                        </Text>
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Trang chủ
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
                     ),
                     tabBarIcon: ({ focused }) => (
-                        <MaterialIcons name="home" size={28} color={focused ? '#2563EB' : '#6B7280'} />
+                        <MaterialIcons name="home" size={28} color={focused ? '#1F2937' : '#6B7280'} />
                     ),
                 }}
             />
@@ -96,14 +102,19 @@ export default function CustomerLayout() {
                 options={{
                     title: undefined,
                     tabBarLabel: ({ focused }) => (
-                        <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
-                            Chuyến bay
-                        </Text>
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Chuyến bay
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
                     ),
                     tabBarIcon: ({ focused }) => (
                         <TabIconWithBadge
                             iconName="flight"
-                            color={focused ? '#2563EB' : '#6B7280'}
+                            color={focused ? '#1F2937' : '#6B7280'}
                             badgeCount={newFlightRequestsCount}
                             size={28}
                         />
@@ -117,14 +128,19 @@ export default function CustomerLayout() {
                 options={{
                     title: undefined,
                     tabBarLabel: ({ focused }) => (
-                        <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
-                            Đơn hàng
-                        </Text>
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Đơn hàng
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
                     ),
                     tabBarIcon: ({ focused }) => (
                         <TabIconWithBadge
                             iconName="inventory"
-                            color={focused ? '#2563EB' : '#6B7280'}
+                            color={focused ? '#1F2937' : '#6B7280'}
                             badgeCount={newOrdersCount}
                             size={28}
                         />
@@ -136,7 +152,17 @@ export default function CustomerLayout() {
                 name="chat"
                 options={{
                     title: undefined,
-                    tabBarIcon: ({ color }) => <ChatIconWithBadge color={color} />
+                    tabBarLabel: ({ focused }) => (
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Chat
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
+                    ),
+                    tabBarIcon: ({ focused }) => <ChatIconWithBadge color={focused ? '#1F2937' : '#6B7280'} />
                 }}
             />
 
@@ -154,12 +180,17 @@ export default function CustomerLayout() {
                 options={{
                     title: undefined,
                     tabBarLabel: ({ focused }) => (
-                        <Text className={`text-xs ${focused ? 'font-bold text-primary' : 'text-gray-500'}`}>
-                            Tài khoản
-                        </Text>
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Tài khoản
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
                     ),
                     tabBarIcon: ({ focused }) => (
-                        <MaterialIcons name="person" size={28} color={focused ? '#2563EB' : '#6B7280'} />
+                        <MaterialIcons name="person" size={28} color={focused ? '#1F2937' : '#6B7280'} />
                     ),
                 }}
             />
