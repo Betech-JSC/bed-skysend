@@ -1,4 +1,5 @@
 // app/(sender)/_layout.tsx
+import React from 'react';
 import { Tabs } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { View, Text } from "react-native";
@@ -72,10 +73,20 @@ export default function SenderLayout() {
                 name="home"
                 options={{
                     title: "Trang chủ",
+                    tabBarLabel: ({ focused }) => (
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Trang chủ
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
+                    ),
                     tabBarIcon: ({ color, focused }) => (
                         <TabIconWithBadge
                             iconName="home"
-                            color={color}
+                            color={focused ? '#1F2937' : '#6B7280'}
                             badgeCount={newFlightRequestsCount}
                             size={focused ? 28 : 26}
                         />
@@ -86,10 +97,20 @@ export default function SenderLayout() {
                 name="list_orders"
                 options={{
                     title: "Đơn hàng",
+                    tabBarLabel: ({ focused }) => (
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Đơn hàng
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
+                    ),
                     tabBarIcon: ({ color, focused }) => (
                         <TabIconWithBadge
                             iconName="work"
-                            color={color}
+                            color={focused ? '#1F2937' : '#6B7280'}
                             badgeCount={newOrdersCount}
                             size={focused ? 28 : 26}
                         />
@@ -109,8 +130,18 @@ export default function SenderLayout() {
                 name="chat"
                 options={{
                     title: "Chat",
+                    tabBarLabel: ({ focused }) => (
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Chat
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
+                    ),
                     tabBarIcon: ({ color, focused }) => (
-                        <ChatIconWithBadge color={color} />
+                        <ChatIconWithBadge color={focused ? '#1F2937' : '#6B7280'} />
                     ),
                 }}
             />
@@ -118,11 +149,21 @@ export default function SenderLayout() {
                 name="profile"
                 options={{
                     title: "Tài khoản",
+                    tabBarLabel: ({ focused }) => (
+                        <View className="items-center">
+                            <Text className={`text-xs ${focused ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                Tài khoản
+                            </Text>
+                            {focused && (
+                                <View className="mt-1 h-0.5 w-8 bg-red-500 rounded-full" />
+                            )}
+                        </View>
+                    ),
                     tabBarIcon: ({ color, focused }) => (
                         <MaterialIcons
                             name="person"
                             size={focused ? 28 : 26}
-                            color={color}
+                            color={focused ? '#1F2937' : '#6B7280'}
                         />
                     ),
                 }}
