@@ -6,8 +6,8 @@
     "fix:prettier": "prettier --write --loglevel warn 'resources/js/**/*.vue'",
     "fix-code-style": "npm run fix:prettier && npm run fix:eslint",
     "heroku-postbuild": "npm run build",
-    "dev": "node init && vite",
-    "build": "node init && vite build && vite build --ssr",
+    "dev": "vite",
+    "build": "vite build && vite build --ssr",
     "socket": "php artisan reverb:start",
     "rematch": "php artisan requests:rematch",
     "migrate:fresh:seed": "php artisan migrate:fresh --seed"
